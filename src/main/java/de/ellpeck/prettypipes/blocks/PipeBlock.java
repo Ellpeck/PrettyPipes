@@ -12,6 +12,7 @@ import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.IStringSerializable;
+import net.minecraft.util.datafix.fixes.BlockEntityKeepPacked;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
@@ -29,7 +30,7 @@ public class PipeBlock extends Block {
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<BlockState, VoxelShape> SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = makeCuboidShape(5, 5, 5, 11, 11, 11);
-    private static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
+    public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
             .put(Direction.UP, makeCuboidShape(5, 10, 5, 11, 16, 11))
             .put(Direction.DOWN, makeCuboidShape(5, 0, 5, 11, 6, 11))
             .put(Direction.NORTH, makeCuboidShape(5, 5, 0, 11, 11, 6))
@@ -59,7 +60,7 @@ public class PipeBlock extends Block {
 
     @Override
     public void neighborChanged(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-        BlockState newState = this.createState(worldIn, pos);
+        BlockState newState = this.createState(worldIn, pos, state);
         if (newState != state)
             worldIn.setBlockState(pos, newState);
     }
@@ -67,24 +68,7 @@ public class PipeBlock extends Block {
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
-        return this.createState(context.getWorld(), context.getPos());
-    }
-
-    private BlockState createState(World world, BlockPos pos) {
-        BlockState state = this.getDefaultState();
-        for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-            BlockPos neighborPos = pos.offset(entry.getKey());
-            boolean canConnect = this.canConnect(world, neighborPos);
-            state = state.with(entry.getValue(), canConnect ? ConnectionType.CONNECTED : ConnectionType.DISCONNECTED);
-        }
-        return state;
-    }
-
-    private boolean canConnect(World world, BlockPos offset) {
-        if (!world.isBlockLoaded(offset))
-            return false;
-        BlockState state = world.getBlockState(offset);
-        return state.getBlock() == this;
+        return this.createState(context.getWorld(), context.getPos(), this.getDefaultState());
     }
 
     @Override
@@ -107,9 +91,33 @@ public class PipeBlock extends Block {
         return shape;
     }
 
+    private BlockState createState(World world, BlockPos pos, BlockState current) {
+        BlockState state = this.getDefaultState();
+        for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
+            ConnectionType type = getConnectionType(world, pos, entry.getKey());
+            if (type == ConnectionType.CONNECTED && current.get(entry.getValue()) == ConnectionType.BLOCKED)
+                type = ConnectionType.BLOCKED;
+            state = state.with(entry.getValue(), type);
+        }
+        return state;
+    }
+
+    public static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction) {
+        BlockPos offset = pos.offset(direction);
+        if (!world.isBlockLoaded(offset))
+            return ConnectionType.DISCONNECTED;
+        BlockState state = world.getBlockState(offset);
+        if (!(state.getBlock() instanceof PipeBlock))
+            return ConnectionType.DISCONNECTED;
+        if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
+            return ConnectionType.BLOCKED;
+        return ConnectionType.CONNECTED;
+    }
+
     public enum ConnectionType implements IStringSerializable {
         CONNECTED,
-        DISCONNECTED;
+        DISCONNECTED,
+        BLOCKED;
 
         private final String name;
 
