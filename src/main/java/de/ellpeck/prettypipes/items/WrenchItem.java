@@ -1,15 +1,14 @@
 package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.blocks.PipeBlock;
-import de.ellpeck.prettypipes.blocks.PipeBlock.ConnectionType;
+import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
+import de.ellpeck.prettypipes.blocks.pipe.ConnectionType;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.state.EnumProperty;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.SoundCategory;
@@ -17,7 +16,6 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
 
 import java.util.Map;
@@ -55,12 +53,20 @@ public class WrenchItem extends Item {
                 continue;
 
             if (!world.isRemote) {
-                ConnectionType newType = curr == ConnectionType.BLOCKED ? ConnectionType.CONNECTED : ConnectionType.BLOCKED;
+                ConnectionType newType = curr == ConnectionType.BLOCKED ? ConnectionType.CONNECTED_PIPE : ConnectionType.BLOCKED;
+                BlockPos otherPos = pos.offset(entry.getKey());
+                BlockState otherState = world.getBlockState(otherPos);
+                if (otherState.getBlock() instanceof PipeBlock) {
+                    otherState = otherState.with(PipeBlock.DIRECTIONS.get(entry.getKey().getOpposite()), newType);
+                    world.setBlockState(otherPos, otherState);
+                    PipeBlock.onStateChanged(world, otherPos, otherState);
+                } else if (newType == ConnectionType.CONNECTED_PIPE) {
+                    newType = ConnectionType.CONNECTED_INVENTORY;
+                }
                 BlockState newState = state.with(prop, newType);
                 world.setBlockState(pos, newState);
-
-                BlockPos otherPos = pos.offset(entry.getKey());
-                world.setBlockState(otherPos, world.getBlockState(otherPos).with(PipeBlock.DIRECTIONS.get(entry.getKey().getOpposite()), newType));
+                PipeBlock.onStateChanged(world, pos, newState);
+                world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ROTATE_ITEM, SoundCategory.PLAYERS, 1, 1);
             }
             return ActionResultType.SUCCESS;
         }

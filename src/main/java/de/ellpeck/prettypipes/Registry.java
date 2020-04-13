@@ -1,14 +1,23 @@
 package de.ellpeck.prettypipes;
 
-import de.ellpeck.prettypipes.blocks.PipeBlock;
+import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
+import de.ellpeck.prettypipes.blocks.pipe.PipeContainer;
+import de.ellpeck.prettypipes.blocks.pipe.PipeGui;
+import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.items.ExtractionUpgradeItem;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import net.minecraft.block.Block;
+import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
+import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraftforge.common.extensions.IForgeContainerType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -23,24 +32,29 @@ public final class Registry {
     public static final ItemGroup GROUP = new ItemGroup(PrettyPipes.ID) {
         @Override
         public ItemStack createIcon() {
-            return new ItemStack(wrench);
+            return new ItemStack(wrenchItem);
         }
     };
 
-    public static Item wrench;
-    public static Block pipe;
+    public static Item wrenchItem;
+    public static Item extractionUpgradeItem;
+
+    public static Block pipeBlock;
+    public static TileEntityType<PipeTileEntity> pipeTileEntity;
+    public static ContainerType<PipeContainer> pipeContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         event.getRegistry().registerAll(
-                pipe = new PipeBlock().setRegistryName("pipe")
+                pipeBlock = new PipeBlock().setRegistryName("pipe")
         );
     }
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
         event.getRegistry().registerAll(
-                wrench = new WrenchItem().setRegistryName("wrench")
+                wrenchItem = new WrenchItem().setRegistryName("wrench"),
+                extractionUpgradeItem = new ExtractionUpgradeItem().setRegistryName("extraction_upgrade")
         );
 
         ForgeRegistries.BLOCKS.getValues().stream()
@@ -48,11 +62,29 @@ public final class Registry {
                 .forEach(b -> event.getRegistry().register(new BlockItem(b, new Item.Properties().group(GROUP)).setRegistryName(b.getRegistryName())));
     }
 
+    @SubscribeEvent
+    public static void registerTiles(RegistryEvent.Register<TileEntityType<?>> event) {
+        event.getRegistry().registerAll(
+                pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe")
+        );
+    }
+
+    @SubscribeEvent
+    public static void registerContainer(RegistryEvent.Register<ContainerType<?>> event) {
+        event.getRegistry().registerAll(
+                pipeContainer = (ContainerType<PipeContainer>) IForgeContainerType.create((windowId, inv, data) -> {
+                    PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
+                    return tile != null ? new PipeContainer(pipeContainer, windowId, inv.player, tile) : null;
+                }).setRegistryName("pipe")
+        );
+    }
+
     public static void setup(FMLCommonSetupEvent event) {
 
     }
 
     public static void setupClient(FMLClientSetupEvent event) {
-        RenderTypeLookup.setRenderLayer(pipe, RenderType.cutout());
+        RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
+        ScreenManager.registerFactory(pipeContainer, PipeGui::new);
     }
 }

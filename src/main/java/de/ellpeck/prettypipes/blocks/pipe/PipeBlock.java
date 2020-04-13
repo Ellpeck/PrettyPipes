@@ -1,31 +1,38 @@
-package de.ellpeck.prettypipes.blocks;
+package de.ellpeck.prettypipes.blocks.pipe;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SoundType;
+import de.ellpeck.prettypipes.Utility;
+import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.state.BooleanProperty;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
+import net.minecraft.tileentity.AbstractFurnaceTileEntity;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
-import net.minecraft.util.IStringSerializable;
-import net.minecraft.util.datafix.fixes.BlockEntityKeepPacked;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
-public class PipeBlock extends Block {
+public class PipeBlock extends ContainerBlock {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<BlockState, VoxelShape> SHAPE_CACHE = new HashMap<>();
@@ -54,6 +61,20 @@ public class PipeBlock extends Block {
     }
 
     @Override
+    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult p_225533_6_) {
+        if (!player.getHeldItem(handIn).isEmpty())
+            return ActionResultType.PASS;
+        if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.CONNECTED_INVENTORY))
+            return ActionResultType.PASS;
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile == null)
+            return ActionResultType.PASS;
+        if (!worldIn.isRemote)
+            NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
+        return ActionResultType.SUCCESS;
+    }
+
+    @Override
     protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
         builder.add(DIRECTIONS.values().toArray(new EnumProperty[0]));
     }
@@ -61,8 +82,10 @@ public class PipeBlock extends Block {
     @Override
     public void neighborChanged(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
         BlockState newState = this.createState(worldIn, pos, state);
-        if (newState != state)
+        if (newState != state) {
             worldIn.setBlockState(pos, newState);
+            onStateChanged(worldIn, pos, newState);
+        }
     }
 
     @Nullable
@@ -84,7 +107,7 @@ public class PipeBlock extends Block {
 
         shape = CENTER_SHAPE;
         for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-            if (state.get(entry.getValue()) == ConnectionType.CONNECTED)
+            if (state.get(entry.getValue()).isConnected())
                 shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
         }
         SHAPE_CACHE.put(state, shape);
@@ -95,7 +118,7 @@ public class PipeBlock extends Block {
         BlockState state = this.getDefaultState();
         for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
             ConnectionType type = getConnectionType(world, pos, entry.getKey());
-            if (type == ConnectionType.CONNECTED && current.get(entry.getValue()) == ConnectionType.BLOCKED)
+            if (type.isConnected() && current.get(entry.getValue()) == ConnectionType.BLOCKED)
                 type = ConnectionType.BLOCKED;
             state = state.with(entry.getValue(), type);
         }
@@ -107,27 +130,46 @@ public class PipeBlock extends Block {
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
         BlockState state = world.getBlockState(offset);
-        if (!(state.getBlock() instanceof PipeBlock))
-            return ConnectionType.DISCONNECTED;
-        if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
-            return ConnectionType.BLOCKED;
-        return ConnectionType.CONNECTED;
+        if (state.getBlock() instanceof PipeBlock) {
+            if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
+                return ConnectionType.BLOCKED;
+            return ConnectionType.CONNECTED_PIPE;
+        } else {
+            TileEntity tile = world.getTileEntity(offset);
+            if (tile == null)
+                return ConnectionType.DISCONNECTED;
+            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
+            return handler == null ? ConnectionType.DISCONNECTED : ConnectionType.CONNECTED_INVENTORY;
+        }
     }
 
-    public enum ConnectionType implements IStringSerializable {
-        CONNECTED,
-        DISCONNECTED,
-        BLOCKED;
-
-        private final String name;
-
-        ConnectionType() {
-            this.name = this.name().toLowerCase(Locale.ROOT);
+    public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
+        if (DIRECTIONS.values().stream().noneMatch(d -> newState.get(d) == ConnectionType.CONNECTED_INVENTORY)) {
+            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
+            if (tile != null)
+                Utility.dropInventory(tile, tile.upgrades);
         }
+    }
 
-        @Override
-        public String getName() {
-            return this.name;
+    @Override
+    public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (state.getBlock() != newState.getBlock()) {
+            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+            if (tile != null)
+                Utility.dropInventory(tile, tile.upgrades);
+
+            super.onReplaced(state, worldIn, pos, newState, isMoving);
         }
+    }
+
+    @Nullable
+    @Override
+    public TileEntity createNewTileEntity(IBlockReader worldIn) {
+        return new PipeTileEntity();
+    }
+
+    @Override
+    public BlockRenderType getRenderType(BlockState state) {
+        return BlockRenderType.MODEL;
     }
 }

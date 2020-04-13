@@ -1,5 +1,7 @@
 {
     "item.prettypipes.wrench": "Pipe Wrench",
+    "item.prettypipes.extraction_upgrade": "Extraction Upgrade",
     "block.prettypipes.pipe": "Pipe",
-    "itemGroup.prettypipes": "Pretty Pipes"
+    "itemGroup.prettypipes": "Pretty Pipes",
+    "container.prettypipes.pipe": "Pipe"
 }

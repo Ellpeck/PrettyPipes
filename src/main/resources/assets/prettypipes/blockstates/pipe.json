@@ -7,7 +7,7 @@
         },
         {
             "when": {
-                "north": "connected"
+                "north": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end"
@@ -15,7 +15,7 @@
         },
         {
             "when": {
-                "south": "connected"
+                "south": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end",
@@ -24,7 +24,7 @@
         },
         {
             "when": {
-                "east": "connected"
+                "east": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end",
@@ -33,7 +33,7 @@
         },
         {
             "when": {
-                "west": "connected"
+                "west": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end",
@@ -42,7 +42,7 @@
         },
         {
             "when": {
-                "down": "connected"
+                "down": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end",
@@ -51,7 +51,7 @@
         },
         {
             "when": {
-                "up": "connected"
+                "up": "connected_pipe|connected_inventory"
             },
             "apply": {
                 "model": "prettypipes:block/pipe_end",
