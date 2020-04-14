@@ -1,21 +1,17 @@
 package de.ellpeck.prettypipes.network;
 
-import com.google.common.collect.Sets;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
-import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
@@ -23,8 +19,6 @@ import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jgrapht.GraphPath;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.traverse.ClosestFirstIterator;
@@ -35,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
@@ -104,7 +99,13 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
     }
 
     public boolean tryInsertItem(BlockPos startPipePos, BlockPos originInv, ItemStack stack) {
+        return this.routeItem(startPipePos, stack, () -> new PipeItem(stack, startPipePos, originInv));
+    }
+
+    public boolean routeItem(BlockPos startPipePos, ItemStack stack, Supplier<PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos))
+            return false;
+        if (!this.world.isBlockLoaded(startPipePos))
             return false;
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
@@ -116,15 +117,27 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
             if (pipe == startPipe)
                 continue;
             BlockPos dest = pipe.getAvailableDestination(stack);
-            if (dest != null) {
-                GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, pipe.getPos());
-                PipeItem item = new PipeItem(stack.copy(), startPipePos, originInv, pipe.getPos(), dest, path);
-                startPipe.items.add(item);
-                PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
-                return true;
-            }
+            if (dest != null)
+                return this.routeItemToLocation(startPipePos, pipe.getPos(), dest, itemSupplier);
         }
         return false;
+    }
+
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos destPipe, BlockPos destInventory, Supplier<PipeItem> itemSupplier) {
+        if (!this.isNode(startPipePos))
+            return false;
+        if (!this.world.isBlockLoaded(startPipePos))
+            return false;
+        PipeTileEntity startPipe = this.getPipe(startPipePos);
+        if (startPipe == null)
+            return false;
+        GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipe);
+        PipeItem item = itemSupplier.get();
+        item.setDestination(startPipePos, destPipe, destInventory, path);
+        if (!startPipe.items.contains(item))
+            startPipe.items.add(item);
+        PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
+        return true;
     }
 
     public PipeTileEntity getPipe(BlockPos pos) {

@@ -37,19 +37,18 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     public float lastY;
     public float lastZ;
 
-    private final List<BlockPos> path;
+    private List<BlockPos> path;
     private BlockPos startPipe;
+    private BlockPos startInventory;
     private BlockPos destPipe;
     private BlockPos destInventory;
     private int pipeTimer;
     private int currentTile;
+    private boolean dropOnObstruction;
 
-    public PipeItem(ItemStack stack, BlockPos startPipe, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
+    public PipeItem(ItemStack stack, BlockPos startPipe, BlockPos startInventory) {
         this.stack = stack;
-        this.startPipe = startPipe;
-        this.destPipe = destPipe;
-        this.destInventory = destInventory;
-        this.path = compilePath(path);
+        this.startInventory = startInventory;
         this.x = MathHelper.lerp(0.5F, startInventory.getX(), startPipe.getX()) + 0.5F;
         this.y = MathHelper.lerp(0.5F, startInventory.getY(), startPipe.getY()) + 0.5F;
         this.z = MathHelper.lerp(0.5F, startInventory.getZ(), startPipe.getZ()) + 0.5F;
@@ -58,6 +57,15 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     public PipeItem(CompoundNBT nbt) {
         this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
+    }
+
+    public void setDestination(BlockPos startPipe, BlockPos destPipe, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
+        this.startPipe = startPipe;
+        this.destPipe = destPipe;
+        this.destInventory = destInventory;
+        this.path = compilePath(path);
+        this.currentTile = 0;
+        this.pipeTimer = 0;
     }
 
     public void updateInPipe(PipeTileEntity currPipe) {
@@ -73,9 +81,9 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                         // ..or store in our destination container if we reached our destination
                         this.stack = this.store(currPipe);
                         if (!this.stack.isEmpty())
-                            this.onPathObstructed(currPipe);
+                            this.onPathObstructed(currPipe, true);
                     } else {
-                        this.onPathObstructed(currPipe);
+                        this.onPathObstructed(currPipe, false);
                     }
                 }
                 return;
@@ -93,7 +101,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                 } else {
                     currPipe.items.remove(this);
                     if (!currPipe.getWorld().isRemote)
-                        this.onPathObstructed(currPipe);
+                        this.onPathObstructed(currPipe, false);
                     return;
                 }
             } else {
@@ -116,8 +124,14 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this.z += dist.z * speed;
     }
 
-    private void onPathObstructed(PipeTileEntity currPipe) {
-        // TODO when the path is obstructed, try to turn back home first
+    private void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
+        if (!this.dropOnObstruction && tryReturn) {
+            PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
+            if (network.routeItemToLocation(currPipe.getPos(), this.startPipe, this.startInventory, () -> this)) {
+                this.dropOnObstruction = true;
+                return;
+            }
+        }
         this.drop(currPipe.getWorld());
     }
 
@@ -156,8 +170,10 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         CompoundNBT nbt = new CompoundNBT();
         nbt.put("stack", this.stack.serializeNBT());
         nbt.put("start_pipe", NBTUtil.writeBlockPos(this.startPipe));
+        nbt.put("start_inventory", NBTUtil.writeBlockPos(this.startInventory));
         nbt.put("dest_pipe", NBTUtil.writeBlockPos(this.destPipe));
         nbt.put("dest_inv", NBTUtil.writeBlockPos(this.destInventory));
+        nbt.putBoolean("drop_on_obstruction", this.dropOnObstruction);
         nbt.putInt("timer", this.pipeTimer);
         nbt.putInt("tile", this.currentTile);
         nbt.putFloat("x", this.x);
@@ -174,8 +190,10 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     public void deserializeNBT(CompoundNBT nbt) {
         this.stack = ItemStack.read(nbt.getCompound("stack"));
         this.startPipe = NBTUtil.readBlockPos(nbt.getCompound("start_pipe"));
+        this.startInventory = NBTUtil.readBlockPos(nbt.getCompound("start_inventory"));
         this.destPipe = NBTUtil.readBlockPos(nbt.getCompound("dest_pipe"));
         this.destInventory = NBTUtil.readBlockPos(nbt.getCompound("dest_inv"));
+        this.dropOnObstruction = nbt.getBoolean("drop_on_obstruction");
         this.pipeTimer = nbt.getInt("timer");
         this.currentTile = nbt.getInt("tile");
         this.x = nbt.getFloat("x");

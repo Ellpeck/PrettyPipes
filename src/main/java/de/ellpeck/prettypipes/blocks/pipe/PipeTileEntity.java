@@ -25,16 +25,11 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
-import org.jgrapht.GraphPath;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths;
-import org.jgrapht.traverse.ClosestFirstIterator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
 
@@ -82,7 +77,17 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     @Override
+    public CompoundNBT getUpdateTag() {
+        // by default, this is just writeInternal, but we
+        // want to sync the current pipe items on load too
+        return this.write(new CompoundNBT());
+    }
+
+    @Override
     public void tick() {
+        if (!this.world.isAreaLoaded(this.pos, 1))
+            return;
+
         for (int i = this.items.size() - 1; i >= 0; i--)
             this.items.get(i).updateInPipe(this);
 
