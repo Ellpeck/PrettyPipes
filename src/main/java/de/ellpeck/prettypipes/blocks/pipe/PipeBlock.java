@@ -5,6 +5,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.InventoryHelper;
@@ -93,6 +94,11 @@ public class PipeBlock extends ContainerBlock {
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
         return this.createState(context.getWorld(), context.getPos(), this.getDefaultState());
+    }
+
+    @Override
+    public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        onStateChanged(worldIn, pos, state);
     }
 
     @Override

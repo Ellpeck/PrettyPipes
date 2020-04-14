@@ -2,7 +2,9 @@ package de.ellpeck.prettypipes.network;
 
 import com.google.common.collect.Sets;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
+import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundNBT;
@@ -31,8 +33,8 @@ import java.util.Set;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
-    public final SimpleWeightedGraph<BlockPos, DefaultWeightedEdge> graph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
-    private final DijkstraShortestPath<BlockPos, DefaultWeightedEdge> dijkstra = new DijkstraShortestPath<>(this.graph);
+    public final SimpleWeightedGraph<BlockPos, NetworkEdge> graph = new SimpleWeightedGraph<>(NetworkEdge.class);
+    private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra = new DijkstraShortestPath<>(this.graph);
     private final World world;
 
     public PipeNetwork(World world) {
@@ -68,48 +70,84 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
     }
 
     public void onPipeChanged(BlockPos pos, BlockState state) {
-        Set<Pair<BlockPos, Integer>> neighbors = this.findConnectedNodesInPipe(pos, state);
+        List<NetworkEdge> neighbors = this.createAllEdges(pos, state, true);
         // if we only have one neighbor, then there can't be any new connections
         if (neighbors.size() <= 1 && !this.graph.containsVertex(pos))
             return;
-        for (Pair<BlockPos, Integer> node : neighbors)
-            this.refreshNode(node.getLeft(), this.world.getBlockState(node.getLeft()));
-        System.out.println(this.graph);
+        for (NetworkEdge edge : neighbors) {
+            BlockPos end = edge.endPipe.getPos();
+            this.refreshNode(end, this.world.getBlockState(end));
+        }
+        System.out.println(this.graph.toString());
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
-        Set<DefaultWeightedEdge> edges = this.graph.edgesOf(pos);
+        Set<NetworkEdge> edges = this.graph.edgesOf(pos);
         this.graph.removeAllEdges(new ArrayList<>(edges));
 
-        for (Pair<BlockPos, Integer> node : this.findConnectedNodesInPipe(pos, state)) {
-            DefaultWeightedEdge edge = this.graph.addEdge(pos, node.getLeft());
-            this.graph.setEdgeWeight(edge, node.getRight());
+        for (NetworkEdge edge : this.createAllEdges(pos, state, false)) {
+            this.graph.addEdge(edge.startPipe.getPos(), edge.endPipe.getPos(), edge);
+            this.graph.setEdgeWeight(edge, edge.pipes.size());
         }
     }
 
-    private Set<Pair<BlockPos, Integer>> findConnectedNodesInPipe(BlockPos pos, BlockState state) {
-        Set<Pair<BlockPos, Integer>> set = new HashSet<>();
-        this.findConnectedNodesInPipe(pos, state, set, Sets.newHashSet(pos), 0);
-        return set;
-    }
-
-    private void findConnectedNodesInPipe(BlockPos pos, BlockState state, Set<Pair<BlockPos, Integer>> nodes, Set<BlockPos> seen, int iterations) {
-        if (!(state.getBlock() instanceof PipeBlock))
-            return;
+    private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean allAround) {
+        List<NetworkEdge> edges = new ArrayList<>();
         for (Direction dir : Direction.values()) {
-            if (!state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
-                continue;
-            BlockPos offset = pos.offset(dir);
-            if (seen.contains(offset))
-                continue;
-            seen.add(offset);
-            if (this.graph.containsVertex(offset)) {
-                nodes.add(Pair.of(offset, iterations));
-                break;
-            } else {
-                this.findConnectedNodesInPipe(offset, this.world.getBlockState(offset), nodes, seen, iterations + 1);
-            }
+            NetworkEdge edge = this.createEdge(pos, state, dir, allAround);
+            if (edge != null)
+                edges.add(edge);
         }
+        return edges;
+    }
+
+    private NetworkEdge createEdge(BlockPos pos, BlockState state, Direction dir, boolean allAround) {
+        if (!allAround && !state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
+            return null;
+        BlockPos currPos = pos.offset(dir);
+        BlockState currState = this.world.getBlockState(currPos);
+        if (!(currState.getBlock() instanceof PipeBlock))
+            return null;
+        NetworkEdge edge = new NetworkEdge();
+        PipeTileEntity startPipe = Utility.getTileEntity(PipeTileEntity.class, this.world, pos);
+        if (startPipe != null) {
+            edge.startPipe = startPipe;
+            edge.pipes.add(startPipe);
+        }
+        edge.pipes.add(Utility.getTileEntity(PipeTileEntity.class, this.world, currPos));
+
+        Set<BlockPos> seen = new HashSet<>();
+        seen.add(pos);
+        seen.add(currPos);
+        while (true) {
+            // if we found a vertex, we can stop since that's the next node
+            // we do this here since the first offset pipe also needs to check this
+            if (this.graph.containsVertex(currPos)) {
+                edge.endPipe = edge.pipes.get(edge.pipes.size() - 1);
+                return edge;
+            }
+
+            boolean found = false;
+            for (Direction nextDir : Direction.values()) {
+                if (!currState.get(PipeBlock.DIRECTIONS.get(nextDir)).isConnected())
+                    continue;
+                BlockPos offset = currPos.offset(nextDir);
+                if (seen.contains(offset))
+                    continue;
+                seen.add(offset);
+                BlockState offState = this.world.getBlockState(offset);
+                if (!(offState.getBlock() instanceof PipeBlock))
+                    continue;
+                edge.pipes.add(Utility.getTileEntity(PipeTileEntity.class, this.world, offset));
+                currPos = offset;
+                currState = offState;
+                found = true;
+                break;
+            }
+            if (!found)
+                break;
+        }
+        return null;
     }
 
     public static PipeNetwork get(World world) {
