@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.blocks.pipe;
 
 import com.google.common.collect.ImmutableMap;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
@@ -182,8 +183,11 @@ public class PipeBlock extends ContainerBlock {
     public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
-            if (tile != null)
+            if (tile != null) {
                 Utility.dropInventory(tile, tile.upgrades);
+                for (PipeItem item : tile.items)
+                    item.drop(worldIn);
+            }
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);

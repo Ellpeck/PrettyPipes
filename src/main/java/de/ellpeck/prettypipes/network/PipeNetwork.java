@@ -118,7 +118,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
             BlockPos dest = pipe.getAvailableDestination(stack);
             if (dest != null) {
                 GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, pipe.getPos());
-                System.out.println("Found path " + path + " from " + startPipePos + " to " + pipe.getPos());
                 PipeItem item = new PipeItem(stack.copy(), startPipePos, originInv, pipe.getPos(), dest, path);
                 startPipe.items.add(item);
                 PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));

@@ -22,22 +22,12 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     public BlockPos startPipe;
     public BlockPos endPipe;
     public final List<BlockPos> pipes = new ArrayList<>();
-    private final Map<Integer, PipeTileEntity> tileCache = new HashMap<>();
 
-    public NetworkEdge(){
+    public NetworkEdge() {
     }
 
-    public NetworkEdge(CompoundNBT nbt){
+    public NetworkEdge(CompoundNBT nbt) {
         this.deserializeNBT(nbt);
-    }
-
-    public PipeTileEntity getPipe(World world, int index) {
-        PipeTileEntity tile = this.tileCache.get(index);
-        if (tile == null || tile.isRemoved()) {
-            tile = Utility.getTileEntity(PipeTileEntity.class, world, this.pipes.get(index));
-            this.tileCache.put(index, tile);
-        }
-        return tile;
     }
 
     @Override

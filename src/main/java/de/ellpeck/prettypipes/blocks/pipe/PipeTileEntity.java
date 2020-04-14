@@ -111,6 +111,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public BlockPos getAvailableDestination(ItemStack stack) {
+        for (int i = 0; i < this.upgrades.getSlots(); i++) {
+            if (this.upgrades.getStackInSlot(i).getItem() == Registry.extractionUpgradeItem)
+                return null;
+        }
         for (Direction dir : Direction.values()) {
             IItemHandler handler = this.getItemHandler(dir);
             if (handler == null)
@@ -128,6 +132,6 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
         if (tile == null)
             return null;
-        return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).orElse(null);
+        return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
     }
 }

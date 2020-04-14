@@ -1,36 +1,47 @@
 package de.ellpeck.prettypipes.network;
 
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
+import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PipeItem implements INBTSerializable<CompoundNBT> {
 
-    public static final int PIPE_TIME = 40;
+    public static final int PIPE_TIME = 20;
 
     public ItemStack stack;
     public float x;
     public float y;
     public float z;
+    public float lastX;
+    public float lastY;
+    public float lastZ;
 
-    private final List<NetworkEdge> pathEdges;
+    private final List<BlockPos> path;
     private BlockPos startPipe;
     private BlockPos destPipe;
     private BlockPos destInventory;
     private int pipeTimer;
-    private int currentEdge;
     private int currentTile;
 
     public PipeItem(ItemStack stack, BlockPos startPipe, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
@@ -38,14 +49,14 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this.startPipe = startPipe;
         this.destPipe = destPipe;
         this.destInventory = destInventory;
-        this.pathEdges = path.getEdgeList();
+        this.path = compilePath(path);
         this.x = MathHelper.lerp(0.5F, startInventory.getX(), startPipe.getX()) + 0.5F;
         this.y = MathHelper.lerp(0.5F, startInventory.getY(), startPipe.getY()) + 0.5F;
         this.z = MathHelper.lerp(0.5F, startInventory.getZ(), startPipe.getZ()) + 0.5F;
     }
 
     public PipeItem(CompoundNBT nbt) {
-        this.pathEdges = new ArrayList<>();
+        this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
     }
 
@@ -57,8 +68,16 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             currPipe.items.remove(this);
             PipeTileEntity next = this.getNextTile(currPipe, true);
             if (next == null) {
-                // ..or store in our destination container if there is no next one
-                this.store(currPipe);
+                if (!currPipe.getWorld().isRemote) {
+                    if (this.reachedDestination()) {
+                        // ..or store in our destination container if we reached our destination
+                        this.stack = this.store(currPipe);
+                        if (!this.stack.isEmpty())
+                            this.onPathObstructed(currPipe);
+                    } else {
+                        this.onPathObstructed(currPipe);
+                    }
+                }
                 return;
             } else {
                 next.items.add(this);
@@ -69,7 +88,14 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             // we're past the start of the pipe, so move to the center of the next pipe
             PipeTileEntity next = this.getNextTile(currPipe, false);
             if (next == null) {
-                goalPos = this.destInventory;
+                if (this.reachedDestination()) {
+                    goalPos = this.destInventory;
+                } else {
+                    currPipe.items.remove(this);
+                    if (!currPipe.getWorld().isRemote)
+                        this.onPathObstructed(currPipe);
+                    return;
+                }
             } else {
                 goalPos = next.getPos();
             }
@@ -77,6 +103,10 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             // we're at the start of the pipe, so just move towards its center
             goalPos = currPipe.getPos();
         }
+
+        this.lastX = this.x;
+        this.lastY = this.y;
+        this.lastZ = this.z;
 
         float speed = 1 / (float) PIPE_TIME;
         Vec3d dist = new Vec3d(goalPos.getX() + 0.5F - this.x, goalPos.getY() + 0.5F - this.y, goalPos.getZ() + 0.5F - this.z);
@@ -86,35 +116,39 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this.z += dist.z * speed;
     }
 
-    private void store(PipeTileEntity currPipe) {
-        if (currPipe.getWorld().isRemote)
-            return;
-        // TODO store in destination
+    private void onPathObstructed(PipeTileEntity currPipe) {
+        // TODO when the path is obstructed, try to turn back home first
+        this.drop(currPipe.getWorld());
+    }
+
+    public void drop(World world) {
+        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, this.stack.copy());
+        item.world.addEntity(item);
+    }
+
+    private ItemStack store(PipeTileEntity currPipe) {
+        TileEntity tile = currPipe.getWorld().getTileEntity(this.destInventory);
+        if (tile == null)
+            return this.stack;
+        Direction dir = Utility.getDirectionFromOffset(this.destPipe, this.destInventory);
+        IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir).orElse(null);
+        if (handler == null)
+            return this.stack;
+        return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
+    }
+
+    private boolean reachedDestination() {
+        return this.currentTile >= this.path.size() - 1;
     }
 
     private PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
-        NetworkEdge edge = this.pathEdges.get(this.currentEdge);
-        int currTile = this.currentTile;
-        if (edge.pipes.size() > currTile + 1) {
-            currTile++;
-        } else {
-            // are we at the end of our path?
-            if (this.pathEdges.size() <= this.currentEdge + 1)
-                return null;
-            edge = this.pathEdges.get(this.currentEdge + 1);
-            // we're setting the current tile to 1 since the 0th index of
-            // the next edge is also the last index of the current edge
-            currTile = 1;
-            if (progress)
-                this.currentEdge++;
-        }
+        if (this.path.size() <= this.currentTile + 1)
+            return null;
+        BlockPos pos = this.path.get(this.currentTile + 1);
         if (progress)
-            this.currentTile = currTile;
-
-        // TODO invert the current tile index if the current edge is the other way around
-
-
-        return edge.getPipe(currPipe.getWorld(), currTile);
+            this.currentTile++;
+        PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
+        return network.getPipe(pos);
     }
 
     @Override
@@ -125,14 +159,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         nbt.put("dest_pipe", NBTUtil.writeBlockPos(this.destPipe));
         nbt.put("dest_inv", NBTUtil.writeBlockPos(this.destInventory));
         nbt.putInt("timer", this.pipeTimer);
-        nbt.putInt("edge", this.currentEdge);
         nbt.putInt("tile", this.currentTile);
         nbt.putFloat("x", this.x);
         nbt.putFloat("y", this.y);
         nbt.putFloat("z", this.z);
         ListNBT list = new ListNBT();
-        for (NetworkEdge edge : this.pathEdges)
-            list.add(edge.serializeNBT());
+        for (BlockPos pos : this.path)
+            list.add(NBTUtil.writeBlockPos(pos));
         nbt.put("path", list);
         return nbt;
     }
@@ -144,14 +177,39 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this.destPipe = NBTUtil.readBlockPos(nbt.getCompound("dest_pipe"));
         this.destInventory = NBTUtil.readBlockPos(nbt.getCompound("dest_inv"));
         this.pipeTimer = nbt.getInt("timer");
-        this.currentEdge = nbt.getInt("edge");
         this.currentTile = nbt.getInt("tile");
         this.x = nbt.getFloat("x");
         this.y = nbt.getFloat("y");
         this.z = nbt.getFloat("z");
-        this.pathEdges.clear();
+        this.path.clear();
         ListNBT list = nbt.getList("path", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)
-            this.pathEdges.add(new NetworkEdge(list.getCompound(i)));
+            this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
+    }
+
+    private static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
+        Graph<BlockPos, NetworkEdge> graph = path.getGraph();
+        List<BlockPos> ret = new ArrayList<>();
+        List<BlockPos> nodes = path.getVertexList();
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            BlockPos first = nodes.get(i);
+            BlockPos second = nodes.get(i + 1);
+            NetworkEdge edge = graph.getEdge(first, second);
+            Consumer<Integer> add = j -> {
+                BlockPos pos = edge.pipes.get(j);
+                if (!ret.contains(pos))
+                    ret.add(pos);
+            };
+            // if the edge is the other way around, we need to loop through tiles
+            // the other way also
+            if (!graph.getEdgeSource(edge).equals(first)) {
+                for (int j = edge.pipes.size() - 1; j >= 0; j--)
+                    add.accept(j);
+            } else {
+                for (int j = 0; j < edge.pipes.size(); j++)
+                    add.accept(j);
+            }
+        }
+        return ret;
     }
 }

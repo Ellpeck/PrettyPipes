@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
@@ -21,5 +22,10 @@ public final class Utility {
             if (!stack.isEmpty())
                 InventoryHelper.spawnItemStack(tile.getWorld(), pos.getX(), pos.getY(), pos.getZ(), stack);
         }
+    }
+
+    public static Direction getDirectionFromOffset(BlockPos pos, BlockPos other) {
+        BlockPos diff = pos.subtract(other);
+        return Direction.getFacingFromVector(diff.getX(), diff.getY(), diff.getZ());
     }
 }
