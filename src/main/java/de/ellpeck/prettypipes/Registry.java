@@ -6,6 +6,7 @@ import de.ellpeck.prettypipes.blocks.pipe.PipeGui;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.items.ExtractionUpgradeItem;
 import de.ellpeck.prettypipes.items.WrenchItem;
+import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -15,8 +16,13 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.INBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.Direction;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityInject;
+import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.extensions.IForgeContainerType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -25,6 +31,8 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
+
+import javax.annotation.Nullable;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
@@ -35,6 +43,9 @@ public final class Registry {
             return new ItemStack(wrenchItem);
         }
     };
+
+    @CapabilityInject(PipeNetwork.class)
+    public static Capability<PipeNetwork> pipeNetworkCapability;
 
     public static Item wrenchItem;
     public static Item extractionUpgradeItem;
@@ -80,7 +91,18 @@ public final class Registry {
     }
 
     public static void setup(FMLCommonSetupEvent event) {
+        CapabilityManager.INSTANCE.register(PipeNetwork.class, new Capability.IStorage<PipeNetwork>() {
+            @Nullable
+            @Override
+            public INBT writeNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side) {
+                return null;
+            }
 
+            @Override
+            public void readNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side, INBT nbt) {
+
+            }
+        }, () -> null);
     }
 
     public static void setupClient(FMLClientSetupEvent event) {

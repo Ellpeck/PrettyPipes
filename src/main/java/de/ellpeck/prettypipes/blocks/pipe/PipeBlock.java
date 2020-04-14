@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.blocks.pipe;
 
 import com.google.common.collect.ImmutableMap;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
@@ -149,6 +150,26 @@ public class PipeBlock extends ContainerBlock {
             if (tile != null)
                 Utility.dropInventory(tile, tile.upgrades);
         }
+
+        PipeNetwork network = PipeNetwork.get(world);
+        int connections = 0;
+        boolean inventory = false;
+        for (EnumProperty<ConnectionType> prop : DIRECTIONS.values()) {
+            ConnectionType value = newState.get(prop);
+            if (!value.isConnected())
+                continue;
+            connections++;
+            if (value == ConnectionType.CONNECTED_INVENTORY) {
+                inventory = true;
+                break;
+            }
+        }
+        if (inventory || connections > 2) {
+            network.addNode(pos, newState);
+        } else {
+            network.removeNode(pos);
+        }
+        network.onPipeChanged(pos, newState);
     }
 
     @Override
@@ -157,7 +178,9 @@ public class PipeBlock extends ContainerBlock {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
             if (tile != null)
                 Utility.dropInventory(tile, tile.upgrades);
-
+            PipeNetwork network = PipeNetwork.get(worldIn);
+            network.removeNode(pos);
+            network.onPipeChanged(pos, state);
             super.onReplaced(state, worldIn, pos, newState, isMoving);
         }
     }
