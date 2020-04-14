@@ -8,28 +8,23 @@ import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
-import org.apache.commons.lang3.tuple.Pair;
-import org.jgrapht.Graphs;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
-import org.jheaps.tree.FibonacciHeap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
@@ -49,12 +44,30 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
     @Override
     public CompoundNBT serializeNBT() {
-        return new CompoundNBT();
+        CompoundNBT nbt = new CompoundNBT();
+        ListNBT nodes = new ListNBT();
+        for (BlockPos node : this.graph.vertexSet())
+            nodes.add(NBTUtil.writeBlockPos(node));
+        nbt.put("nodes", nodes);
+        ListNBT edges = new ListNBT();
+        for (NetworkEdge edge : this.graph.edgeSet())
+            edges.add(edge.serializeNBT());
+        nbt.put("edges", edges);
+        return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
-
+        this.graph.removeAllVertices(new ArrayList<>(this.graph.vertexSet()));
+        ListNBT nodes = nbt.getList("nodes", Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < nodes.size(); i++)
+            this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
+        ListNBT edges = nbt.getList("edges", Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < edges.size(); i++) {
+            NetworkEdge edge = new NetworkEdge(this.world);
+            edge.deserializeNBT(edges.getCompound(i));
+            this.addEdge(edge);
+        }
     }
 
     public void addNode(BlockPos pos, BlockState state) {
@@ -74,21 +87,19 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         // if we only have one neighbor, then there can't be any new connections
         if (neighbors.size() <= 1 && !this.graph.containsVertex(pos))
             return;
-        for (NetworkEdge edge : neighbors) {
-            BlockPos end = edge.endPipe.getPos();
-            this.refreshNode(end, this.world.getBlockState(end));
-        }
-        System.out.println(this.graph.toString());
+        for (NetworkEdge edge : neighbors)
+            this.refreshNode(edge.endPipe, this.world.getBlockState(edge.endPipe));
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
-        Set<NetworkEdge> edges = this.graph.edgesOf(pos);
-        this.graph.removeAllEdges(new ArrayList<>(edges));
+        this.graph.removeAllEdges(new ArrayList<>(this.graph.edgesOf(pos)));
+        for (NetworkEdge edge : this.createAllEdges(pos, state, false))
+            this.addEdge(edge);
+    }
 
-        for (NetworkEdge edge : this.createAllEdges(pos, state, false)) {
-            this.graph.addEdge(edge.startPipe.getPos(), edge.endPipe.getPos(), edge);
-            this.graph.setEdgeWeight(edge, edge.pipes.size());
-        }
+    private void addEdge(NetworkEdge edge) {
+        this.graph.addEdge(edge.startPipe, edge.endPipe, edge);
+        this.graph.setEdgeWeight(edge, edge.pipes.size());
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean allAround) {
@@ -108,17 +119,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         BlockState currState = this.world.getBlockState(currPos);
         if (!(currState.getBlock() instanceof PipeBlock))
             return null;
-        NetworkEdge edge = new NetworkEdge();
-        PipeTileEntity startPipe = Utility.getTileEntity(PipeTileEntity.class, this.world, pos);
-        if (startPipe != null) {
-            edge.startPipe = startPipe;
-            edge.pipes.add(startPipe);
-        }
-        edge.pipes.add(Utility.getTileEntity(PipeTileEntity.class, this.world, currPos));
+        NetworkEdge edge = new NetworkEdge(this.world);
+        edge.startPipe = pos;
+        edge.pipes.add(pos);
+        edge.pipes.add(currPos);
 
-        Set<BlockPos> seen = new HashSet<>();
-        seen.add(pos);
-        seen.add(currPos);
         while (true) {
             // if we found a vertex, we can stop since that's the next node
             // we do this here since the first offset pipe also needs to check this
@@ -132,13 +137,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
                 if (!currState.get(PipeBlock.DIRECTIONS.get(nextDir)).isConnected())
                     continue;
                 BlockPos offset = currPos.offset(nextDir);
-                if (seen.contains(offset))
-                    continue;
-                seen.add(offset);
                 BlockState offState = this.world.getBlockState(offset);
                 if (!(offState.getBlock() instanceof PipeBlock))
                     continue;
-                edge.pipes.add(Utility.getTileEntity(PipeTileEntity.class, this.world, offset));
+                if (edge.pipes.contains(offset))
+                    continue;
+                edge.pipes.add(offset);
                 currPos = offset;
                 currState = offState;
                 found = true;
