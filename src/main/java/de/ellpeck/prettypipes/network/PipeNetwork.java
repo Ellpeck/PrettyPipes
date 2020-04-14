@@ -5,11 +5,15 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
@@ -18,18 +22,25 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleWeightedGraph;
+import org.jgrapht.traverse.ClosestFirstIterator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
     public final SimpleWeightedGraph<BlockPos, NetworkEdge> graph = new SimpleWeightedGraph<>(NetworkEdge.class);
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra = new DijkstraShortestPath<>(this.graph);
+    private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
     private final World world;
 
     public PipeNetwork(World world) {
@@ -63,32 +74,67 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         for (int i = 0; i < nodes.size(); i++)
             this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
         ListNBT edges = nbt.getList("edges", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < edges.size(); i++) {
-            NetworkEdge edge = new NetworkEdge(this.world);
-            edge.deserializeNBT(edges.getCompound(i));
-            this.addEdge(edge);
-        }
+        for (int i = 0; i < edges.size(); i++)
+            this.addEdge(new NetworkEdge(edges.getCompound(i)));
     }
 
     public void addNode(BlockPos pos, BlockState state) {
-        if (!this.graph.containsVertex(pos)) {
+        if (!this.isNode(pos)) {
             this.graph.addVertex(pos);
             this.refreshNode(pos, state);
         }
     }
 
     public void removeNode(BlockPos pos) {
-        if (this.graph.containsVertex(pos))
+        if (this.isNode(pos))
             this.graph.removeVertex(pos);
+    }
+
+    public boolean isNode(BlockPos pos) {
+        return this.graph.containsVertex(pos);
     }
 
     public void onPipeChanged(BlockPos pos, BlockState state) {
         List<NetworkEdge> neighbors = this.createAllEdges(pos, state, true);
         // if we only have one neighbor, then there can't be any new connections
-        if (neighbors.size() <= 1 && !this.graph.containsVertex(pos))
+        if (neighbors.size() <= 1 && !this.isNode(pos))
             return;
         for (NetworkEdge edge : neighbors)
             this.refreshNode(edge.endPipe, this.world.getBlockState(edge.endPipe));
+    }
+
+    public boolean tryInsertItem(BlockPos startPipePos, BlockPos originInv, ItemStack stack) {
+        if (!this.isNode(startPipePos))
+            return false;
+        PipeTileEntity startPipe = this.getPipe(startPipePos);
+        if (startPipe == null)
+            return false;
+        ClosestFirstIterator<BlockPos, NetworkEdge> it = new ClosestFirstIterator<>(this.graph, startPipePos);
+        while (it.hasNext()) {
+            PipeTileEntity pipe = this.getPipe(it.next());
+            // don't try to insert into yourself, duh
+            if (pipe == startPipe)
+                continue;
+            BlockPos dest = pipe.getAvailableDestination(stack);
+            if (dest != null) {
+                GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, pipe.getPos());
+                System.out.println("Found path " + path + " from " + startPipePos + " to " + pipe.getPos());
+                PipeItem item = new PipeItem(stack.copy(), startPipePos, originInv, pipe.getPos(), dest, path);
+                startPipe.items.add(item);
+                PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public PipeTileEntity getPipe(BlockPos pos) {
+        PipeTileEntity tile = this.tileCache.get(pos);
+        if (tile == null || tile.isRemoved()) {
+            tile = Utility.getTileEntity(PipeTileEntity.class, this.world, pos);
+            this.tileCache.put(pos, tile);
+        }
+        return tile;
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
@@ -119,7 +165,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         BlockState currState = this.world.getBlockState(currPos);
         if (!(currState.getBlock() instanceof PipeBlock))
             return null;
-        NetworkEdge edge = new NetworkEdge(this.world);
+        NetworkEdge edge = new NetworkEdge();
         edge.startPipe = pos;
         edge.pipes.add(pos);
         edge.pipes.add(currPos);
@@ -127,7 +173,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         while (true) {
             // if we found a vertex, we can stop since that's the next node
             // we do this here since the first offset pipe also needs to check this
-            if (this.graph.containsVertex(currPos)) {
+            if (this.isNode(currPos)) {
                 edge.endPipe = edge.pipes.get(edge.pipes.size() - 1);
                 return edge;
             }

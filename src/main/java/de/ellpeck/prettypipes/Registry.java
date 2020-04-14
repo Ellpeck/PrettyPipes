@@ -1,12 +1,10 @@
 package de.ellpeck.prettypipes;
 
-import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
-import de.ellpeck.prettypipes.blocks.pipe.PipeContainer;
-import de.ellpeck.prettypipes.blocks.pipe.PipeGui;
-import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.blocks.pipe.*;
 import de.ellpeck.prettypipes.items.ExtractionUpgradeItem;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -17,7 +15,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.INBT;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
@@ -26,6 +23,7 @@ import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.extensions.IForgeContainerType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -103,10 +101,12 @@ public final class Registry {
 
             }
         }, () -> null);
+        PacketHandler.setup();
     }
 
     public static void setupClient(FMLClientSetupEvent event) {
         RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
+        ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
         ScreenManager.registerFactory(pipeContainer, PipeGui::new);
     }
 }
