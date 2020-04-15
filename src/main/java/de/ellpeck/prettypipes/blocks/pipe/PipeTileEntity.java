@@ -130,6 +130,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return null;
     }
 
+    // TODO module priority
+    public int getPriority() {
+        return 0;
+    }
+
     private IItemHandler getItemHandler(Direction dir) {
         BlockState state = this.getBlockState();
         if (!state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())

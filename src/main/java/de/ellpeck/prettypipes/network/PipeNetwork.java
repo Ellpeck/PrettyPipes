@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
@@ -18,28 +19,40 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
+import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.jgrapht.ListenableGraph;
+import org.jgrapht.alg.connectivity.ConnectivityInspector;
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
+import org.jgrapht.event.GraphEdgeChangeEvent;
+import org.jgrapht.event.GraphListener;
+import org.jgrapht.event.GraphVertexChangeEvent;
+import org.jgrapht.graph.DefaultListenableGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
+import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.ClosestFirstIterator;
+import org.jgrapht.traverse.DepthFirstIterator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
+public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphListener<BlockPos, NetworkEdge> {
 
-    public final SimpleWeightedGraph<BlockPos, NetworkEdge> graph = new SimpleWeightedGraph<>(NetworkEdge.class);
-    private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra = new DijkstraShortestPath<>(this.graph);
+    public final ListenableGraph<BlockPos, NetworkEdge> graph;
+    private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
+    private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
     private final World world;
 
     public PipeNetwork(World world) {
         this.world = world;
+        this.graph = new DefaultListenableGraph<>(new SimpleWeightedGraph<>(NetworkEdge.class));
+        this.graph.addGraphListener(this);
+        this.dijkstra = new DijkstraShortestPath<>(this.graph);
     }
 
     @Nonnull
@@ -110,12 +123,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return false;
-        ClosestFirstIterator<BlockPos, NetworkEdge> it = new ClosestFirstIterator<>(this.graph, startPipePos);
-        while (it.hasNext()) {
-            PipeTileEntity pipe = this.getPipe(it.next());
-            // don't try to insert into yourself, duh
-            if (pipe == startPipe)
-                continue;
+        for (BlockPos pipePos : this.getOrderedDestinations(startPipePos)) {
+            PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack);
             if (dest != null)
                 return this.routeItemToLocation(startPipePos, pipe.getPos(), dest, itemSupplier);
@@ -157,7 +166,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
     private void addEdge(NetworkEdge edge) {
         this.graph.addEdge(edge.startPipe, edge.endPipe, edge);
-        this.graph.setEdgeWeight(edge, edge.pipes.size());
+        // only use size - 1 so that nodes aren't counted twice for multi-edge paths
+        this.graph.setEdgeWeight(edge, edge.pipes.size() - 1);
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean allAround) {
@@ -214,5 +224,43 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT> {
 
     public static PipeNetwork get(World world) {
         return world.getCapability(Registry.pipeNetworkCapability).orElse(null);
+    }
+
+    private List<BlockPos> getOrderedDestinations(BlockPos node) {
+        List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
+        if (ret == null) {
+            ShortestPathAlgorithm.SingleSourcePaths<BlockPos, NetworkEdge> paths = this.dijkstra.getPaths(node);
+            // sort destinations first by their priority (eg trash pipes should be last)
+            // and then by their distance from the specified node
+            ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
+                    .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
+                    .collect(Collectors.toList());
+            this.nodeToConnectedNodes.put(node, ret);
+        }
+        return ret;
+    }
+
+    @Override
+    public void edgeAdded(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
+        this.edgeModified(e);
+    }
+
+    @Override
+    public void edgeRemoved(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
+        this.edgeModified(e);
+    }
+
+    private void edgeModified(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
+        // uncache all connection infos that contain the removed edge's vertices
+        this.nodeToConnectedNodes.values().removeIf(
+                nodes -> nodes.stream().anyMatch(n -> n.equals(e.getEdgeSource()) || n.equals(e.getEdgeTarget())));
+    }
+
+    @Override
+    public void vertexAdded(GraphVertexChangeEvent<BlockPos> e) {
+    }
+
+    @Override
+    public void vertexRemoved(GraphVertexChangeEvent<BlockPos> e) {
     }
 }
