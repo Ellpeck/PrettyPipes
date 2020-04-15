@@ -45,6 +45,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     private int pipeTimer;
     private int currentTile;
     private boolean dropOnObstruction;
+    private long lastWorldTick;
 
     public PipeItem(ItemStack stack, BlockPos startPipe, BlockPos startInventory) {
         this.stack = stack;
@@ -69,6 +70,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     }
 
     public void updateInPipe(PipeTileEntity currPipe) {
+        // this prevents pipes being updated after one another
+        // causing an item that just switched to tick twice
+        long worldTick = currPipe.getWorld().getGameTime();
+        if (this.lastWorldTick == worldTick)
+            return;
+        this.lastWorldTick = worldTick;
+
         this.pipeTimer++;
         BlockPos goalPos;
         if (this.pipeTimer >= PIPE_TIME) {
@@ -92,7 +100,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                 this.pipeTimer = 0;
                 goalPos = next.getPos();
             }
-        } else if (this.pipeTimer >= PIPE_TIME / 2) {
+        } else if (this.pipeTimer > PIPE_TIME / 2) {
             // we're past the start of the pipe, so move to the center of the next pipe
             PipeTileEntity next = this.getNextTile(currPipe, false);
             if (next == null) {
@@ -116,12 +124,11 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this.lastY = this.y;
         this.lastZ = this.z;
 
-        float speed = 1 / (float) PIPE_TIME;
         Vec3d dist = new Vec3d(goalPos.getX() + 0.5F - this.x, goalPos.getY() + 0.5F - this.y, goalPos.getZ() + 0.5F - this.z);
         dist = dist.normalize();
-        this.x += dist.x * speed;
-        this.y += dist.y * speed;
-        this.z += dist.z * speed;
+        this.x += dist.x / PIPE_TIME;
+        this.y += dist.y / PIPE_TIME;
+        this.z += dist.z / PIPE_TIME;
     }
 
     private void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {

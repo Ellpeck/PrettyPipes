@@ -25,13 +25,17 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
 
     @Override
     public void render(PipeTileEntity tile, float v, MatrixStack matrixStack, IRenderTypeBuffer iRenderTypeBuffer, int k, int i1) {
-        BlockPos pos = tile.getPos();
+        if (tile.items.isEmpty())
+            return;
+        matrixStack.push();
+        BlockPos tilePos = tile.getPos();
+        matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
         for (PipeItem item : tile.items) {
             matrixStack.push();
             matrixStack.translate(
-                    MathHelper.lerp(v, item.lastX, item.x) - pos.getX(),
-                    MathHelper.lerp(v, item.lastY, item.y) - pos.getY(),
-                    MathHelper.lerp(v, item.lastZ, item.z) - pos.getZ());
+                    MathHelper.lerp(v, item.lastX, item.x),
+                    MathHelper.lerp(v, item.lastY, item.y),
+                    MathHelper.lerp(v, item.lastZ, item.z));
 
             if (item.stack.getItem() instanceof BlockItem) {
                 float scale = 0.7F;
@@ -59,6 +63,7 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
             }
             matrixStack.pop();
         }
+        matrixStack.pop();
     }
 
     protected int getModelCount(ItemStack stack) {
