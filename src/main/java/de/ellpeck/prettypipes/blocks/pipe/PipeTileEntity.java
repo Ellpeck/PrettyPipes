@@ -2,18 +2,17 @@ package de.ellpeck.prettypipes.blocks.pipe;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.items.UpgradeItem;
-import de.ellpeck.prettypipes.network.NetworkEdge;
+import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.network.PipeNetwork;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -31,13 +30,14 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
 
-    public final ItemStackHandler upgrades = new ItemStackHandler(3) {
+    public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return stack.getItem() instanceof UpgradeItem;
+            return stack.getItem() instanceof IModule;
         }
     };
     public final List<PipeItem> items = new ArrayList<>();
@@ -59,7 +59,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     @Override
     public CompoundNBT write(CompoundNBT compound) {
-        compound.put("upgrades", this.upgrades.serializeNBT());
+        compound.put("modules", this.modules.serializeNBT());
         ListNBT list = new ListNBT();
         for (PipeItem item : this.items)
             list.add(item.serializeNBT());
@@ -69,7 +69,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     @Override
     public void read(CompoundNBT compound) {
-        this.upgrades.deserializeNBT(compound.getCompound("upgrades"));
+        this.modules.deserializeNBT(compound.getCompound("modules"));
         this.items.clear();
         ListNBT list = compound.getList("items", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)
@@ -88,57 +88,44 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public void tick() {
         if (!this.world.isAreaLoaded(this.pos, 1))
             return;
+        IProfiler profiler = this.world.getProfiler();
 
+        profiler.startSection("ticking_modules");
+        this.streamModules().forEach(m -> m.tick(this));
+        profiler.endSection();
+
+        profiler.startSection("ticking_items");
         for (int i = this.items.size() - 1; i >= 0; i--)
             this.items.get(i).updateInPipe(this);
+        profiler.endSection();
+    }
 
-        // TODO make this extraction module stuff proper
-        PipeNetwork network = PipeNetwork.get(this.world);
-        for (int i = 0; i < this.upgrades.getSlots(); i++) {
-            if (this.upgrades.getStackInSlot(i).getItem() != Registry.extractionUpgradeItem)
-                continue;
-            BlockState state = this.getBlockState();
-            for (Direction dir : Direction.values()) {
-                if (!state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
-                    continue;
-                IItemHandler handler = this.getItemHandler(dir);
-                if (handler != null) {
-                    for (int j = 0; j < handler.getSlots(); j++) {
-                        ItemStack stack = handler.extractItem(j, 64, true);
-                        if (!stack.isEmpty() && network.tryInsertItem(this.pos, this.pos.offset(dir), stack)) {
-                            handler.extractItem(j, 64, false);
-                            return;
-                        }
-                    }
-                }
-            }
-            return;
-        }
+    public boolean isConnected(Direction dir) {
+        return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
     }
 
     public BlockPos getAvailableDestination(ItemStack stack) {
-        for (int i = 0; i < this.upgrades.getSlots(); i++) {
-            if (this.upgrades.getStackInSlot(i).getItem() == Registry.extractionUpgradeItem)
-                return null;
-        }
+        if (this.streamModules().anyMatch(u -> !u.canAcceptItem(this, stack)))
+            return null;
         for (Direction dir : Direction.values()) {
             IItemHandler handler = this.getItemHandler(dir);
             if (handler == null)
                 continue;
-            if (ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
-                return this.pos.offset(dir);
+            if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
+                continue;
+            if (this.streamModules().anyMatch(u -> !u.isAvailableDestination(this, stack, handler)))
+                continue;
+            return this.pos.offset(dir);
         }
         return null;
     }
 
-    // TODO module priority
     public int getPriority() {
-        return 0;
+        return this.streamModules().mapToInt(u -> u.getPriority(this)).max().orElse(0);
     }
 
-    private IItemHandler getItemHandler(Direction dir) {
-        BlockState state = this.getBlockState();
-        if (!state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
+    public IItemHandler getItemHandler(Direction dir) {
+        if (!this.isConnected(dir))
             return null;
         TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
         if (tile == null)
@@ -152,5 +139,18 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     public boolean isConnectedInventory() {
         return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
+    }
+
+    private Stream<IModule> streamModules() {
+        Stream.Builder<IModule> builder = Stream.builder();
+        for (int i = 0; i < this.modules.getSlots(); i++) {
+            ItemStack stack = this.modules.getStackInSlot(i);
+            if (stack.isEmpty())
+                continue;
+            Item item = stack.getItem();
+            if (item instanceof IModule)
+                builder.accept((IModule) item);
+        }
+        return builder.build();
     }
 }

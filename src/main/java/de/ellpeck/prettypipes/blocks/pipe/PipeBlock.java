@@ -9,17 +9,14 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.AbstractFurnaceTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.shapes.ISelectionContext;
@@ -155,7 +152,7 @@ public class PipeBlock extends ContainerBlock {
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
         if (tile != null && !tile.isConnectedInventory())
-            Utility.dropInventory(tile, tile.upgrades);
+            Utility.dropInventory(tile, tile.modules);
 
         PipeNetwork network = PipeNetwork.get(world);
         int connections = 0;
@@ -183,7 +180,7 @@ public class PipeBlock extends ContainerBlock {
         if (state.getBlock() != newState.getBlock()) {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
             if (tile != null) {
-                Utility.dropInventory(tile, tile.upgrades);
+                Utility.dropInventory(tile, tile.modules);
                 for (PipeItem item : tile.items)
                     item.drop(worldIn);
             }

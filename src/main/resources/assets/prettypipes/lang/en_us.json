@@ -1,6 +1,8 @@
 {
     "item.prettypipes.wrench": "Pipe Wrench",
-    "item.prettypipes.extraction_upgrade": "Extraction Upgrade",
+    "item.prettypipes.low_extraction_module": "Low Extraction Module",
+    "item.prettypipes.medium_extraction_module": "Medium Extraction Module",
+    "item.prettypipes.high_extraction_module": "High Extraction Module",
     "block.prettypipes.pipe": "Pipe",
     "itemGroup.prettypipes": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe"

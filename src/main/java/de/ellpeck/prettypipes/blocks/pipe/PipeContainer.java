@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.blocks.pipe;
 
-import de.ellpeck.prettypipes.items.UpgradeItem;
+import de.ellpeck.prettypipes.items.IModule;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
@@ -15,7 +15,7 @@ public class PipeContainer extends Container {
         super(type, id);
 
         for (int i = 0; i < 3; i++)
-            this.addSlot(new SlotItemHandler(tile.upgrades, i, 62 + i * 18, 17));
+            this.addSlot(new SlotItemHandler(tile.modules, i, 62 + i * 18, 17));
 
         for (int l = 0; l < 3; ++l)
             for (int j1 = 0; j1 < 9; ++j1)
@@ -46,7 +46,7 @@ public class PipeContainer extends Container {
                 // shift into this container here
                 // mergeItemStack with the slots that newStack should go into
                 // return an empty stack if mergeItemStack fails
-                if (newStack.getItem() instanceof UpgradeItem) {
+                if (newStack.getItem() instanceof IModule) {
                     if (!this.mergeItemStack(newStack, 0, 3, false))
                         return ItemStack.EMPTY;
                 }

@@ -1,7 +1,9 @@
 package de.ellpeck.prettypipes;
 
+import com.mojang.datafixers.types.Func;
 import de.ellpeck.prettypipes.blocks.pipe.*;
-import de.ellpeck.prettypipes.items.ExtractionUpgradeItem;
+import de.ellpeck.prettypipes.items.ExtractionModuleItem;
+import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
@@ -29,8 +31,14 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.IForgeRegistry;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
@@ -46,7 +54,6 @@ public final class Registry {
     public static Capability<PipeNetwork> pipeNetworkCapability;
 
     public static Item wrenchItem;
-    public static Item extractionUpgradeItem;
 
     public static Block pipeBlock;
     public static TileEntityType<PipeTileEntity> pipeTileEntity;
@@ -61,14 +68,15 @@ public final class Registry {
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
-        event.getRegistry().registerAll(
-                wrenchItem = new WrenchItem().setRegistryName("wrench"),
-                extractionUpgradeItem = new ExtractionUpgradeItem().setRegistryName("extraction_upgrade")
+        IForgeRegistry<Item> registry = event.getRegistry();
+        registry.registerAll(
+                wrenchItem = new WrenchItem().setRegistryName("wrench")
         );
+        registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
-                .forEach(b -> event.getRegistry().register(new BlockItem(b, new Item.Properties().group(GROUP)).setRegistryName(b.getRegistryName())));
+                .forEach(b -> registry.register(new BlockItem(b, new Item.Properties().group(GROUP)).setRegistryName(b.getRegistryName())));
     }
 
     @SubscribeEvent
@@ -86,6 +94,13 @@ public final class Registry {
                     return tile != null ? new PipeContainer(pipeContainer, windowId, inv.player, tile) : null;
                 }).setRegistryName("pipe")
         );
+    }
+
+    private static Item[] createTieredModule(String name, Function<ModuleTier, Item> item) {
+        List<Item> items = new ArrayList<>();
+        for (ModuleTier tier : ModuleTier.values())
+            items.add(item.apply(tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
+        return items.toArray(new Item[0]);
     }
 
     public static void setup(FMLCommonSetupEvent event) {

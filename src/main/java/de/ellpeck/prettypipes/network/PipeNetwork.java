@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.network;
 
 import com.google.common.collect.Streams;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
@@ -123,12 +124,16 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return false;
+        this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedDestinations(startPipePos)) {
             PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack);
-            if (dest != null)
+            if (dest != null) {
+                this.endProfile();
                 return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
+            }
         }
+        this.endProfile();
         return false;
     }
 
@@ -140,7 +145,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return false;
+        this.startProfile("get_path");
         GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipe);
+        this.endProfile();
         if (path == null)
             return false;
         PipeItem item = itemSupplier.get();
@@ -161,9 +168,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
+        this.startProfile("refresh_node");
         this.graph.removeAllEdges(new ArrayList<>(this.graph.edgesOf(pos)));
         for (NetworkEdge edge : this.createAllEdges(pos, state, false))
             this.addEdge(edge);
+        this.endProfile();
     }
 
     private void addEdge(NetworkEdge edge) {
@@ -173,12 +182,14 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean allAround) {
+        this.startProfile("create_all_edges");
         List<NetworkEdge> edges = new ArrayList<>();
         for (Direction dir : Direction.values()) {
             NetworkEdge edge = this.createEdge(pos, state, dir, allAround);
             if (edge != null)
                 edges.add(edge);
         }
+        this.endProfile();
         return edges;
     }
 
@@ -189,6 +200,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         BlockState currState = this.world.getBlockState(currPos);
         if (!(currState.getBlock() instanceof PipeBlock))
             return null;
+        this.startProfile("create_edge");
         NetworkEdge edge = new NetworkEdge();
         edge.startPipe = pos;
         edge.pipes.add(pos);
@@ -199,6 +211,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // we do this here since the first offset pipe also needs to check this
             if (this.isNode(currPos)) {
                 edge.endPipe = edge.pipes.get(edge.pipes.size() - 1);
+                this.endProfile();
                 return edge;
             }
 
@@ -221,6 +234,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             if (!found)
                 break;
         }
+        this.endProfile();
         return null;
     }
 
@@ -231,6 +245,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private List<BlockPos> getOrderedDestinations(BlockPos node) {
         List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
+            this.startProfile("compile_connected_nodes");
             ShortestPathAlgorithm.SingleSourcePaths<BlockPos, NetworkEdge> paths = this.dijkstra.getPaths(node);
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
@@ -238,6 +253,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                     .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
                     .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);
+            this.endProfile();
         }
         return ret;
     }
@@ -254,8 +270,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
 
     private void edgeModified(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
         // uncache all connection infos that contain the removed edge's vertices
+        this.startProfile("clear_node_cache");
         this.nodeToConnectedNodes.values().removeIf(
                 nodes -> nodes.stream().anyMatch(n -> n.equals(e.getEdgeSource()) || n.equals(e.getEdgeTarget())));
+        this.endProfile();
     }
 
     @Override
@@ -264,5 +282,13 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
 
     @Override
     public void vertexRemoved(GraphVertexChangeEvent<BlockPos> e) {
+    }
+
+    private void startProfile(String name) {
+        this.world.getProfiler().startSection(() -> PrettyPipes.ID + ":pipe_network_" + name);
+    }
+
+    private void endProfile() {
+        this.world.getProfiler().endSection();
     }
 }
