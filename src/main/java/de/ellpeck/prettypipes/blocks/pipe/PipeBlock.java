@@ -67,10 +67,10 @@ public class PipeBlock extends ContainerBlock {
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult p_225533_6_) {
         if (!player.getHeldItem(handIn).isEmpty())
             return ActionResultType.PASS;
-        if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.CONNECTED_INVENTORY))
-            return ActionResultType.PASS;
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
         if (tile == null)
+            return ActionResultType.PASS;
+        if (!tile.isConnectedInventory())
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
             NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
@@ -133,7 +133,7 @@ public class PipeBlock extends ContainerBlock {
         return state;
     }
 
-    public static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction) {
+    private static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction) {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
@@ -141,32 +141,31 @@ public class PipeBlock extends ContainerBlock {
         if (state.getBlock() instanceof PipeBlock) {
             if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
                 return ConnectionType.BLOCKED;
-            return ConnectionType.CONNECTED_PIPE;
-        } else {
-            TileEntity tile = world.getTileEntity(offset);
-            if (tile == null)
-                return ConnectionType.DISCONNECTED;
-            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
-            return handler == null ? ConnectionType.DISCONNECTED : ConnectionType.CONNECTED_INVENTORY;
+            return ConnectionType.CONNECTED;
         }
+        TileEntity tile = world.getTileEntity(offset);
+        if (tile != null) {
+            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
+            if (handler != null)
+                return ConnectionType.CONNECTED;
+        }
+        return ConnectionType.DISCONNECTED;
     }
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
-        if (DIRECTIONS.values().stream().noneMatch(d -> newState.get(d) == ConnectionType.CONNECTED_INVENTORY)) {
-            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
-            if (tile != null)
-                Utility.dropInventory(tile, tile.upgrades);
-        }
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
+        if (tile != null && !tile.isConnectedInventory())
+            Utility.dropInventory(tile, tile.upgrades);
 
         PipeNetwork network = PipeNetwork.get(world);
         int connections = 0;
         boolean inventory = false;
-        for (EnumProperty<ConnectionType> prop : DIRECTIONS.values()) {
-            ConnectionType value = newState.get(prop);
+        for (Direction dir : Direction.values()) {
+            ConnectionType value = newState.get(DIRECTIONS.get(dir));
             if (!value.isConnected())
                 continue;
             connections++;
-            if (value == ConnectionType.CONNECTED_INVENTORY) {
+            if (tile.isConnectedInventory(dir)) {
                 inventory = true;
                 break;
             }

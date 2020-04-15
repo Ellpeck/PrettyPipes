@@ -29,6 +29,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
@@ -143,5 +144,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         if (tile == null)
             return null;
         return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
+    }
+
+    public boolean isConnectedInventory(Direction dir) {
+        return this.getItemHandler(dir) != null;
+    }
+
+    public boolean isConnectedInventory() {
+        return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
     }
 }

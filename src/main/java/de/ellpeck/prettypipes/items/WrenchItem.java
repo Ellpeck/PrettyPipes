@@ -53,15 +53,13 @@ public class WrenchItem extends Item {
                 continue;
 
             if (!world.isRemote) {
-                ConnectionType newType = curr == ConnectionType.BLOCKED ? ConnectionType.CONNECTED_PIPE : ConnectionType.BLOCKED;
+                ConnectionType newType = curr == ConnectionType.BLOCKED ? ConnectionType.CONNECTED : ConnectionType.BLOCKED;
                 BlockPos otherPos = pos.offset(entry.getKey());
                 BlockState otherState = world.getBlockState(otherPos);
                 if (otherState.getBlock() instanceof PipeBlock) {
                     otherState = otherState.with(PipeBlock.DIRECTIONS.get(entry.getKey().getOpposite()), newType);
                     world.setBlockState(otherPos, otherState);
                     PipeBlock.onStateChanged(world, otherPos, otherState);
-                } else if (newType == ConnectionType.CONNECTED_PIPE) {
-                    newType = ConnectionType.CONNECTED_INVENTORY;
                 }
                 BlockState newState = state.with(prop, newType);
                 world.setBlockState(pos, newState);

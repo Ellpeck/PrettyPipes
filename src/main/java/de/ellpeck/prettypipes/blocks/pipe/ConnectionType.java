@@ -5,8 +5,7 @@ import net.minecraft.util.IStringSerializable;
 import java.util.Locale;
 
 public enum ConnectionType implements IStringSerializable {
-    CONNECTED_PIPE(true),
-    CONNECTED_INVENTORY(true),
+    CONNECTED(true),
     DISCONNECTED(false),
     BLOCKED(false);
 
