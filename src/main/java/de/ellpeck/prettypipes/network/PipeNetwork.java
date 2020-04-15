@@ -111,11 +111,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             this.refreshNode(edge.endPipe, this.world.getBlockState(edge.endPipe));
     }
 
-    public boolean tryInsertItem(BlockPos startPipePos, BlockPos originInv, ItemStack stack) {
-        return this.routeItem(startPipePos, stack, () -> new PipeItem(stack, startPipePos, originInv));
+    public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack) {
+        return this.routeItem(startPipePos, startInventory, stack, () -> new PipeItem(stack));
     }
 
-    public boolean routeItem(BlockPos startPipePos, ItemStack stack, Supplier<PipeItem> itemSupplier) {
+    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Supplier<PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -127,12 +127,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack);
             if (dest != null)
-                return this.routeItemToLocation(startPipePos, pipe.getPos(), dest, itemSupplier);
+                return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
         }
         return false;
     }
 
-    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos destPipe, BlockPos destInventory, Supplier<PipeItem> itemSupplier) {
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, Supplier<PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -141,8 +141,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         if (startPipe == null)
             return false;
         GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipe);
+        if (path == null)
+            return false;
         PipeItem item = itemSupplier.get();
-        item.setDestination(startPipePos, destPipe, destInventory, path);
+        item.setDestination(startPipePos, startInventory, destPipe, destInventory, path);
         if (!startPipe.items.contains(item))
             startPipe.items.add(item);
         PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
