@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.pipe.containers;
+package de.ellpeck.prettypipes.pipe.modules.containers;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;

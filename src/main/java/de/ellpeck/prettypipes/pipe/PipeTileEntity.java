@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.containers.MainPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -122,6 +122,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().mapToInt(m -> m.getRight().getPriority(m.getLeft(), this)).max().orElse(0);
     }
 
+    public float getItemSpeed() {
+        float speed = (float) this.streamModules().mapToDouble(m -> m.getRight().getItemSpeedIncrease(m.getLeft(), this)).sum();
+        return 0.05F + speed;
+    }
+
     public IItemHandler getItemHandler(Direction dir) {
         if (!this.isConnected(dir))
             return null;
@@ -139,7 +144,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
     }
 
-    public Stream<Pair<ItemStack, IModule>> streamModules() {
+    private Stream<Pair<ItemStack, IModule>> streamModules() {
         Stream.Builder<Pair<ItemStack, IModule>> builder = Stream.builder();
         for (int i = 0; i < this.modules.getSlots(); i++) {
             ItemStack stack = this.modules.getStackInSlot(i);

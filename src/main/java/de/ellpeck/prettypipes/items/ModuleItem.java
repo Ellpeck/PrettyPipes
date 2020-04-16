@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
@@ -15,7 +15,6 @@ import net.minecraft.util.text.*;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.client.gui.GuiUtils;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
@@ -66,5 +65,10 @@ public abstract class ModuleItem extends Item implements IModule {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return null;
+    }
+
+    @Override
+    public float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile) {
+        return 0;
     }
 }

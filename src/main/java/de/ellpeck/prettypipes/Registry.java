@@ -1,18 +1,19 @@
 package de.ellpeck.prettypipes;
 
 import de.ellpeck.prettypipes.items.ModuleItem;
-import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleContainer;
-import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleGui;
-import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.*;
-import de.ellpeck.prettypipes.pipe.containers.*;
-import de.ellpeck.prettypipes.pipe.insertion.FilterModuleContainer;
-import de.ellpeck.prettypipes.pipe.insertion.FilterModuleGui;
-import de.ellpeck.prettypipes.pipe.insertion.FilterModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.containers.*;
+import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleItem;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -44,7 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
@@ -83,6 +83,7 @@ public final class Registry {
         );
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
+        registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))

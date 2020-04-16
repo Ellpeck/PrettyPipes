@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 public class PipeItem implements INBTSerializable<CompoundNBT> {
 
     public ItemStack stack;
+    public float speed;
     public float x;
     public float y;
     public float z;
@@ -45,8 +46,9 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     private boolean dropOnObstruction;
     private long lastWorldTick;
 
-    public PipeItem(ItemStack stack) {
+    public PipeItem(ItemStack stack, float speed) {
         this.stack = stack;
+        this.speed = speed;
     }
 
     public PipeItem(CompoundNBT nbt) {
@@ -79,7 +81,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             return;
         this.lastWorldTick = worldTick;
 
-        float speed = 0.05F;
+        float currSpeed = this.speed;
         BlockPos myPos = new BlockPos(this.x, this.y, this.z);
         if (!myPos.equals(currPipe.getPos()) && (this.reachedDestination() || !myPos.equals(this.startInventory))) {
             // we're done with the current pipe, so switch to the next one
@@ -102,7 +104,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             }
         } else {
             double dist = new Vec3d(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
-            if (dist < speed * speed) {
+            if (dist < this.speed * this.speed) {
                 // we're past the start of the pipe, so move to the center of the next pipe
                 PipeTileEntity next = this.getNextTile(currPipe, false);
                 if (next == null) {
@@ -115,7 +117,19 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                         return;
                     }
                 } else {
-                    this.currGoalPos = next.getPos();
+                    BlockPos nextPos = next.getPos();
+                    if (dist >= 0.001F) {
+                        // when going around corners, we want to move right up to the corner
+                        Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                        Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                        if (motion.crossProduct(diff).length() >= 0.001F) {
+                            currSpeed = (float) Math.sqrt(dist);
+                        } else {
+                            this.currGoalPos = nextPos;
+                        }
+                    } else {
+                        this.currGoalPos = nextPos;
+                    }
                 }
             }
         }
@@ -126,15 +140,15 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
 
         Vec3d dist = new Vec3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
         dist = dist.normalize();
-        this.x += dist.x * speed;
-        this.y += dist.y * speed;
-        this.z += dist.z * speed;
+        this.x += dist.x * currSpeed;
+        this.y += dist.y * currSpeed;
+        this.z += dist.z * currSpeed;
     }
 
     private void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
         if (!this.dropOnObstruction && tryReturn) {
             PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
-            if (network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.startPipe, this.startInventory, () -> this)) {
+            if (network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.startPipe, this.startInventory, speed -> this)) {
                 this.dropOnObstruction = true;
                 return;
             }
@@ -176,6 +190,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();
         nbt.put("stack", this.stack.serializeNBT());
+        nbt.putFloat("speed", this.speed);
         nbt.put("start_pipe", NBTUtil.writeBlockPos(this.startPipe));
         nbt.put("start_inv", NBTUtil.writeBlockPos(this.startInventory));
         nbt.put("dest_pipe", NBTUtil.writeBlockPos(this.destPipe));
@@ -196,6 +211,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
         this.stack = ItemStack.read(nbt.getCompound("stack"));
+        this.speed = nbt.getFloat("speed");
         this.startPipe = NBTUtil.readBlockPos(nbt.getCompound("start_pipe"));
         this.startInventory = NBTUtil.readBlockPos(nbt.getCompound("start_inv"));
         this.destPipe = NBTUtil.readBlockPos(nbt.getCompound("dest_pipe"));

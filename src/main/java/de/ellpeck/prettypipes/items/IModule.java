@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.items;
 
-import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -22,4 +22,6 @@ public interface IModule {
     boolean hasContainer(ItemStack module, PipeTileEntity tile);
 
     AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex);
+
+    float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile);
 }

@@ -1,8 +1,8 @@
-package de.ellpeck.prettypipes.pipe.extraction;
+package de.ellpeck.prettypipes.pipe.modules.extraction;
 
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
-import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;

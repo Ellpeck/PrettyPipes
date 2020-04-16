@@ -34,6 +34,7 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -109,10 +110,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack) {
-        return this.routeItem(startPipePos, startInventory, stack, () -> new PipeItem(stack));
+        return this.routeItem(startPipePos, startInventory, stack, speed -> new PipeItem(stack, speed));
     }
 
-    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Supplier<PipeItem> itemSupplier) {
+    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Function<Float, PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -133,7 +134,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return false;
     }
 
-    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, Supplier<PipeItem> itemSupplier) {
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -146,7 +147,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.endProfile();
         if (path == null)
             return false;
-        PipeItem item = itemSupplier.get();
+        PipeItem item = itemSupplier.apply(startPipe.getItemSpeed());
         item.setDestination(startPipePos, startInventory, destPipe, destInventory, path);
         if (!startPipe.items.contains(item))
             startPipe.items.add(item);
