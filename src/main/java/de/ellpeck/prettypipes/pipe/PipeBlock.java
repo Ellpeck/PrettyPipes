@@ -23,6 +23,7 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -86,6 +87,14 @@ public class PipeBlock extends ContainerBlock {
             worldIn.setBlockState(pos, newState);
             onStateChanged(worldIn, pos, newState);
         }
+    }
+
+    @Override
+    public BlockState updatePostPlacement(BlockState stateIn, Direction facing, BlockState facingState, IWorld worldIn, BlockPos currentPos, BlockPos facingPos) {
+        ConnectionType type = getConnectionType((World) worldIn, currentPos, facing, stateIn);
+        if (type != stateIn.get(DIRECTIONS.get(facing)))
+            stateIn = stateIn.with(DIRECTIONS.get(facing), type);
+        return stateIn;
     }
 
     @Nullable
