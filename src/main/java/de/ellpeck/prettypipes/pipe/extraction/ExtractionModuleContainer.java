@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.pipe.extraction;
 
 import de.ellpeck.prettypipes.misc.ItemFilter;
+import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
@@ -9,7 +10,7 @@ import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nullable;
 
-public class ExtractionModuleContainer extends AbstractPipeContainer<ExtractionModuleItem> {
+public class ExtractionModuleContainer extends AbstractPipeContainer<ExtractionModuleItem> implements IFilteredContainer {
 
     public ItemFilter filter;
 
@@ -28,5 +29,10 @@ public class ExtractionModuleContainer extends AbstractPipeContainer<ExtractionM
     public void onContainerClosed(PlayerEntity playerIn) {
         super.onContainerClosed(playerIn);
         this.filter.save();
+    }
+
+    @Override
+    public ItemFilter getFilter() {
+        return this.filter;
     }
 }

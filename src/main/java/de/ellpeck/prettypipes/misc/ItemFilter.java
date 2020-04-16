@@ -1,6 +1,9 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.packets.PacketButton;
+import de.ellpeck.prettypipes.packets.PacketHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
@@ -11,6 +14,9 @@ import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -50,8 +56,18 @@ public class ItemFilter extends ItemStackHandler {
         Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
         return Collections.singletonList(
                 new Button(x, y, 80, 20, whitelistText.get(), button -> {
-                    // TODO actually make whitelist button work
+                    PacketHandler.sendToServer(new PacketButton(BlockPos.ZERO, PacketButton.ButtonResult.FILTER_CHANGE, 0));
+                    this.onButtonPacket(0);
+                    button.setMessage(whitelistText.get());
                 }));
+    }
+
+    public void onButtonPacket(int id) {
+        // whitelist
+        if (id == 0) {
+            this.isWhitelist = !this.isWhitelist;
+        }
+        this.save();
     }
 
     public boolean isAllowed(ItemStack stack) {
@@ -82,5 +98,9 @@ public class ItemFilter extends ItemStackHandler {
     public void deserializeNBT(CompoundNBT nbt) {
         super.deserializeNBT(nbt);
         this.isWhitelist = nbt.getBoolean("whitelist");
+    }
+
+    public interface IFilteredContainer {
+        ItemFilter getFilter();
     }
 }

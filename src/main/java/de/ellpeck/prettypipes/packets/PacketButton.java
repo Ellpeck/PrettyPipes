@@ -2,6 +2,8 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.misc.ItemFilter;
+import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -84,6 +86,11 @@ public class PacketButton {
                     buf.writeInt(data[0]);
                 });
             }
+        }),
+        FILTER_CHANGE((pos, data, player) -> {
+            IFilteredContainer container = (IFilteredContainer) player.openContainer;
+            ItemFilter filter = container.getFilter();
+            filter.onButtonPacket(data[0]);
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;
