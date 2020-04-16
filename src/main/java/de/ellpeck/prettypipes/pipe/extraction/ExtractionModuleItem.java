@@ -20,7 +20,8 @@ public class ExtractionModuleItem extends ModuleItem {
     private final int speed;
     public final int filterSlots;
 
-    public ExtractionModuleItem(ModuleTier tier) {
+    public ExtractionModuleItem(String name, ModuleTier tier) {
+        super(name);
         this.maxExtraction = tier.forTier(1, 8, 64);
         this.speed = tier.forTier(20, 15, 10);
         this.filterSlots = tier.forTier(3, 6, 9);

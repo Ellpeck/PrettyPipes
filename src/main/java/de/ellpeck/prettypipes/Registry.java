@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes;
 
+import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleContainer;
 import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleGui;
 import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleItem;
@@ -39,6 +40,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
@@ -112,10 +114,10 @@ public final class Registry {
         PacketHandler.setup();
     }
 
-    private static Item[] createTieredModule(String name, Function<ModuleTier, Item> item) {
+    private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
         List<Item> items = new ArrayList<>();
         for (ModuleTier tier : ModuleTier.values())
-            items.add(item.apply(tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
+            items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
         return items.toArray(new Item[0]);
     }
 
