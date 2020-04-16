@@ -1,12 +1,13 @@
 package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.blocks.pipe.PipeContainer;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
-public class ModuleItem extends Item implements IModule {
+public abstract class ModuleItem extends Item implements IModule {
     public ModuleItem() {
         super(new Properties().group(Registry.GROUP).maxStackSize(16));
     }
@@ -29,5 +30,10 @@ public class ModuleItem extends Item implements IModule {
     @Override
     public int getPriority(PipeTileEntity tile) {
         return 0;
+    }
+
+    @Override
+    public boolean hasContainerTab(PipeTileEntity tile, PipeContainer container) {
+        return false;
     }
 }

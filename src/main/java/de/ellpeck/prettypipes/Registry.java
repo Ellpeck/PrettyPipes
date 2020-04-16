@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes;
 import com.mojang.datafixers.types.Func;
 import de.ellpeck.prettypipes.blocks.pipe.*;
 import de.ellpeck.prettypipes.items.ExtractionModuleItem;
+import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -91,7 +92,9 @@ public final class Registry {
         event.getRegistry().registerAll(
                 pipeContainer = (ContainerType<PipeContainer>) IForgeContainerType.create((windowId, inv, data) -> {
                     PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
-                    return tile != null ? new PipeContainer(pipeContainer, windowId, inv.player, tile) : null;
+                    int openModule = data.readInt();
+                    IModule module = openModule < 0 ? null : (IModule) tile.modules.getStackInSlot(openModule).getItem();
+                    return tile != null ? new PipeContainer(pipeContainer, windowId, inv.player, tile, module) : null;
                 }).setRegistryName("pipe")
         );
     }

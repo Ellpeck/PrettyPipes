@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.items;
 
+import de.ellpeck.prettypipes.blocks.pipe.PipeContainer;
 import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.item.ItemStack;
@@ -38,5 +39,15 @@ public class ExtractionModuleItem extends ModuleItem {
     @Override
     public boolean canAcceptItem(PipeTileEntity tile, ItemStack stack) {
         return false;
+    }
+
+    @Override
+    public boolean isCompatible(PipeTileEntity tile, IModule other) {
+        return !(other instanceof ExtractionModuleItem);
+    }
+
+    @Override
+    public boolean hasContainerTab(PipeTileEntity tile, PipeContainer container) {
+        return true;
     }
 }

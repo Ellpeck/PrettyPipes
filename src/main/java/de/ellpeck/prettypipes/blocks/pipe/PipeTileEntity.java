@@ -32,29 +32,27 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
+public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return stack.getItem() instanceof IModule;
+            Item item = stack.getItem();
+            if (!(item instanceof IModule))
+                return false;
+            IModule module = (IModule) item;
+            return PipeTileEntity.this.streamModules().allMatch(m -> module.isCompatible(PipeTileEntity.this, m) && m.isCompatible(PipeTileEntity.this, module));
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
         }
     };
     public final List<PipeItem> items = new ArrayList<>();
 
     public PipeTileEntity() {
         super(Registry.pipeTileEntity);
-    }
-
-    @Override
-    public ITextComponent getDisplayName() {
-        return new TranslationTextComponent("container." + PrettyPipes.ID + ".pipe");
-    }
-
-    @Nullable
-    @Override
-    public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
-        return new PipeContainer(Registry.pipeContainer, window, player, this);
     }
 
     @Override
@@ -141,16 +139,35 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
     }
 
-    private Stream<IModule> streamModules() {
+    public Stream<IModule> streamModules() {
         Stream.Builder<IModule> builder = Stream.builder();
         for (int i = 0; i < this.modules.getSlots(); i++) {
             ItemStack stack = this.modules.getStackInSlot(i);
             if (stack.isEmpty())
                 continue;
-            Item item = stack.getItem();
-            if (item instanceof IModule)
-                builder.accept((IModule) item);
+            builder.accept((IModule) stack.getItem());
         }
         return builder.build();
+    }
+
+    public INamedContainerProvider createContainer(int openModule) {
+        ItemStack moduleStack = openModule < 0 ? null : this.modules.getStackInSlot(openModule);
+        return new INamedContainerProvider() {
+
+            @Override
+            public ITextComponent getDisplayName() {
+                if (moduleStack != null)
+                    return moduleStack.getDisplayName();
+                return new TranslationTextComponent("container." + PrettyPipes.ID + ".pipe");
+            }
+
+            @Nullable
+            @Override
+            public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
+                IModule module = moduleStack == null ? null : (IModule) moduleStack.getItem();
+                return new PipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this, module);
+            }
+
+        };
     }
 }

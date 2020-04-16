@@ -19,6 +19,7 @@ public final class PacketHandler {
     public static void setup() {
         network = NetworkRegistry.newSimpleChannel(new ResourceLocation(PrettyPipes.ID, "network"), () -> VERSION, VERSION::equals, VERSION::equals);
         network.registerMessage(0, PacketItemEnterPipe.class, PacketItemEnterPipe::toBytes, PacketItemEnterPipe::fromBytes, PacketItemEnterPipe::onMessage);
+        network.registerMessage(1, PacketButton.class, PacketButton::toBytes, PacketButton::fromBytes, PacketButton::onMessage);
     }
 
     public static void sendToAllLoaded(World world, BlockPos pos, Object message) {
@@ -29,7 +30,7 @@ public final class PacketHandler {
         network.send(PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, world.getDimension().getType())), message);
     }
 
-    public static void sendTo(PlayerEntity player, Object message) {
-        network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), message);
+    public static void sendToServer(Object message) {
+        network.send(PacketDistributor.SERVER.noArg(), message);
     }
 }

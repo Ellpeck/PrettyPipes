@@ -70,7 +70,10 @@ public class PipeBlock extends ContainerBlock {
         if (!tile.isConnectedInventory())
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
-            NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
+            NetworkHooks.openGui((ServerPlayerEntity) player, tile.createContainer(-1), buf -> {
+                buf.writeBlockPos(pos);
+                buf.writeInt(-1);
+            });
         return ActionResultType.SUCCESS;
     }
 
