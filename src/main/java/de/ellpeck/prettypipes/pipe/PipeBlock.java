@@ -119,24 +119,25 @@ public class PipeBlock extends ContainerBlock {
         return shape;
     }
 
-    private BlockState createState(World world, BlockPos pos, BlockState current) {
+    private BlockState createState(World world, BlockPos pos, BlockState curr) {
         BlockState state = this.getDefaultState();
-        for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-            ConnectionType type = getConnectionType(world, pos, entry.getKey());
-            if (type.isConnected() && current.get(entry.getValue()) == ConnectionType.BLOCKED)
-                type = ConnectionType.BLOCKED;
-            state = state.with(entry.getValue(), type);
+        for (Direction dir : Direction.values()) {
+            EnumProperty<ConnectionType> prop = DIRECTIONS.get(dir);
+            ConnectionType type = getConnectionType(world, pos, dir, state);
+            // don't reconnect on blocked faces
+            if (!type.isConnected() || curr.get(prop) != ConnectionType.BLOCKED)
+                state = state.with(prop, type);
         }
         return state;
     }
 
-    private static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction) {
+    private static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction, BlockState state) {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
-        BlockState state = world.getBlockState(offset);
-        if (state.getBlock() instanceof PipeBlock) {
-            if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
+        BlockState offState = world.getBlockState(offset);
+        if (offState.getBlock() instanceof PipeBlock) {
+            if (offState.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
                 return ConnectionType.BLOCKED;
             return ConnectionType.CONNECTED;
         }
@@ -146,7 +147,19 @@ public class PipeBlock extends ContainerBlock {
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
+        if (hasLegsTo(world, offState, offset, direction)) {
+            if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.LEGS))
+                return ConnectionType.LEGS;
+        }
         return ConnectionType.DISCONNECTED;
+    }
+
+    private static boolean hasLegsTo(World world, BlockState state, BlockPos pos, Direction direction) {
+        if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
+            return direction == Direction.DOWN;
+        if (state.getMaterial() == Material.ROCK || state.getMaterial() == Material.IRON)
+            return hasSolidSide(state, world, pos, direction.getOpposite());
+        return false;
     }
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {

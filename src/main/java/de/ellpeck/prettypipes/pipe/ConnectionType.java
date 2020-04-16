@@ -7,7 +7,8 @@ import java.util.Locale;
 public enum ConnectionType implements IStringSerializable {
     CONNECTED(true),
     DISCONNECTED(false),
-    BLOCKED(false);
+    BLOCKED(false),
+    LEGS(false);
 
     private final String name;
     private final boolean isConnected;
