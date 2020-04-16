@@ -81,7 +81,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
 
         float speed = 0.05F;
         BlockPos myPos = new BlockPos(this.x, this.y, this.z);
-        if (!myPos.equals(currPipe.getPos()) && !myPos.equals(this.startInventory)) {
+        if (!myPos.equals(currPipe.getPos()) && (this.reachedDestination() || !myPos.equals(this.startInventory))) {
             // we're done with the current pipe, so switch to the next one
             currPipe.items.remove(this);
             PipeTileEntity next = this.getNextTile(currPipe, true);
