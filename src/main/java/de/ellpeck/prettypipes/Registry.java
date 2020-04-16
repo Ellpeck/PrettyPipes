@@ -10,6 +10,9 @@ import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.*;
 import de.ellpeck.prettypipes.pipe.containers.*;
+import de.ellpeck.prettypipes.pipe.insertion.FilterModuleContainer;
+import de.ellpeck.prettypipes.pipe.insertion.FilterModuleGui;
+import de.ellpeck.prettypipes.pipe.insertion.FilterModuleItem;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -63,6 +66,7 @@ public final class Registry {
 
     public static ContainerType<MainPipeContainer> pipeContainer;
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
+    public static ContainerType<FilterModuleContainer> filterModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -78,6 +82,7 @@ public final class Registry {
                 wrenchItem = new WrenchItem().setRegistryName("wrench")
         );
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
+        registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
@@ -95,7 +100,9 @@ public final class Registry {
     public static void registerContainer(RegistryEvent.Register<ContainerType<?>> event) {
         event.getRegistry().registerAll(
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
-                extractionModuleContainer = (ContainerType<ExtractionModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new ExtractionModuleContainer(extractionModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("extraction_module"));
+                extractionModuleContainer = (ContainerType<ExtractionModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new ExtractionModuleContainer(extractionModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("extraction_module"),
+                filterModuleContainer = (ContainerType<FilterModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new FilterModuleContainer(filterModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("filter_module")
+        );
     }
 
     public static void setup(FMLCommonSetupEvent event) {
@@ -128,6 +135,7 @@ public final class Registry {
 
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
+            ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
         }
     }
 }

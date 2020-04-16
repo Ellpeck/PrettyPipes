@@ -44,10 +44,8 @@ public class ItemFilter extends ItemStackHandler {
 
     public List<Slot> getSlots(int x, int y) {
         List<Slot> slots = new ArrayList<>();
-        for (int i = 0; i < this.getSlots(); i++) {
-            slots.add(new SlotFilter(this, i, x, y));
-            x += 18;
-        }
+        for (int i = 0; i < this.getSlots(); i++)
+            slots.add(new SlotFilter(this, i, x + i % 9 * 18, y + i / 9 * 18));
         return slots;
     }
 
