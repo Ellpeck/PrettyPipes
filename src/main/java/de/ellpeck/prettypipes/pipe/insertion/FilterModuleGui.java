@@ -14,7 +14,7 @@ public class FilterModuleGui extends AbstractPipeGui<FilterModuleContainer> {
     @Override
     protected void init() {
         super.init();
-        for (Widget widget : this.container.filter.getButtons(this.guiLeft + 7, this.guiTop + 17 + 32 + 18 * MathHelper.ceil(this.container.filter.getSlots() / 9F) + 2))
+        for (Widget widget : this.container.filter.getButtons(this, this.guiLeft + 7, this.guiTop + 17 + 32 + 18 * MathHelper.ceil(this.container.filter.getSlots() / 9F) + 2))
             this.addButton(widget);
     }
 }

@@ -7,6 +7,7 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.client.audio.SimpleSound;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Slot;
@@ -39,6 +40,10 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     public void render(int mouseX, int mouseY, float partialTicks) {
         this.renderBackground();
         super.render(mouseX, mouseY, partialTicks);
+        for (Widget widget : this.buttons) {
+            if (widget.isHovered())
+                widget.renderToolTip(mouseX, mouseY);
+        }
         this.renderHoveredToolTip(mouseX, mouseY);
     }
 

@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.misc;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
@@ -15,11 +16,14 @@ import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
@@ -33,13 +37,16 @@ import java.util.function.Supplier;
 public class ItemFilter extends ItemStackHandler {
 
     private final ItemStack stack;
+    private final PipeTileEntity pipe;
+    public boolean canPopulateFromInventories;
     private boolean isWhitelist;
 
-    public ItemFilter(int size, ItemStack stack) {
+    public ItemFilter(int size, ItemStack stack, PipeTileEntity pipe) {
         super(size);
         this.stack = stack;
-        if (this.stack != null && this.stack.hasTag())
-            this.deserializeNBT(this.stack.getTag().getCompound("filter"));
+        this.pipe = pipe;
+        if (stack.hasTag())
+            this.deserializeNBT(stack.getTag().getCompound("filter"));
     }
 
     public List<Slot> getSlots(int x, int y) {
@@ -50,39 +57,65 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public List<Widget> getButtons(int x, int y) {
+    public List<Widget> getButtons(Screen gui, int x, int y) {
+        List<Widget> buttons = new ArrayList<>();
         Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
-        return Collections.singletonList(
-                new Button(x, y, 80, 20, whitelistText.get(), button -> {
-                    PacketHandler.sendToServer(new PacketButton(BlockPos.ZERO, PacketButton.ButtonResult.FILTER_CHANGE, 0));
-                    this.onButtonPacket(0);
-                    button.setMessage(whitelistText.get());
-                }));
+        buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
+            PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0));
+            this.onButtonPacket(0);
+            button.setMessage(whitelistText.get());
+        }));
+        if (this.canPopulateFromInventories) {
+            buttons.add(new Button(x + 72, y, 70, 20, I18n.format("info." + PrettyPipes.ID + ".populate"), button -> {
+                PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1));
+                this.onButtonPacket(1);
+            }) {
+                @Override
+                public void renderToolTip(int x, int y) {
+                    gui.renderTooltip(TextFormatting.GRAY + I18n.format("info." + PrettyPipes.ID + ".populate.description"), x, y);
+                }
+            });
+        }
+        return buttons;
     }
 
     public void onButtonPacket(int id) {
-        // whitelist
         if (id == 0) {
             this.isWhitelist = !this.isWhitelist;
+        } else if (id == 1) {
+            // populate filter from inventories
+            for (Direction direction : Direction.values()) {
+                IItemHandler handler = this.pipe.getItemHandler(direction);
+                if (handler == null)
+                    continue;
+                for (int i = 0; i < handler.getSlots(); i++) {
+                    ItemStack stack = handler.getStackInSlot(i);
+                    if (stack.isEmpty() || this.isFiltered(stack))
+                        continue;
+                    ItemStack copy = stack.copy();
+                    copy.setCount(1);
+                    ItemHandlerHelper.insertItem(this, copy, false);
+                }
+            }
         }
         this.save();
     }
 
     public boolean isAllowed(ItemStack stack) {
+        return this.isFiltered(stack) == this.isWhitelist;
+    }
+
+    private boolean isFiltered(ItemStack stack) {
         for (int i = 0; i < this.getSlots(); i++) {
             ItemStack other = this.getStackInSlot(i);
-            if (ItemHandlerHelper.canItemStacksStack(stack, other)) {
-                // if we're whitelist, then this is true -> item is allowed
-                return this.isWhitelist;
-            }
+            if (ItemHandlerHelper.canItemStacksStack(stack, other))
+                return true;
         }
-        // if we're whitelist, then this is false -> item is disallowed
-        return !this.isWhitelist;
+        return false;
     }
 
     public void save() {
-        if (this.stack != null)
-            this.stack.getOrCreateTag().put("filter", this.serializeNBT());
+        this.stack.getOrCreateTag().put("filter", this.serializeNBT());
     }
 
     @Override

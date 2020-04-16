@@ -14,15 +14,17 @@ import net.minecraft.item.ItemStack;
 public class FilterModuleItem extends ModuleItem {
 
     public final int filterSlots;
+    public final boolean canPopulateFromInventories;
 
     public FilterModuleItem(String name, ModuleTier tier) {
         super(name);
         this.filterSlots = tier.forTier(5, 9, 18);
+        this.canPopulateFromInventories = tier.forTier(false, false, true);
     }
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
-        ItemFilter filter = new ItemFilter(this.filterSlots, module);
+        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
         return filter.isAllowed(stack);
     }
 

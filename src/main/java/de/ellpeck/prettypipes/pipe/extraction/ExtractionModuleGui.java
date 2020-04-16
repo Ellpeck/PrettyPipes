@@ -13,7 +13,7 @@ public class ExtractionModuleGui extends AbstractPipeGui<ExtractionModuleContain
     @Override
     protected void init() {
         super.init();
-        for (Widget widget : this.container.filter.getButtons(this.guiLeft + 7, this.guiTop + 17 + 32 + 20))
+        for (Widget widget : this.container.filter.getButtons(this, this.guiLeft + 7, this.guiTop + 17 + 32 + 20))
             this.addButton(widget);
     }
 }
