@@ -1,13 +1,14 @@
 package de.ellpeck.prettypipes;
 
-import com.mojang.datafixers.types.Func;
-import de.ellpeck.prettypipes.blocks.pipe.*;
-import de.ellpeck.prettypipes.items.ExtractionModuleItem;
-import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleContainer;
+import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleGui;
+import de.ellpeck.prettypipes.pipe.extraction.ExtractionModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.items.WrenchItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.pipe.*;
+import de.ellpeck.prettypipes.pipe.containers.*;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -39,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
@@ -58,7 +58,9 @@ public final class Registry {
 
     public static Block pipeBlock;
     public static TileEntityType<PipeTileEntity> pipeTileEntity;
-    public static ContainerType<PipeContainer> pipeContainer;
+
+    public static ContainerType<MainPipeContainer> pipeContainer;
+    public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -90,20 +92,8 @@ public final class Registry {
     @SubscribeEvent
     public static void registerContainer(RegistryEvent.Register<ContainerType<?>> event) {
         event.getRegistry().registerAll(
-                pipeContainer = (ContainerType<PipeContainer>) IForgeContainerType.create((windowId, inv, data) -> {
-                    PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
-                    int openModule = data.readInt();
-                    IModule module = openModule < 0 ? null : (IModule) tile.modules.getStackInSlot(openModule).getItem();
-                    return tile != null ? new PipeContainer(pipeContainer, windowId, inv.player, tile, module) : null;
-                }).setRegistryName("pipe")
-        );
-    }
-
-    private static Item[] createTieredModule(String name, Function<ModuleTier, Item> item) {
-        List<Item> items = new ArrayList<>();
-        for (ModuleTier tier : ModuleTier.values())
-            items.add(item.apply(tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
-        return items.toArray(new Item[0]);
+                pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
+                extractionModuleContainer = (ContainerType<ExtractionModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new ExtractionModuleContainer(extractionModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("extraction_module"));
     }
 
     public static void setup(FMLCommonSetupEvent event) {
@@ -122,9 +112,20 @@ public final class Registry {
         PacketHandler.setup();
     }
 
-    public static void setupClient(FMLClientSetupEvent event) {
-        RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
-        ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
-        ScreenManager.registerFactory(pipeContainer, PipeGui::new);
+    private static Item[] createTieredModule(String name, Function<ModuleTier, Item> item) {
+        List<Item> items = new ArrayList<>();
+        for (ModuleTier tier : ModuleTier.values())
+            items.add(item.apply(tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
+        return items.toArray(new Item[0]);
+    }
+
+    public static final class Client {
+        public static void setup(FMLClientSetupEvent event) {
+            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
+            ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
+
+            ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
+            ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
+        }
     }
 }

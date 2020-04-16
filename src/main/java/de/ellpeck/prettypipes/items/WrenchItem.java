@@ -1,8 +1,8 @@
 package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.blocks.pipe.PipeBlock;
-import de.ellpeck.prettypipes.blocks.pipe.ConnectionType;
+import de.ellpeck.prettypipes.pipe.PipeBlock;
+import de.ellpeck.prettypipes.pipe.ConnectionType;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;

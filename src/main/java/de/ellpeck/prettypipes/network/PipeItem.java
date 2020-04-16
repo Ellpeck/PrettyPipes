@@ -1,7 +1,7 @@
 package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;

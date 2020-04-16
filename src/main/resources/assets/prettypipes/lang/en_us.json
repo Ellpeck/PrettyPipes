@@ -5,5 +5,7 @@
     "item.prettypipes.high_extraction_module": "High Extraction Module",
     "block.prettypipes.pipe": "Pipe",
     "itemGroup.prettypipes": "Pretty Pipes",
-    "container.prettypipes.pipe": "Pipe"
+    "container.prettypipes.pipe": "Pipe",
+    "info.prettypipes.whitelist": "Allowed",
+    "info.prettypipes.blacklist": "Disallowed"
 }

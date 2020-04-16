@@ -1,11 +1,9 @@
 package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;

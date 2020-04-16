@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.events;
+package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.network.PipeNetwork;

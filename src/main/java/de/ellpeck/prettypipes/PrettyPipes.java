@@ -1,6 +1,8 @@
 package de.ellpeck.prettypipes;
 
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -12,6 +14,6 @@ public final class PrettyPipes {
     public PrettyPipes() {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(Registry::setup);
-        bus.addListener(Registry::setupClient);
+        DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> bus.addListener(Registry.Client::setup));
     }
 }

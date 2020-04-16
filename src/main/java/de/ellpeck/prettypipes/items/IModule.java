@@ -1,46 +1,25 @@
 package de.ellpeck.prettypipes.items;
 
-import de.ellpeck.prettypipes.blocks.pipe.PipeContainer;
-import de.ellpeck.prettypipes.blocks.pipe.PipeGui;
-import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
-import net.minecraft.inventory.container.Slot;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
-import org.apache.commons.lang3.Range;
-
-import java.util.Collections;
-import java.util.List;
 
 public interface IModule {
 
-    void tick(PipeTileEntity tile);
+    void tick(ItemStack module, PipeTileEntity tile);
 
-    boolean canAcceptItem(PipeTileEntity tile, ItemStack stack);
+    boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack);
 
-    boolean isAvailableDestination(PipeTileEntity tile, ItemStack stack, IItemHandler destination);
+    boolean isAvailableDestination(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination);
 
-    int getPriority(PipeTileEntity tile);
+    int getPriority(ItemStack module, PipeTileEntity tile);
 
-    boolean hasContainerTab(PipeTileEntity tile, PipeContainer container);
+    boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other);
 
-    boolean isCompatible(PipeTileEntity tile, IModule other);
+    boolean hasContainer(ItemStack module, PipeTileEntity tile);
 
-    default List<Slot> getContainerSlots(PipeTileEntity tile, PipeContainer container) {
-        return Collections.emptyList();
-    }
-
-    default Range<Integer> getShiftClickSlots(PipeTileEntity tile, PipeContainer container, ItemStack newStack) {
-        return null;
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    default void drawContainerGuiBackground(PipeTileEntity tile, PipeContainer container, PipeGui gui, int mouseX, int mouseY) {
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    default void drawContainerGuiForeground(PipeTileEntity tile, PipeContainer container, PipeGui gui, int mouseX, int mouseY) {
-    }
+    AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex);
 }

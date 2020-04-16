@@ -1,33 +1,33 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe.containers;
 
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.misc.SlotFilter;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.items.SlotItemHandler;
-import org.apache.commons.lang3.Range;
+import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nullable;
 
-public class PipeContainer extends Container {
+public abstract class AbstractPipeContainer<T extends IModule> extends Container {
 
     public final PipeTileEntity tile;
-    public final IModule openModule;
+    public final T module;
+    public final ItemStack moduleStack;
 
-    public PipeContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, PipeTileEntity tile, IModule openModule) {
+    public AbstractPipeContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
         super(type, id);
-        this.tile = tile;
-        this.openModule = openModule;
+        this.tile = Utility.getTileEntity(PipeTileEntity.class, player.world, pos);
+        this.moduleStack = moduleIndex < 0 ? null : this.tile.modules.getStackInSlot(moduleIndex);
+        this.module = moduleIndex < 0 ? null : (T) this.moduleStack.getItem();
 
-        if (openModule == null) {
-            for (int i = 0; i < 3; i++)
-                this.addSlot(new SlotItemHandler(tile.modules, i, 62 + i * 18, 17 + 32));
-        } else {
-            for (Slot slot : openModule.getContainerSlots(tile, this))
-                this.addSlot(slot);
-        }
+        // needs to be done here so transferStackInSlot works correctly, bleh
+        this.addSlots();
 
         for (int l = 0; l < 3; ++l)
             for (int j1 = 0; j1 < 9; ++j1)
@@ -35,6 +35,8 @@ public class PipeContainer extends Container {
         for (int i1 = 0; i1 < 9; ++i1)
             this.addSlot(new Slot(player.inventory, i1, 8 + i1 * 18, 147 + 32));
     }
+
+    protected abstract void addSlots();
 
     @Override
     public boolean canInteractWith(PlayerEntity playerIn) {
@@ -53,29 +55,16 @@ public class PipeContainer extends Container {
             ItemStack newStack = slot.getStack();
             ItemStack currentStack = newStack.copy();
 
-            inv:
             if (slotIndex >= inventoryStart) {
                 // shift into this container here
                 // mergeItemStack with the slots that newStack should go into
                 // return an empty stack if mergeItemStack fails
-                if (this.openModule == null) {
-                    if (newStack.getItem() instanceof IModule) {
-                        if (!this.mergeItemStack(newStack, 0, 3, false))
-                            return ItemStack.EMPTY;
-                        break inv;
-                    }
-                } else {
-                    // bleh
-                    Range<Integer> range = this.openModule.getShiftClickSlots(this.tile, this, newStack);
-                    if (range != null) {
-                        if (!this.mergeItemStack(newStack, range.getMinimum(), range.getMaximum(), false))
-                            return ItemStack.EMPTY;
-                        break inv;
-                    }
+                if (newStack.getItem() instanceof IModule) {
+                    if (!this.mergeItemStack(newStack, 0, 3, false))
+                        return ItemStack.EMPTY;
                 }
                 // end custom code
-
-                if (slotIndex >= inventoryStart && slotIndex <= inventoryEnd) {
+                else if (slotIndex >= inventoryStart && slotIndex <= inventoryEnd) {
                     if (!this.mergeItemStack(newStack, hotbarStart, hotbarEnd + 1, false))
                         return ItemStack.EMPTY;
                 } else if (slotIndex >= inventoryEnd + 1 && slotIndex < hotbarEnd + 1 && !this.mergeItemStack(newStack, inventoryStart, inventoryEnd + 1, false)) {
@@ -95,5 +84,12 @@ public class PipeContainer extends Container {
             return currentStack;
         }
         return ItemStack.EMPTY;
+    }
+
+    @Override
+    public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
+        if (SlotFilter.checkFilter(this, slotId, player))
+            return ItemStack.EMPTY;
+        return super.slotClick(slotId, dragType, clickTypeIn, player);
     }
 }

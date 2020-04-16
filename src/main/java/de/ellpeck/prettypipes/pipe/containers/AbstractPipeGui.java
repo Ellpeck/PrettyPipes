@@ -1,34 +1,29 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe.containers;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.client.audio.SimpleSound;
-import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.text.ITextComponent;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-public class PipeGui extends ContainerScreen<PipeContainer> {
+public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extends ContainerScreen<T> {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pipe.png");
     private final List<Tab> tabs = new ArrayList<>();
-    private int lastTabAmount;
 
-    public PipeGui(PipeContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+    public AbstractPipeGui(T screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
         this.xSize = 176;
         this.ySize = 171 + 32;
@@ -51,9 +46,6 @@ public class PipeGui extends ContainerScreen<PipeContainer> {
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8, this.ySize - 96 + 2, 4210752);
         this.font.drawString(this.title.getFormattedText(), 8, 6 + 32, 4210752);
-        if (this.container.openModule != null)
-            this.container.openModule.drawContainerGuiForeground(this.container.tile, this.container, this, mouseX, mouseY);
-
         for (Tab tab : this.tabs)
             tab.drawForeground(mouseX, mouseY);
     }
@@ -66,11 +58,11 @@ public class PipeGui extends ContainerScreen<PipeContainer> {
         for (Tab tab : this.tabs)
             tab.draw();
 
-        if (this.container.openModule == null) {
-            for (int i = 0; i < 3; i++)
-                this.blit(this.guiLeft + 61 + i * 18, this.guiTop + 32 + 16, 176, 62, 18, 18);
-        } else {
-            this.container.openModule.drawContainerGuiBackground(this.container.tile, this.container, this, mouseX, mouseY);
+        // draw the slots since we're using a blank ui
+        for (Slot slot : this.container.inventorySlots) {
+            if (slot.inventory == this.playerInventory)
+                continue;
+            this.blit(this.guiLeft + slot.xPos - 1, this.guiTop + slot.yPos - 1, 176, 62, 18, 18);
         }
     }
 
@@ -100,7 +92,7 @@ public class PipeGui extends ContainerScreen<PipeContainer> {
             if (stack.isEmpty())
                 continue;
             IModule module = (IModule) stack.getItem();
-            if (module.hasContainerTab(this.container.tile, this.container))
+            if (module.hasContainer(stack, this.container.tile))
                 this.tabs.add(new Tab(stack, module, this.tabs.size(), i));
         }
     }
@@ -116,8 +108,8 @@ public class PipeGui extends ContainerScreen<PipeContainer> {
             this.moduleStack = moduleStack;
             this.module = module;
             this.index = index;
-            this.x = PipeGui.this.guiLeft + 5 + tabIndex * 28;
-            this.y = PipeGui.this.guiTop;
+            this.x = AbstractPipeGui.this.guiLeft + 5 + tabIndex * 28;
+            this.y = AbstractPipeGui.this.guiTop;
         }
 
         private void draw() {
@@ -125,33 +117,33 @@ public class PipeGui extends ContainerScreen<PipeContainer> {
             int v = 0;
             int height = 30;
             int itemOffset = 9;
-            if (this.module == PipeGui.this.container.openModule) {
+            if (this.module == AbstractPipeGui.this.container.module) {
                 y = 0;
                 v = 30;
                 height = 32;
                 itemOffset = 7;
             }
-            PipeGui.this.blit(this.x, this.y + y, 176, v, 28, height);
+            AbstractPipeGui.this.blit(this.x, this.y + y, 176, v, 28, height);
 
-            PipeGui.this.itemRenderer.renderItemIntoGUI(this.moduleStack, this.x + 6, this.y + itemOffset);
-            PipeGui.this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
+            AbstractPipeGui.this.itemRenderer.renderItemIntoGUI(this.moduleStack, this.x + 6, this.y + itemOffset);
+            AbstractPipeGui.this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
         }
 
         private void drawForeground(int mouseX, int mouseY) {
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return;
-            PipeGui.this.renderTooltip(this.moduleStack.getDisplayName().getFormattedText(), mouseX - PipeGui.this.guiLeft, mouseY - PipeGui.this.guiTop);
+            AbstractPipeGui.this.renderTooltip(this.moduleStack.getDisplayName().getFormattedText(), mouseX - AbstractPipeGui.this.guiLeft, mouseY - AbstractPipeGui.this.guiTop);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {
-            if (this.module == PipeGui.this.container.openModule)
+            if (this.module == AbstractPipeGui.this.container.module)
                 return false;
             if (button != 0)
                 return false;
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return false;
-            PacketHandler.sendToServer(new PacketButton(PipeGui.this.container.tile.getPos(), PacketButton.ButtonResult.PIPE_TAB, this.index));
-            PipeGui.this.getMinecraft().getSoundHandler().play(SimpleSound.master(SoundEvents.UI_BUTTON_CLICK, 1));
+            PacketHandler.sendToServer(new PacketButton(AbstractPipeGui.this.container.tile.getPos(), PacketButton.ButtonResult.PIPE_TAB, this.index));
+            AbstractPipeGui.this.getMinecraft().getSoundHandler().play(SimpleSound.master(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }
     }

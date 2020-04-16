@@ -1,21 +1,15 @@
 package de.ellpeck.prettypipes.network;
 
-import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.blocks.pipe.PipeTileEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable<CompoundNBT> {
 

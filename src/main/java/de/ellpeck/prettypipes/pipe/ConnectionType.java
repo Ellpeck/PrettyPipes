@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe;
 
 import net.minecraft.util.IStringSerializable;
 

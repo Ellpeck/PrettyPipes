@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.network.PipeItem;

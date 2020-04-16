@@ -1,9 +1,10 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
+import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -24,15 +25,14 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
-public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
+public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
@@ -41,7 +41,7 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
             if (!(item instanceof IModule))
                 return false;
             IModule module = (IModule) item;
-            return PipeTileEntity.this.streamModules().allMatch(m -> module.isCompatible(PipeTileEntity.this, m) && m.isCompatible(PipeTileEntity.this, module));
+            return PipeTileEntity.this.streamModules().allMatch(m -> module.isCompatible(stack, PipeTileEntity.this, m.getRight()) && m.getRight().isCompatible(m.getLeft(), PipeTileEntity.this, module));
         }
 
         @Override
@@ -89,7 +89,7 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
         IProfiler profiler = this.world.getProfiler();
 
         profiler.startSection("ticking_modules");
-        this.streamModules().forEach(m -> m.tick(this));
+        this.streamModules().forEach(m -> m.getRight().tick(m.getLeft(), this));
         profiler.endSection();
 
         profiler.startSection("ticking_items");
@@ -103,7 +103,7 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
     }
 
     public BlockPos getAvailableDestination(ItemStack stack) {
-        if (this.streamModules().anyMatch(u -> !u.canAcceptItem(this, stack)))
+        if (this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
             IItemHandler handler = this.getItemHandler(dir);
@@ -111,7 +111,7 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
                 continue;
             if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
                 continue;
-            if (this.streamModules().anyMatch(u -> !u.isAvailableDestination(this, stack, handler)))
+            if (this.streamModules().anyMatch(m -> !m.getRight().isAvailableDestination(m.getLeft(), this, stack, handler)))
                 continue;
             return this.pos.offset(dir);
         }
@@ -119,7 +119,7 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
     }
 
     public int getPriority() {
-        return this.streamModules().mapToInt(u -> u.getPriority(this)).max().orElse(0);
+        return this.streamModules().mapToInt(m -> m.getRight().getPriority(m.getLeft(), this)).max().orElse(0);
     }
 
     public IItemHandler getItemHandler(Direction dir) {
@@ -139,35 +139,25 @@ public class PipeTileEntity extends TileEntity implements ITickableTileEntity {
         return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
     }
 
-    public Stream<IModule> streamModules() {
-        Stream.Builder<IModule> builder = Stream.builder();
+    public Stream<Pair<ItemStack, IModule>> streamModules() {
+        Stream.Builder<Pair<ItemStack, IModule>> builder = Stream.builder();
         for (int i = 0; i < this.modules.getSlots(); i++) {
             ItemStack stack = this.modules.getStackInSlot(i);
             if (stack.isEmpty())
                 continue;
-            builder.accept((IModule) stack.getItem());
+            builder.accept(Pair.of(stack, (IModule) stack.getItem()));
         }
         return builder.build();
     }
 
-    public INamedContainerProvider createContainer(int openModule) {
-        ItemStack moduleStack = openModule < 0 ? null : this.modules.getStackInSlot(openModule);
-        return new INamedContainerProvider() {
+    @Override
+    public ITextComponent getDisplayName() {
+        return new TranslationTextComponent("container." + PrettyPipes.ID + ".pipe");
+    }
 
-            @Override
-            public ITextComponent getDisplayName() {
-                if (moduleStack != null)
-                    return moduleStack.getDisplayName();
-                return new TranslationTextComponent("container." + PrettyPipes.ID + ".pipe");
-            }
-
-            @Nullable
-            @Override
-            public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
-                IModule module = moduleStack == null ? null : (IModule) moduleStack.getItem();
-                return new PipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this, module);
-            }
-
-        };
+    @Nullable
+    @Override
+    public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
+        return new MainPipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this.pos);
     }
 }

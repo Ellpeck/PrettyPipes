@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.blocks.pipe;
+package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
 import de.ellpeck.prettypipes.Utility;
@@ -61,7 +61,7 @@ public class PipeBlock extends ContainerBlock {
     }
 
     @Override
-    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult p_225533_6_) {
+    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
         if (!player.getHeldItem(handIn).isEmpty())
             return ActionResultType.PASS;
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
@@ -70,10 +70,7 @@ public class PipeBlock extends ContainerBlock {
         if (!tile.isConnectedInventory())
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
-            NetworkHooks.openGui((ServerPlayerEntity) player, tile.createContainer(-1), buf -> {
-                buf.writeBlockPos(pos);
-                buf.writeInt(-1);
-            });
+            NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
         return ActionResultType.SUCCESS;
     }
 
