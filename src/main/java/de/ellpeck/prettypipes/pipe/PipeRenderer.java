@@ -25,12 +25,12 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
 
     @Override
     public void render(PipeTileEntity tile, float v, MatrixStack matrixStack, IRenderTypeBuffer iRenderTypeBuffer, int k, int i1) {
-        if (tile.items.isEmpty())
+        if (tile.getItems().isEmpty())
             return;
         matrixStack.push();
         BlockPos tilePos = tile.getPos();
         matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
-        for (PipeItem item : tile.items) {
+        for (PipeItem item : tile.getItems()) {
             matrixStack.push();
             matrixStack.translate(
                     MathHelper.lerp(v, item.lastX, item.x),

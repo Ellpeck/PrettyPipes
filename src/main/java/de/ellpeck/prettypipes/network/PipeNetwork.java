@@ -47,6 +47,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
     private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
+    private final ListMultimap<BlockPos, PipeItem> pipeItems = ArrayListMultimap.create();
     private final World world;
 
     public PipeNetwork(World world) {
@@ -73,18 +74,23 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         for (NetworkEdge edge : this.graph.edgeSet())
             edges.add(edge.serializeNBT());
         nbt.put("edges", edges);
+        nbt.put("items", PipeItem.serializeAll(this.pipeItems.values()));
         return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
         this.graph.removeAllVertices(new ArrayList<>(this.graph.vertexSet()));
+        this.pipeItems.clear();
+
         ListNBT nodes = nbt.getList("nodes", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < nodes.size(); i++)
             this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
         ListNBT edges = nbt.getList("edges", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
+        for (PipeItem item : PipeItem.deserializeAll(nbt.getList("items", Constants.NBT.TAG_COMPOUND)))
+            this.pipeItems.put(item.getCurrentPipe(), item);
     }
 
     public void addNode(BlockPos pos, BlockState state) {
@@ -137,23 +143,23 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return false;
     }
 
-    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
-        if (!this.isNode(startPipePos) || !this.isNode(destPipe))
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
+        if (!this.isNode(startPipePos) || !this.isNode(destPipePos))
             return false;
-        if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipe))
+        if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipePos))
             return false;
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return false;
         this.startProfile("get_path");
-        GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipe);
+        GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipePos);
         this.endProfile();
         if (path == null)
             return false;
         PipeItem item = itemSupplier.apply(startPipe.getItemSpeed());
-        item.setDestination(startPipePos, startInventory, destPipe, destInventory, path);
-        if (!startPipe.items.contains(item))
-            startPipe.items.add(item);
+        item.setDestination(startInventory, destInventory, path);
+        if (!startPipe.getItems().contains(item))
+            startPipe.getItems().add(item);
         PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
         return true;
     }
@@ -266,10 +272,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return null;
     }
 
-    public static PipeNetwork get(World world) {
-        return world.getCapability(Registry.pipeNetworkCapability).orElse(null);
-    }
-
     private List<BlockPos> getOrderedDestinations(BlockPos node) {
         List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
@@ -291,6 +293,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("clear_node_cache");
         this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
         this.endProfile();
+    }
+
+    public List<PipeItem> getItemsInPipe(BlockPos pos) {
+        return this.pipeItems.get(pos);
     }
 
     @Override
@@ -318,4 +324,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private void endProfile() {
         this.world.getProfiler().endSection();
     }
+
+    public static PipeNetwork get(World world) {
+        return world.getCapability(Registry.pipeNetworkCapability).orElse(null);
+    }
+
 }

@@ -14,6 +14,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
@@ -50,7 +51,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             return 1;
         }
     };
-    public final List<PipeItem> items = new ArrayList<>();
+    private List<PipeItem> items;
     private int priority;
 
     public PipeTileEntity() {
@@ -60,28 +61,29 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         compound.put("modules", this.modules.serializeNBT());
-        ListNBT list = new ListNBT();
-        for (PipeItem item : this.items)
-            list.add(item.serializeNBT());
-        compound.put("items", list);
         return super.write(compound);
     }
 
     @Override
     public void read(CompoundNBT compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
-        this.items.clear();
-        ListNBT list = compound.getList("items", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++)
-            this.items.add(new PipeItem(list.getCompound(i)));
         super.read(compound);
     }
 
     @Override
     public CompoundNBT getUpdateTag() {
-        // by default, this is just writeInternal, but we
-        // want to sync the current pipe items on load too
-        return this.write(new CompoundNBT());
+        // sync pipe items on load
+        CompoundNBT nbt = this.write(new CompoundNBT());
+        nbt.put("items", PipeItem.serializeAll(this.getItems()));
+        return nbt;
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundNBT nbt) {
+        this.read(nbt);
+        List<PipeItem> items = this.getItems();
+        items.clear();
+        items.addAll(PipeItem.deserializeAll(nbt.getList("items", Constants.NBT.TAG_COMPOUND)));
     }
 
     @Override
@@ -106,9 +108,16 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         profiler.endSection();
 
         profiler.startSection("ticking_items");
-        for (int i = this.items.size() - 1; i >= 0; i--)
-            this.items.get(i).updateInPipe(this);
+        List<PipeItem> items = this.getItems();
+        for (int i = items.size() - 1; i >= 0; i--)
+            items.get(i).updateInPipe(this);
         profiler.endSection();
+    }
+
+    public List<PipeItem> getItems() {
+        if (this.items == null)
+            this.items = PipeNetwork.get(this.world).getItemsInPipe(this.pos);
+        return this.items;
     }
 
     public boolean isConnected(Direction dir) {

@@ -48,7 +48,7 @@ public class PacketItemEnterPipe {
                 PipeItem item = new PipeItem(message.item);
                 PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, mc.world, message.tilePos);
                 if (pipe != null)
-                    pipe.items.add(item);
+                    pipe.getItems().add(item);
             }
         });
         ctx.get().setPacketHandled(true);
