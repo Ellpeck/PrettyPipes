@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes;
 
 import de.ellpeck.prettypipes.items.ModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.LowPriorityModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleGui;
@@ -84,6 +85,7 @@ public final class Registry {
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
         registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
+        registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))

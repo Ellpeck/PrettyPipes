@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
@@ -255,22 +256,20 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return ret;
     }
 
+    public void clearDestinationCache(BlockPos... nodes) {
+        this.startProfile("clear_node_cache");
+        this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
+        this.endProfile();
+    }
+
     @Override
     public void edgeAdded(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
-        this.edgeModified(e);
+        this.clearDestinationCache(e.getEdgeSource(), e.getEdgeTarget());
     }
 
     @Override
     public void edgeRemoved(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
-        this.edgeModified(e);
-    }
-
-    private void edgeModified(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
-        // uncache all connection infos that contain the removed edge's vertices
-        this.startProfile("clear_node_cache");
-        this.nodeToConnectedNodes.values().removeIf(
-                nodes -> nodes.stream().anyMatch(n -> n.equals(e.getEdgeSource()) || n.equals(e.getEdgeTarget())));
-        this.endProfile();
+        this.clearDestinationCache(e.getEdgeSource(), e.getEdgeTarget());
     }
 
     @Override

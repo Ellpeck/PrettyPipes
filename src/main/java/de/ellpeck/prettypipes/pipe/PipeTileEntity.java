@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
+import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.modules.containers.MainPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -50,6 +51,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     public final List<PipeItem> items = new ArrayList<>();
+    private int priority;
 
     public PipeTileEntity() {
         super(Registry.pipeTileEntity);
@@ -89,7 +91,18 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         IProfiler profiler = this.world.getProfiler();
 
         profiler.startSection("ticking_modules");
-        this.streamModules().forEach(m -> m.getRight().tick(m.getLeft(), this));
+        int prio = 0;
+        Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
+        while (modules.hasNext()) {
+            Pair<ItemStack, IModule> module = modules.next();
+            module.getRight().tick(module.getLeft(), this);
+            prio += module.getRight().getPriority(module.getLeft(), this);
+        }
+        if (prio != this.priority) {
+            this.priority = prio;
+            // clear the cache so that it's reevaluated based on priority
+            PipeNetwork.get(this.world).clearDestinationCache(this.pos);
+        }
         profiler.endSection();
 
         profiler.startSection("ticking_items");
@@ -119,7 +132,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public int getPriority() {
-        return this.streamModules().mapToInt(m -> m.getRight().getPriority(m.getLeft(), this)).max().orElse(0);
+        return this.priority;
     }
 
     public float getItemSpeed() {
