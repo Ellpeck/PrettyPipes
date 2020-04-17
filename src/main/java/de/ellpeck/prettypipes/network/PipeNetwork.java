@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.network;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
@@ -21,6 +22,8 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.ListenableGraph;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
@@ -36,7 +39,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphListener<BlockPos, NetworkEdge> {
@@ -125,7 +127,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedDestinations(startPipePos)) {
             PipeTileEntity pipe = this.getPipe(pipePos);
-            BlockPos dest = pipe.getAvailableDestination(stack);
+            BlockPos dest = pipe.getAvailableDestination(stack, false);
             if (dest != null) {
                 this.endProfile();
                 return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
@@ -163,6 +165,34 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             this.tileCache.put(pos, tile);
         }
         return tile;
+    }
+
+    public List<NetworkLocation> getOrderedNetworkItems(BlockPos node) {
+        if (!this.isNode(node))
+            return Collections.emptyList();
+        this.startProfile("get_network_items");
+        List<NetworkLocation> info = new ArrayList<>();
+        for (BlockPos dest : this.getOrderedDestinations(node)) {
+            PipeTileEntity pipe = this.getPipe(dest);
+            for (Direction dir : Direction.values()) {
+                IItemHandler handler = pipe.getItemHandler(dir);
+                if (handler == null)
+                    continue;
+                ListMultimap<Direction, Pair<Integer, ItemStack>> items = null;
+                for (int i = 0; i < handler.getSlots(); i++) {
+                    ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
+                    if (found.isEmpty())
+                        continue;
+                    if (items == null)
+                        items = ArrayListMultimap.create();
+                    items.put(dir, Pair.of(i, found));
+                }
+                if (items != null)
+                    info.add(new NetworkLocation(dest, items));
+            }
+        }
+        this.endProfile();
+        return info;
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
@@ -248,6 +278,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
+                    .filter(p -> !p.equals(node))
                     .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
                     .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);

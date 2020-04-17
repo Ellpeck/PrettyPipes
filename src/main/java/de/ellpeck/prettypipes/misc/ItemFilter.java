@@ -4,33 +4,22 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.util.INBTSerializable;
-import net.minecraftforge.fml.client.gui.GuiUtils;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -38,8 +27,10 @@ public class ItemFilter extends ItemStackHandler {
 
     private final ItemStack stack;
     private final PipeTileEntity pipe;
+    public boolean isWhitelist;
+
     public boolean canPopulateFromInventories;
-    private boolean isWhitelist;
+    public boolean canModifyWhitelist = true;
 
     public ItemFilter(int size, ItemStack stack, PipeTileEntity pipe) {
         super(size);
@@ -59,12 +50,14 @@ public class ItemFilter extends ItemStackHandler {
     @OnlyIn(Dist.CLIENT)
     public List<Widget> getButtons(Screen gui, int x, int y) {
         List<Widget> buttons = new ArrayList<>();
-        Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
-        buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
-            PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0));
-            this.onButtonPacket(0);
-            button.setMessage(whitelistText.get());
-        }));
+        if (this.canModifyWhitelist) {
+            Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
+            buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
+                PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0));
+                this.onButtonPacket(0);
+                button.setMessage(whitelistText.get());
+            }));
+        }
         if (this.canPopulateFromInventories) {
             buttons.add(new Button(x + 72, y, 70, 20, I18n.format("info." + PrettyPipes.ID + ".populate"), button -> {
                 PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1));
@@ -80,9 +73,9 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     public void onButtonPacket(int id) {
-        if (id == 0) {
+        if (id == 0 && this.canModifyWhitelist) {
             this.isWhitelist = !this.isWhitelist;
-        } else if (id == 1) {
+        } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
             for (Direction direction : Direction.values()) {
                 IItemHandler handler = this.pipe.getItemHandler(direction);

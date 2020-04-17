@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes;
 
+import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.LowPriorityModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
@@ -15,6 +16,9 @@ import de.ellpeck.prettypipes.pipe.modules.containers.*;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -68,6 +72,7 @@ public final class Registry {
     public static ContainerType<MainPipeContainer> pipeContainer;
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
     public static ContainerType<FilterModuleContainer> filterModuleContainer;
+    public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -86,6 +91,7 @@ public final class Registry {
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
         registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
         registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
+        registry.registerAll(createTieredModule("retrieval_module", RetrievalModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
@@ -102,10 +108,21 @@ public final class Registry {
     @SubscribeEvent
     public static void registerContainer(RegistryEvent.Register<ContainerType<?>> event) {
         event.getRegistry().registerAll(
+                // this needs to be registered manually since it doesn't send the module slot
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
-                extractionModuleContainer = (ContainerType<ExtractionModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new ExtractionModuleContainer(extractionModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("extraction_module"),
-                filterModuleContainer = (ContainerType<FilterModuleContainer>) IForgeContainerType.create((windowId, inv, data) -> new FilterModuleContainer(filterModuleContainer, windowId, inv.player, data.readBlockPos(), data.readInt())).setRegistryName("filter_module")
+                extractionModuleContainer = createPipeContainer("extraction_module"),
+                filterModuleContainer = createPipeContainer("filter_module"),
+                retrievalModuleContainer = createPipeContainer("retrieval_module")
         );
+    }
+
+    private static <T extends AbstractPipeContainer<?>> ContainerType<T> createPipeContainer(String name) {
+        return (ContainerType<T>) IForgeContainerType.create((windowId, inv, data) -> {
+            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
+            int moduleIndex = data.readInt();
+            ItemStack moduleStack = tile.modules.getStackInSlot(moduleIndex);
+            return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
+        }).setRegistryName(name);
     }
 
     public static void setup(FMLCommonSetupEvent event) {
@@ -139,6 +156,7 @@ public final class Registry {
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
+            ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
         }
     }
 }

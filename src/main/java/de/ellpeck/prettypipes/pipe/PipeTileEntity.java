@@ -115,8 +115,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
     }
 
-    public BlockPos getAvailableDestination(ItemStack stack) {
-        if (this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
+    public BlockPos getAvailableDestination(ItemStack stack, boolean internal) {
+        if (!internal && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
             IItemHandler handler = this.getItemHandler(dir);
