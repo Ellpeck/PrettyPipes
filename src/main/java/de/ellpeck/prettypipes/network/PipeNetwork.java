@@ -136,9 +136,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipe, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
-        if (!this.isNode(startPipePos))
+        if (!this.isNode(startPipePos) || !this.isNode(destPipe))
             return false;
-        if (!this.world.isBlockLoaded(startPipePos))
+        if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipe))
             return false;
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
