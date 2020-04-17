@@ -106,10 +106,11 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             double dist = new Vec3d(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
             if (dist < this.speed * this.speed) {
                 // we're past the start of the pipe, so move to the center of the next pipe
+                BlockPos nextPos;
                 PipeTileEntity next = this.getNextTile(currPipe, false);
                 if (next == null) {
                     if (this.reachedDestination()) {
-                        this.currGoalPos = this.destInventory;
+                        nextPos = this.destInventory;
                     } else {
                         currPipe.items.remove(this);
                         if (!currPipe.getWorld().isRemote)
@@ -117,19 +118,22 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                         return;
                     }
                 } else {
-                    BlockPos nextPos = next.getPos();
-                    if (dist >= 0.001F) {
-                        // when going around corners, we want to move right up to the corner
-                        Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
-                        Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
-                        if (motion.crossProduct(diff).length() >= 0.001F) {
-                            currSpeed = (float) Math.sqrt(dist);
-                        } else {
-                            this.currGoalPos = nextPos;
-                        }
+                    nextPos = next.getPos();
+                }
+                float tolerance = 0.001F;
+                if (dist >= tolerance * tolerance) {
+                    // when going around corners, we want to move right up to the corner
+                    Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                    Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                    if (motion.crossProduct(diff).length() >= tolerance) {
+                        currSpeed = (float) Math.sqrt(dist);
                     } else {
+                        // we're not going around a corner, so continue
                         this.currGoalPos = nextPos;
                     }
+                } else {
+                    // distance is very small, so continue
+                    this.currGoalPos = nextPos;
                 }
             }
         }
