@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "ISI",
+        "SMS",
+        "ISI"
+    ],
+    "key": {
+        "S": {
+            "item": "minecraft:sugar"
+        },
+        "M": {
+            "item": "prettypipes:low_speed_module"
+        },
+        "I": {
+            "item": "minecraft:iron_ingot"
+        }
+    },
+    "result": {
+        "item": "prettypipes:medium_speed_module"
+    }
+}

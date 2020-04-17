@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "GDG",
+        "GMG",
+        "GGG"
+    ],
+    "key": {
+        "D": {
+            "item": "minecraft:diamond"
+        },
+        "G": {
+            "item": "minecraft:gold_ingot"
+        },
+        "M": {
+            "item": "prettypipes:medium_extraction_module"
+        }
+    },
+    "result": {
+        "item": "prettypipes:high_extraction_module"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " R ",
+        "SPS",
+        " R "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "P": {
+            "item": "prettypipes:pipe"
+        },
+        "S": {
+            "item": "minecraft:stone_slab"
+        }
+    },
+    "result": {
+        "item": "prettypipes:blank_module"
+    }
+}

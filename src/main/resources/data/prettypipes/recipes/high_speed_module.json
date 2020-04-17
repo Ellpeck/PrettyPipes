@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "GBG",
+        "BMB",
+        "GBG"
+    ],
+    "key": {
+        "G": {
+            "item": "minecraft:gold_ingot"
+        },
+        "M": {
+            "item": "prettypipes:medium_speed_module"
+        },
+        "B": {
+            "item": "minecraft:sugar"
+        }
+    },
+    "result": {
+        "item": "prettypipes:high_speed_module"
+    }
+}

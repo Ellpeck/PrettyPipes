@@ -1,0 +1,25 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " P ",
+        "RMR",
+        " E "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone_block"
+        },
+        "P": {
+            "item": "minecraft:sticky_piston"
+        },
+        "M": {
+            "item": "prettypipes:blank_module"
+        },
+        "E": {
+            "item": "minecraft:ender_pearl"
+        }
+    },
+    "result": {
+        "item": "prettypipes:low_retrieval_module"
+    }
+}

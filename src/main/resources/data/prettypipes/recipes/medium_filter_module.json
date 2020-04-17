@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " B ",
+        "IMI",
+        " B "
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:iron_ingot"
+        },
+        "M": {
+            "item": "prettypipes:low_filter_module"
+        },
+        "B": {
+            "item": "minecraft:iron_bars"
+        }
+    },
+    "result": {
+        "item": "prettypipes:medium_filter_module"
+    }
+}

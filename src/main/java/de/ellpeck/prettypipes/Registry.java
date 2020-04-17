@@ -85,7 +85,8 @@ public final class Registry {
     public static void registerItems(RegistryEvent.Register<Item> event) {
         IForgeRegistry<Item> registry = event.getRegistry();
         registry.registerAll(
-                wrenchItem = new WrenchItem().setRegistryName("wrench")
+                wrenchItem = new WrenchItem().setRegistryName("wrench"),
+                new Item(new Item.Properties().group(GROUP)).setRegistryName("blank_module")
         );
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
