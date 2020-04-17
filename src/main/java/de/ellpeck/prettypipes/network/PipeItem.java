@@ -2,7 +2,11 @@ package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ILiquidContainer;
 import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -12,6 +16,8 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -26,7 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class PipeItem implements INBTSerializable<CompoundNBT> {
+public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer {
 
     public ItemStack stack;
     public float speed;
@@ -80,13 +86,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
 
         float currSpeed = this.speed;
         BlockPos myPos = new BlockPos(this.x, this.y, this.z);
-        if (!myPos.equals(currPipe.getPos()) && (this.reachedDestination() || !myPos.equals(this.startInventory))) {
+        if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
             // we're done with the current pipe, so switch to the next one
             currPipe.getItems().remove(this);
             PipeTileEntity next = this.getNextTile(currPipe, true);
             if (next == null) {
                 if (!currPipe.getWorld().isRemote) {
-                    if (this.reachedDestination()) {
+                    if (currPipe.getPos().equals(this.getDestPipe())) {
                         // ..or store in our destination container if we reached our destination
                         this.stack = this.store(currPipe);
                         if (!this.stack.isEmpty())
@@ -106,7 +112,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
                 BlockPos nextPos;
                 PipeTileEntity next = this.getNextTile(currPipe, false);
                 if (next == null) {
-                    if (this.reachedDestination()) {
+                    if (currPipe.getPos().equals(this.getDestPipe())) {
                         nextPos = this.destInventory;
                     } else {
                         currPipe.getItems().remove(this);
@@ -171,10 +177,6 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         if (handler == null)
             return this.stack;
         return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
-    }
-
-    private boolean reachedDestination() {
-        return this.currentTile >= this.path.size() - 1;
     }
 
     private PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
@@ -275,5 +277,15 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         for (int i = 0; i < list.size(); i++)
             items.add(new PipeItem(list.getCompound(i)));
         return items;
+    }
+
+    @Override
+    public boolean canContainFluid(IBlockReader worldIn, BlockPos pos, BlockState state, Fluid fluidIn) {
+        return true;
+    }
+
+    @Override
+    public boolean receiveFluid(IWorld worldIn, BlockPos pos, BlockState state, IFluidState fluidStateIn) {
+        return false;
     }
 }

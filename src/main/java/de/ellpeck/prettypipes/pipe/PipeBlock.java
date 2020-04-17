@@ -9,10 +9,14 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
+import net.minecraft.state.properties.BlockStateProperties;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
@@ -55,7 +59,7 @@ public class PipeBlock extends ContainerBlock {
     public PipeBlock() {
         super(Block.Properties.create(Material.ROCK).hardnessAndResistance(2).sound(SoundType.STONE).notSolid());
 
-        BlockState state = this.getDefaultState();
+        BlockState state = this.getDefaultState().with(BlockStateProperties.WATERLOGGED, false);
         for (EnumProperty<ConnectionType> prop : DIRECTIONS.values())
             state = state.with(prop, ConnectionType.DISCONNECTED);
         this.setDefaultState(state);
@@ -78,6 +82,12 @@ public class PipeBlock extends ContainerBlock {
     @Override
     protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
         builder.add(DIRECTIONS.values().toArray(new EnumProperty[0]));
+        builder.add(BlockStateProperties.WATERLOGGED);
+    }
+
+    @Override
+    public IFluidState getFluidState(BlockState state) {
+        return state.get(BlockStateProperties.WATERLOGGED) ? Fluids.WATER.getStillFluidState(false) : super.getFluidState(state);
     }
 
     @Override
@@ -93,6 +103,13 @@ public class PipeBlock extends ContainerBlock {
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
         return this.createState(context.getWorld(), context.getPos(), this.getDefaultState());
+    }
+
+    @Override
+    public BlockState updatePostPlacement(BlockState stateIn, Direction facing, BlockState facingState, IWorld worldIn, BlockPos currentPos, BlockPos facingPos) {
+        if (stateIn.get(BlockStateProperties.WATERLOGGED))
+            worldIn.getPendingFluidTicks().scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickRate(worldIn));
+        return super.updatePostPlacement(stateIn, facing, facingState, worldIn, currentPos, facingPos);
     }
 
     @Override
@@ -122,6 +139,10 @@ public class PipeBlock extends ContainerBlock {
 
     private BlockState createState(World world, BlockPos pos, BlockState curr) {
         BlockState state = this.getDefaultState();
+        IFluidState fluid = world.getFluidState(pos);
+        if (fluid.isTagged(FluidTags.WATER) && fluid.getLevel() == 8)
+            state = state.with(BlockStateProperties.WATERLOGGED, true);
+
         for (Direction dir : Direction.values()) {
             EnumProperty<ConnectionType> prop = DIRECTIONS.get(dir);
             ConnectionType type = getConnectionType(world, pos, dir, state);
@@ -201,7 +222,6 @@ public class PipeBlock extends ContainerBlock {
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
-            network.getItemsInPipe(pos).clear();
             super.onReplaced(state, worldIn, pos, newState, isMoving);
         }
     }

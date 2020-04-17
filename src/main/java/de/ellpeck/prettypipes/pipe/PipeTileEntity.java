@@ -197,6 +197,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     @Override
+    public void remove() {
+        super.remove();
+        this.getItems().clear();
+    }
+
+    @Override
     public ITextComponent getDisplayName() {
         return new TranslationTextComponent("container." + PrettyPipes.ID + ".pipe");
     }
