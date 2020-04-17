@@ -191,7 +191,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         return this.path.get(0);
     }
 
-    private BlockPos getDestPipe() {
+    public BlockPos getDestPipe() {
         return this.path.get(this.path.size() - 1);
     }
 

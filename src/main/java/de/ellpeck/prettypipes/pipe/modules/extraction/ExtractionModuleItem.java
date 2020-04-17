@@ -18,6 +18,7 @@ public class ExtractionModuleItem extends ModuleItem {
 
     private final int maxExtraction;
     private final int speed;
+    private final boolean preventOversending;
     public final int filterSlots;
 
     public ExtractionModuleItem(String name, ModuleTier tier) {
@@ -25,6 +26,7 @@ public class ExtractionModuleItem extends ModuleItem {
         this.maxExtraction = tier.forTier(1, 8, 64);
         this.speed = tier.forTier(20, 15, 10);
         this.filterSlots = tier.forTier(3, 6, 9);
+        this.preventOversending = tier.forTier(false, false, true);
     }
 
     @Override
@@ -44,12 +46,17 @@ public class ExtractionModuleItem extends ModuleItem {
                     continue;
                 if (!filter.isAllowed(stack))
                     continue;
-                if (network.tryInsertItem(tile.getPos(), tile.getPos().offset(dir), stack)) {
+                if (network.tryInsertItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending)) {
                     handler.extractItem(j, this.maxExtraction, false);
                     return;
                 }
             }
         }
+    }
+
+    @Override
+    public boolean canNetworkSee(ItemStack module, PipeTileEntity tile) {
+        return false;
     }
 
     @Override

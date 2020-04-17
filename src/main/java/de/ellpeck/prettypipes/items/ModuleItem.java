@@ -15,7 +15,6 @@ import net.minecraft.util.text.*;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -48,12 +47,12 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
+    public boolean canNetworkSee(ItemStack module, PipeTileEntity tile) {
         return true;
     }
 
     @Override
-    public boolean isAvailableDestination(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination) {
+    public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
         return true;
     }
 

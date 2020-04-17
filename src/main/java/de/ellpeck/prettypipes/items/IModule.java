@@ -11,9 +11,9 @@ public interface IModule {
 
     void tick(ItemStack module, PipeTileEntity tile);
 
-    boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack);
+    boolean canNetworkSee(ItemStack module, PipeTileEntity tile);
 
-    boolean isAvailableDestination(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination);
+    boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack);
 
     int getPriority(ItemStack module, PipeTileEntity tile);
 

@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphListener<BlockPos, NetworkEdge> {
 
@@ -118,11 +119,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             this.refreshNode(edge.endPipe, this.world.getBlockState(edge.endPipe));
     }
 
-    public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack) {
-        return this.routeItem(startPipePos, startInventory, stack, speed -> new PipeItem(stack, speed));
+    public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
+        return this.routeItem(startPipePos, startInventory, stack, speed -> new PipeItem(stack, speed), preventOversending);
     }
 
-    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Function<Float, PipeItem> itemSupplier) {
+    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Function<Float, PipeItem> itemSupplier, boolean preventOversending) {
         if (!this.isNode(startPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -133,7 +134,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedDestinations(startPipePos)) {
             PipeTileEntity pipe = this.getPipe(pipePos);
-            BlockPos dest = pipe.getAvailableDestination(stack, false);
+            BlockPos dest = pipe.getAvailableDestination(stack, false, preventOversending);
             if (dest != null) {
                 this.endProfile();
                 return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
@@ -179,23 +180,23 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("get_network_items");
         List<NetworkLocation> info = new ArrayList<>();
         for (BlockPos dest : this.getOrderedDestinations(node)) {
+            NetworkLocation location = new NetworkLocation(dest);
             PipeTileEntity pipe = this.getPipe(dest);
+            if (!pipe.canNetworkSee())
+                continue;
             for (Direction dir : Direction.values()) {
                 IItemHandler handler = pipe.getItemHandler(dir);
                 if (handler == null)
                     continue;
-                ListMultimap<Direction, Pair<Integer, ItemStack>> items = null;
                 for (int i = 0; i < handler.getSlots(); i++) {
                     ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
                     if (found.isEmpty())
                         continue;
-                    if (items == null)
-                        items = ArrayListMultimap.create();
-                    items.put(dir, Pair.of(i, found));
+                    location.addItem(dir, i, found);
                 }
-                if (items != null)
-                    info.add(new NetworkLocation(dest, items));
             }
+            if (!location.isEmpty())
+                info.add(location);
         }
         this.endProfile();
         return info;
@@ -297,6 +298,19 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
 
     public List<PipeItem> getItemsInPipe(BlockPos pos) {
         return this.pipeItems.get(pos);
+    }
+
+    public Stream<PipeItem> getPipeItemsOnTheWay(BlockPos goalPipe) {
+        this.startProfile("get_pipe_items_on_the_way");
+        Stream<PipeItem> ret = this.pipeItems.values().stream().filter(i -> i.getDestPipe().equals(goalPipe));
+        this.endProfile();
+        return ret;
+    }
+
+    public int getItemsOnTheWay(BlockPos goalPipe, ItemStack type) {
+        return this.getPipeItemsOnTheWay(goalPipe)
+                .filter(i -> i.stack.isItemEqual(type))
+                .mapToInt(i -> i.stack.getCount()).sum();
     }
 
     @Override

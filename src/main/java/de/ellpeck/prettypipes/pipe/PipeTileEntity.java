@@ -124,7 +124,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
     }
 
-    public BlockPos getAvailableDestination(ItemStack stack, boolean internal) {
+    public BlockPos getAvailableDestination(ItemStack stack, boolean internal, boolean preventOversending) {
         if (!internal && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
@@ -133,8 +133,23 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 continue;
             if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
                 continue;
-            if (this.streamModules().anyMatch(m -> !m.getRight().isAvailableDestination(m.getLeft(), this, stack, handler)))
-                continue;
+            if (preventOversending) {
+                // these are the items that are currently in the pipes, going to this pipe
+                int onTheWay = PipeNetwork.get(this.world).getItemsOnTheWay(this.pos, stack);
+                if (onTheWay > 0) {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(copy.getMaxStackSize());
+                    // totalSpace will be the amount of items that fit into the attached container
+                    int totalSpace = 0;
+                    for (int i = 0; i < handler.getSlots(); i++) {
+                        ItemStack remain = handler.insertItem(i, copy, true);
+                        totalSpace += copy.getMaxStackSize() - remain.getCount();
+                    }
+                    // if the items on the way plus the items we're trying to move are too much, abort
+                    if (onTheWay + stack.getCount() > totalSpace)
+                        continue;
+                }
+            }
             return this.pos.offset(dir);
         }
         return null;
@@ -164,6 +179,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     public boolean isConnectedInventory() {
         return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
+    }
+
+    public boolean canNetworkSee() {
+        return this.streamModules().allMatch(m -> m.getRight().canNetworkSee(m.getLeft(), this));
     }
 
     private Stream<Pair<ItemStack, IModule>> streamModules() {

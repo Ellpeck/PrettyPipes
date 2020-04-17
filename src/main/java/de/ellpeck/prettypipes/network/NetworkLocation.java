@@ -14,18 +14,29 @@ import java.util.Map;
 public class NetworkLocation {
 
     public final BlockPos pipePos;
-    public final ListMultimap<Direction, Pair<Integer, ItemStack>> items;
+    private ListMultimap<Direction, Pair<Integer, ItemStack>> items;
 
-    public NetworkLocation(BlockPos pipePos, ListMultimap<Direction, Pair<Integer, ItemStack>> items) {
+    public NetworkLocation(BlockPos pipePos) {
         this.pipePos = pipePos;
-        this.items = items;
+    }
+
+    public void addItem(Direction direction, int slot, ItemStack stack) {
+        if (this.items == null)
+            this.items = ArrayListMultimap.create();
+        this.items.put(direction, Pair.of(slot, stack));
     }
 
     public Pair<Direction, Integer> getStackLocation(ItemStack stack) {
+        if (this.isEmpty())
+            return null;
         for (Map.Entry<Direction, Pair<Integer, ItemStack>> entry : this.items.entries()) {
             if (entry.getValue().getRight().isItemEqual(stack))
                 return Pair.of(entry.getKey(), entry.getValue().getLeft());
         }
         return null;
+    }
+
+    public boolean isEmpty() {
+        return this.items == null || this.items.isEmpty();
     }
 }

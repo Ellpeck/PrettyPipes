@@ -23,6 +23,7 @@ import java.util.List;
 public class RetrievalModuleItem extends ModuleItem {
     private final int maxExtraction;
     private final int speed;
+    private final boolean preventOversending;
     public final int filterSlots;
 
     public RetrievalModuleItem(String name, ModuleTier tier) {
@@ -30,6 +31,7 @@ public class RetrievalModuleItem extends ModuleItem {
         this.maxExtraction = tier.forTier(1, 8, 16);
         this.speed = tier.forTier(40, 20, 10);
         this.filterSlots = tier.forTier(3, 6, 9);
+        this.preventOversending = tier.forTier(false, true, true);
     }
 
     @Override
@@ -48,7 +50,7 @@ public class RetrievalModuleItem extends ModuleItem {
                 continue;
             ItemStack copy = filtered.copy();
             copy.setCount(this.maxExtraction);
-            BlockPos dest = tile.getAvailableDestination(copy, true);
+            BlockPos dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
             // loop through locations to find a location that has the item
@@ -69,6 +71,11 @@ public class RetrievalModuleItem extends ModuleItem {
                 }
             }
         }
+    }
+
+    @Override
+    public boolean canNetworkSee(ItemStack module, PipeTileEntity tile) {
+        return false;
     }
 
     @Override
