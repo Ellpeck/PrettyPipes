@@ -89,14 +89,6 @@ public class PipeBlock extends ContainerBlock {
         }
     }
 
-    @Override
-    public BlockState updatePostPlacement(BlockState stateIn, Direction facing, BlockState facingState, IWorld worldIn, BlockPos currentPos, BlockPos facingPos) {
-        ConnectionType type = getConnectionType((World) worldIn, currentPos, facing, stateIn);
-        if (type != stateIn.get(DIRECTIONS.get(facing)))
-            stateIn = stateIn.with(DIRECTIONS.get(facing), type);
-        return stateIn;
-    }
-
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockItemUseContext context) {
