@@ -61,7 +61,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     @Nonnull
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        return cap == Registry.pipeNetworkCapability ? LazyOptional.of(() -> (T) this) : null;
+        return cap == Registry.pipeNetworkCapability ? LazyOptional.of(() -> (T) this) : LazyOptional.empty();
     }
 
     @Override
