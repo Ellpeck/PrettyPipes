@@ -53,16 +53,12 @@ public class ItemFilter extends ItemStackHandler {
         if (this.canModifyWhitelist) {
             Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
             buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
-                PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0));
-                this.onButtonPacket(0);
+                PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
                 button.setMessage(whitelistText.get());
             }));
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, I18n.format("info." + PrettyPipes.ID + ".populate"), button -> {
-                PacketHandler.sendToServer(new PacketButton(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1));
-                this.onButtonPacket(1);
-            }) {
+            buttons.add(new Button(x + 72, y, 70, 20, I18n.format("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
                 @Override
                 public void renderToolTip(int x, int y) {
                     gui.renderTooltip(TextFormatting.GRAY + I18n.format("info." + PrettyPipes.ID + ".populate.description"), x, y);

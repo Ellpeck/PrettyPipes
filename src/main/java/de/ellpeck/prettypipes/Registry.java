@@ -19,6 +19,9 @@ import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -73,6 +76,7 @@ public final class Registry {
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
     public static ContainerType<FilterModuleContainer> filterModuleContainer;
     public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
+    public static ContainerType<StackSizeModuleContainer> stackSizeModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -93,6 +97,7 @@ public final class Registry {
         registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
         registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
         registry.registerAll(createTieredModule("retrieval_module", RetrievalModuleItem::new));
+        registry.register(new StackSizeModuleItem("stack_size_module"));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
@@ -113,7 +118,8 @@ public final class Registry {
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
-                retrievalModuleContainer = createPipeContainer("retrieval_module")
+                retrievalModuleContainer = createPipeContainer("retrieval_module"),
+                stackSizeModuleContainer = createPipeContainer("stack_size_module")
         );
     }
 
@@ -124,6 +130,13 @@ public final class Registry {
             ItemStack moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
         }).setRegistryName(name);
+    }
+
+    private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
+        List<Item> items = new ArrayList<>();
+        for (ModuleTier tier : ModuleTier.values())
+            items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
+        return items.toArray(new Item[0]);
     }
 
     public static void setup(FMLCommonSetupEvent event) {
@@ -142,13 +155,6 @@ public final class Registry {
         PacketHandler.setup();
     }
 
-    private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
-        List<Item> items = new ArrayList<>();
-        for (ModuleTier tier : ModuleTier.values())
-            items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
-        return items.toArray(new Item[0]);
-    }
-
     public static final class Client {
         public static void setup(FMLClientSetupEvent event) {
             RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
@@ -158,6 +164,7 @@ public final class Registry {
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
             ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
+            ScreenManager.registerFactory(stackSizeModuleContainer, StackSizeModuleGui::new);
         }
     }
 }

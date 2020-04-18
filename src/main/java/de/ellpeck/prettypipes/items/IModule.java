@@ -15,6 +15,8 @@ public interface IModule {
 
     boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack);
 
+    int getMaxInsertionAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination);
+
     int getPriority(ItemStack module, PipeTileEntity tile);
 
     boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other);

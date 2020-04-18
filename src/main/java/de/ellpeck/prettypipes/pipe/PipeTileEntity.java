@@ -13,8 +13,6 @@ import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.NBTUtil;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
@@ -133,10 +131,16 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 continue;
             if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
                 continue;
-            if (preventOversending) {
+            int maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
+            if (maxAmount < stack.getCount())
+                continue;
+            if (preventOversending || maxAmount < Integer.MAX_VALUE) {
                 // these are the items that are currently in the pipes, going to this pipe
                 int onTheWay = PipeNetwork.get(this.world).getItemsOnTheWay(this.pos, stack);
                 if (onTheWay > 0) {
+                    // check if any modules are limiting us
+                    if (onTheWay + stack.getCount() > maxAmount)
+                        continue;
                     ItemStack copy = stack.copy();
                     copy.setCount(copy.getMaxStackSize());
                     // totalSpace will be the amount of items that fit into the attached container

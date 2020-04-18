@@ -5,6 +5,9 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -63,6 +66,11 @@ public class PacketButton {
         ctx.get().setPacketHandled(true);
     }
 
+    public static void sendAndExecute(BlockPos pos, ButtonResult result, int... data) {
+        PacketHandler.sendToServer(new PacketButton(pos, result, data));
+        result.action.accept(pos, data, Minecraft.getInstance().player);
+    }
+
     public enum ButtonResult {
         PIPE_TAB((pos, data, player) -> {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, player.world, pos);
@@ -91,6 +99,14 @@ public class PacketButton {
             IFilteredContainer container = (IFilteredContainer) player.openContainer;
             ItemFilter filter = container.getFilter();
             filter.onButtonPacket(data[0]);
+        }),
+        STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
+            AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.openContainer;
+            StackSizeModuleItem.setLimitToMaxStackSize(container.moduleStack, !StackSizeModuleItem.getLimitToMaxStackSize(container.moduleStack));
+        }),
+        STACK_SIZE_AMOUNT((pos, data, player) -> {
+            AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.openContainer;
+            StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;

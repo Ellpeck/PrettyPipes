@@ -16,11 +16,13 @@
     "item.prettypipes.low_retrieval_module": "Low Retrieval Module",
     "item.prettypipes.medium_retrieval_module": "Medium Retrieval Module",
     "item.prettypipes.high_retrieval_module": "High Retrieval Module",
+    "item.prettypipes.stack_size_module": "Stack Limiter Module",
     "info.prettypipes.extraction_module": "Pulls items from adjacent inventories\nFilters and pull rates vary by tier\nHigh tiers prevent over-sending",
     "info.prettypipes.filter_module": "Restricts flow from pipes into adjacent inventories\nFilter amount varies by tier",
     "info.prettypipes.speed_module": "Increases speed of items exiting adjacent inventories\nSpeed varies by tier",
     "info.prettypipes.low_priority_module": "Decreases the reception priority of adjacent inventories\nLower priority means items will prefer other inventories",
     "info.prettypipes.retrieval_module": "Pulls items from other inventories in the network\nFilters and pull rates vary by tier\nHigh tiers prevent over-sending",
+    "info.prettypipes.stack_size_module": "Limits the amount of items that can enter adjacent inventories\nAutomatically prevents over-sending",
     "block.prettypipes.pipe": "Pipe",
     "itemGroup.prettypipes": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe",
@@ -28,5 +30,8 @@
     "info.prettypipes.blacklist": "Disallowed",
     "info.prettypipes.shift": "Hold Shift for info",
     "info.prettypipes.populate": "Populate",
-    "info.prettypipes.populate.description": "Filters items from adjacent inventories"
+    "info.prettypipes.populate.description": "Filters items from adjacent inventories",
+    "info.prettypipes.max_stack_size": "Maximum item amount",
+    "info.prettypipes.limit_to_max_on": "Limit to one stack",
+    "info.prettypipes.limit_to_max_off": "Don't limit to one stack"
 }
