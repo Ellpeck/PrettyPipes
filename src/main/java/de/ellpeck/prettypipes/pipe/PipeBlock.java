@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PipeBlock extends ContainerBlock {
+public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<BlockState, VoxelShape> SHAPE_CACHE = new HashMap<>();
@@ -158,11 +158,9 @@ public class PipeBlock extends ContainerBlock {
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
         BlockState offState = world.getBlockState(offset);
-        if (offState.getBlock() instanceof PipeBlock) {
-            if (offState.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
-                return ConnectionType.BLOCKED;
-            return ConnectionType.CONNECTED;
-        }
+        Block block = offState.getBlock();
+        if (block instanceof IPipeConnectable)
+            return ((IPipeConnectable) block).getConnectionType(world, offset, offState, pos, direction.getOpposite());
         TileEntity tile = world.getTileEntity(offset);
         if (tile != null) {
             IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
@@ -191,19 +189,22 @@ public class PipeBlock extends ContainerBlock {
 
         PipeNetwork network = PipeNetwork.get(world);
         int connections = 0;
-        boolean inventory = false;
+        boolean force = false;
         for (Direction dir : Direction.values()) {
             ConnectionType value = newState.get(DIRECTIONS.get(dir));
             if (!value.isConnected())
                 continue;
             connections++;
-            if (tile.isConnectedInventory(dir)) {
-                inventory = true;
+            BlockState otherState = world.getBlockState(pos.offset(dir));
+            // force a node if we're connecting to a different block (inventory etc.)
+            if (otherState.getBlock() != newState.getBlock()) {
+                force = true;
                 break;
             }
         }
-        if (inventory || connections > 2) {
+        if (force || connections > 2) {
             network.addNode(pos, newState);
+            System.out.println("Node at " + pos);
         } else {
             network.removeNode(pos);
         }
@@ -235,5 +236,12 @@ public class PipeBlock extends ContainerBlock {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
+    }
+
+    @Override
+    public ConnectionType getConnectionType(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction) {
+        if (state.get(DIRECTIONS.get(direction)) == ConnectionType.BLOCKED)
+            return ConnectionType.BLOCKED;
+        return ConnectionType.CONNECTED;
     }
 }
