@@ -295,6 +295,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
 
     public void clearDestinationCache(BlockPos... nodes) {
         this.startProfile("clear_node_cache");
+        // remove caches for the nodes
+        for(BlockPos node : nodes)
+            this.nodeToConnectedNodes.keySet().remove(node);
+        // remove caches that contain the node as a destination
         this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
         this.endProfile();
     }
