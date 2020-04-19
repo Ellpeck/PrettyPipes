@@ -57,16 +57,13 @@ public class RetrievalModuleItem extends ModuleItem {
             if (locations == null)
                 locations = network.getOrderedNetworkItems(tile.getPos());
             for (NetworkLocation location : locations) {
-                Pair<Direction, Integer> item = location.getStackLocation(filtered);
-                if (item == null)
+                int slot = location.getStackSlot(filtered);
+                if (slot < 0)
                     continue;
-                // get that location's pipe and inventory
-                PipeTileEntity pipe = network.getPipe(location.pipePos);
-                IItemHandler handler = pipe.getItemHandler(item.getKey());
                 // try to extract from that location's inventory and send the item
-                ItemStack stack = handler.extractItem(item.getValue(), this.maxExtraction, true);
-                if (network.routeItemToLocation(location.pipePos, location.pipePos.offset(item.getKey()), tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
-                    handler.extractItem(item.getValue(), stack.getCount(), false);
+                ItemStack stack = location.handler.extractItem(slot, this.maxExtraction, true);
+                if (network.routeItemToLocation(location.pipePos, location.pos, tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
+                    location.handler.extractItem(slot, stack.getCount(), false);
                     return;
                 }
             }

@@ -180,7 +180,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("get_network_items");
         List<NetworkLocation> info = new ArrayList<>();
         for (BlockPos dest : this.getOrderedDestinations(node)) {
-            NetworkLocation location = new NetworkLocation(dest);
             PipeTileEntity pipe = this.getPipe(dest);
             if (!pipe.canNetworkSee())
                 continue;
@@ -188,15 +187,19 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 IItemHandler handler = pipe.getItemHandler(dir);
                 if (handler == null)
                     continue;
+                // check if this handler already exists (double-connected pipes, double chests etc.)
+                if (info.stream().anyMatch(l -> l.handler == handler))
+                    continue;
+                NetworkLocation location = new NetworkLocation(dest, dir, handler);
                 for (int i = 0; i < handler.getSlots(); i++) {
                     ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
                     if (found.isEmpty())
                         continue;
-                    location.addItem(dir, i, found);
+                    location.addItem(i, found);
                 }
+                if (!location.isEmpty())
+                    info.add(location);
             }
-            if (!location.isEmpty())
-                info.add(location);
         }
         this.endProfile();
         return info;

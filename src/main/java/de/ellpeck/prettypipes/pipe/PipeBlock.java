@@ -204,7 +204,6 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         }
         if (force || connections > 2) {
             network.addNode(pos, newState);
-            System.out.println("Node at " + pos);
         } else {
             network.removeNode(pos);
         }

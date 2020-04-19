@@ -5,38 +5,51 @@ import com.google.common.collect.ListMultimap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class NetworkLocation {
 
     public final BlockPos pipePos;
-    private ListMultimap<Direction, Pair<Integer, ItemStack>> items;
+    public final Direction direction;
+    public final BlockPos pos;
+    public final IItemHandler handler;
+    private Map<Integer, ItemStack> items;
 
-    public NetworkLocation(BlockPos pipePos) {
+    public NetworkLocation(BlockPos pipePos, Direction direction, IItemHandler handler) {
         this.pipePos = pipePos;
+        this.direction = direction;
+        this.pos = pipePos.offset(direction);
+        this.handler = handler;
     }
 
-    public void addItem(Direction direction, int slot, ItemStack stack) {
+    public void addItem(int slot, ItemStack stack) {
         if (this.items == null)
-            this.items = ArrayListMultimap.create();
-        this.items.put(direction, Pair.of(slot, stack));
+            this.items = new HashMap<>();
+        this.items.put(slot, stack);
     }
 
-    public Pair<Direction, Integer> getStackLocation(ItemStack stack) {
+    public int getStackSlot(ItemStack stack) {
         if (this.isEmpty())
-            return null;
-        for (Map.Entry<Direction, Pair<Integer, ItemStack>> entry : this.items.entries()) {
-            if (entry.getValue().getRight().isItemEqual(stack))
-                return Pair.of(entry.getKey(), entry.getValue().getLeft());
+            return -1;
+        for (Map.Entry<Integer, ItemStack> entry : this.items.entrySet()) {
+            if (entry.getValue().isItemEqual(stack))
+                return entry.getKey();
         }
-        return null;
+        return -1;
     }
 
     public boolean isEmpty() {
         return this.items == null || this.items.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return this.items.values().toString();
     }
 }
