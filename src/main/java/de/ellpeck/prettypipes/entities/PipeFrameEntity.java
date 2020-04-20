@@ -23,6 +23,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapData;
@@ -153,6 +154,11 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
         if (this.getDisplayedItem().isEmpty())
             return super.processInitialInteract(player, hand);
         return false;
+    }
+
+    @Override
+    public ItemStack getPickedResult(RayTraceResult target) {
+        return new ItemStack(Registry.pipeFrameItem);
     }
 
     @Override
