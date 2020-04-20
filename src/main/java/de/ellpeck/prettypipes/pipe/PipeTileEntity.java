@@ -6,6 +6,8 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.modules.containers.MainPipeContainer;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -14,6 +16,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.profiler.IProfiler;
+import net.minecraft.tileentity.ChestTileEntity;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -25,6 +28,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.wrapper.InvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -174,6 +178,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
         if (tile == null)
             return null;
+        // if we don't do this, then chests get really weird
+        if (tile instanceof ChestTileEntity) {
+            BlockState state = this.world.getBlockState(tile.getPos());
+            if (state.getBlock() instanceof ChestBlock)
+                return new InvWrapper(ChestBlock.func_226916_a_((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
+        }
         return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
     }
 

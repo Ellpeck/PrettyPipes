@@ -169,11 +169,8 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     }
 
     private ItemStack store(PipeTileEntity currPipe) {
-        TileEntity tile = currPipe.getWorld().getTileEntity(this.destInventory);
-        if (tile == null)
-            return this.stack;
-        Direction dir = Utility.getDirectionFromOffset(this.getDestPipe(), this.destInventory);
-        IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir).orElse(null);
+        Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
+        IItemHandler handler = currPipe.getItemHandler(dir);
         if (handler == null)
             return this.stack;
         return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
