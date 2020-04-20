@@ -14,6 +14,7 @@ import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.IPacket;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -25,12 +26,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapData;
+import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class PipeFrameEntity extends ItemFrameEntity {
+public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditionalSpawnData {
 
     private static final DataParameter<Integer> AMOUNT = EntityDataManager.createKey(PipeFrameEntity.class, DataSerializers.VARINT);
 
@@ -156,5 +158,17 @@ public class PipeFrameEntity extends ItemFrameEntity {
     @Override
     public IPacket<?> createSpawnPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public void writeSpawnData(PacketBuffer buffer) {
+        buffer.writeBlockPos(this.hangingPosition);
+        buffer.writeInt(this.facingDirection.getIndex());
+    }
+
+    @Override
+    public void readSpawnData(PacketBuffer additionalData) {
+        this.hangingPosition = additionalData.readBlockPos();
+        this.updateFacingWithBoundingBox(Direction.values()[additionalData.readInt()]);
     }
 }

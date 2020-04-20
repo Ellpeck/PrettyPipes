@@ -25,7 +25,7 @@ public class PipeFrameRenderer extends ItemFrameRenderer {
         Direction direction = entityIn.getHorizontalFacing();
         Vec3d vec3d = this.getRenderOffset(entityIn, partialTicks);
         matrixStackIn.translate(-vec3d.getX(), -vec3d.getY(), -vec3d.getZ());
-        matrixStackIn.translate(direction.getXOffset() * 0.05, direction.getYOffset() * 0.05, direction.getZOffset() * 0.05);
+        matrixStackIn.translate(direction.getXOffset() * 0.46875, direction.getYOffset() * 0.46875, direction.getZOffset() * 0.46875);
         matrixStackIn.rotate(Vector3f.XP.rotationDegrees(entityIn.rotationPitch));
         matrixStackIn.rotate(Vector3f.YP.rotationDegrees(180.0F - entityIn.rotationYaw));
 
@@ -34,7 +34,7 @@ public class PipeFrameRenderer extends ItemFrameRenderer {
         String ammountStrg = amount < 0 ? "?" : String.valueOf(amount);
         float x = 0.5F - font.getStringWidth(ammountStrg) / 2F;
         Matrix4f matrix4f = matrixStackIn.getLast().getPositionMatrix();
-        matrixStackIn.translate(0, 0.285F, 0);
+        matrixStackIn.translate(0, 0.285F, 0.415F);
         matrixStackIn.scale(-0.02F, -0.02F, 0.02F);
         font.renderString(ammountStrg, x, 0, 0xFFFFFF, true, matrix4f, bufferIn, false, 0, packedLightIn);
 
