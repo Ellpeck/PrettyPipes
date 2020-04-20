@@ -21,8 +21,6 @@ public class PipeFrameRenderer extends ItemFrameRenderer {
     @Override
     public void render(ItemFrameEntity entityIn, float entityYaw, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int packedLightIn) {
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
-        if (entityIn.getDisplayedItem().isEmpty())
-            return;
         matrixStackIn.push();
         Direction direction = entityIn.getHorizontalFacing();
         Vec3d vec3d = this.getRenderOffset(entityIn, partialTicks);
@@ -33,10 +31,10 @@ public class PipeFrameRenderer extends ItemFrameRenderer {
 
         FontRenderer font = this.getFontRendererFromRenderManager();
         int amount = ((PipeFrameEntity) entityIn).getAmount();
-        String ammountStrg = String.valueOf(amount);
+        String ammountStrg = amount < 0 ? "?" : String.valueOf(amount);
         float x = 0.5F - font.getStringWidth(ammountStrg) / 2F;
         Matrix4f matrix4f = matrixStackIn.getLast().getPositionMatrix();
-        matrixStackIn.translate(0, -0.13F, 0);
+        matrixStackIn.translate(0, 0.285F, 0);
         matrixStackIn.scale(-0.02F, -0.02F, 0.02F);
         font.renderString(ammountStrg, x, 0, 0xFFFFFF, true, matrix4f, bufferIn, false, 0, packedLightIn);
 

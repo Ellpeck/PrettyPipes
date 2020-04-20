@@ -1,9 +1,11 @@
 package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.item.HangingEntity;
 import net.minecraft.entity.item.ItemFrameEntity;
@@ -16,7 +18,11 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 public class PipeFrameItem extends Item {
     public PipeFrameItem() {
@@ -57,9 +63,12 @@ public class PipeFrameItem extends Item {
     }
 
     protected boolean canPlace(PlayerEntity playerIn, Direction directionIn, ItemStack itemStackIn, BlockPos posIn) {
-        BlockState state = playerIn.world.getBlockState(posIn.offset(directionIn.getOpposite()));
-        if (!(state.getBlock() instanceof PipeBlock))
-            return false;
-        return !directionIn.getAxis().isVertical() && playerIn.canPlayerEdit(posIn, directionIn, itemStackIn);
+        return !directionIn.getAxis().isVertical() && playerIn.canPlayerEdit(posIn, directionIn, itemStackIn) && PipeFrameEntity.canPlace(playerIn.world, posIn, directionIn);
+    }
+
+    @Override
+    public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
+        super.addInformation(stack, worldIn, tooltip, flagIn);
+        Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
     }
 }

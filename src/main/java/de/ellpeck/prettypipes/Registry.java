@@ -70,6 +70,7 @@ public final class Registry {
     public static Capability<PipeNetwork> pipeNetworkCapability;
 
     public static Item wrenchItem;
+    public static Item pipeFrameItem;
 
     public static Block pipeBlock;
     public static TileEntityType<PipeTileEntity> pipeTileEntity;
@@ -95,7 +96,7 @@ public final class Registry {
         registry.registerAll(
                 wrenchItem = new WrenchItem().setRegistryName("wrench"),
                 new Item(new Item.Properties().group(GROUP)).setRegistryName("blank_module"),
-                new PipeFrameItem().setRegistryName("pipe_frame")
+                pipeFrameItem = new PipeFrameItem().setRegistryName("pipe_frame")
         );
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));

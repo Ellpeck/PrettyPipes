@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        {
+            "item": "minecraft:item_frame"
+        },
+        {
+            "item": "prettypipes:pipe"
+        },
+        {
+            "item": "minecraft:redstone"
+        }
+    ],
+    "result": {
+        "item": "prettypipes:pipe_frame"
+    }
+}
