@@ -147,8 +147,9 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
             EnumProperty<ConnectionType> prop = DIRECTIONS.get(dir);
             ConnectionType type = getConnectionType(world, pos, dir, state);
             // don't reconnect on blocked faces
-            if (!type.isConnected() || curr.get(prop) != ConnectionType.BLOCKED)
-                state = state.with(prop, type);
+            if (type.isConnected() && curr.get(prop) == ConnectionType.BLOCKED)
+                type = ConnectionType.BLOCKED;
+            state = state.with(prop, type);
         }
         return state;
     }
