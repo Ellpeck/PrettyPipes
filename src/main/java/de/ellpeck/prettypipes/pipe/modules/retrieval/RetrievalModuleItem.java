@@ -57,6 +57,8 @@ public class RetrievalModuleItem extends ModuleItem {
             if (locations == null)
                 locations = network.getOrderedNetworkItems(tile.getPos());
             for (NetworkLocation location : locations) {
+                if (location.pipePos.equals(tile.getPos()))
+                    continue;
                 int slot = location.getStackSlot(filtered);
                 if (slot < 0)
                     continue;

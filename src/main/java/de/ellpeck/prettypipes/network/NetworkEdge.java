@@ -13,8 +13,6 @@ import java.util.List;
 
 public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable<CompoundNBT> {
 
-    public BlockPos startPipe;
-    public BlockPos endPipe;
     public final List<BlockPos> pipes = new ArrayList<>();
 
     public NetworkEdge() {
@@ -24,11 +22,17 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
         this.deserializeNBT(nbt);
     }
 
+    public BlockPos getStartPipe() {
+        return this.pipes.get(0);
+    }
+
+    public BlockPos getEndPipe() {
+        return this.pipes.get(this.pipes.size() - 1);
+    }
+
     @Override
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();
-        nbt.put("start", NBTUtil.writeBlockPos(this.startPipe));
-        nbt.put("end", NBTUtil.writeBlockPos(this.endPipe));
         ListNBT list = new ListNBT();
         for (BlockPos pos : this.pipes)
             list.add(NBTUtil.writeBlockPos(pos));
@@ -38,8 +42,6 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
-        this.startPipe = NBTUtil.readBlockPos(nbt.getCompound("start"));
-        this.endPipe = NBTUtil.readBlockPos(nbt.getCompound("end"));
         this.pipes.clear();
         ListNBT list = nbt.getList("pipes", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)

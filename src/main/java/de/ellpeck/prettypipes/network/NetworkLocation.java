@@ -44,6 +44,12 @@ public class NetworkLocation {
         return -1;
     }
 
+    public int getItemAmount(ItemStack stack) {
+        return this.items.values().stream()
+                .filter(i -> i.isItemEqual(stack))
+                .mapToInt(ItemStack::getCount).sum();
+    }
+
     public boolean isEmpty() {
         return this.items == null || this.items.isEmpty();
     }

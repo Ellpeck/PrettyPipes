@@ -115,8 +115,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         // if we only have one neighbor, then there can't be any new connections
         if (neighbors.size() <= 1 && !this.isNode(pos))
             return;
-        for (NetworkEdge edge : neighbors)
-            this.refreshNode(edge.endPipe, this.world.getBlockState(edge.endPipe));
+        for (NetworkEdge edge : neighbors) {
+            BlockPos end = edge.getEndPipe();
+            this.refreshNode(end, this.world.getBlockState(end));
+        }
     }
 
     public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
@@ -132,7 +134,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         if (startPipe == null)
             return false;
         this.startProfile("find_destination");
-        for (BlockPos pipePos : this.getOrderedDestinations(startPipePos)) {
+        for (BlockPos pipePos : this.getOrderedNetworkNodes(startPipePos)) {
+            if (pipePos.equals(startPipePos))
+                continue;
             PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack, false, preventOversending);
             if (dest != null) {
@@ -179,7 +183,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             return Collections.emptyList();
         this.startProfile("get_network_items");
         List<NetworkLocation> info = new ArrayList<>();
-        for (BlockPos dest : this.getOrderedDestinations(node)) {
+        for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
             PipeTileEntity pipe = this.getPipe(dest);
             if (!pipe.canNetworkSee())
                 continue;
@@ -214,16 +218,30 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     private void addEdge(NetworkEdge edge) {
-        this.graph.addEdge(edge.startPipe, edge.endPipe, edge);
+        this.graph.addEdge(edge.getStartPipe(), edge.getEndPipe(), edge);
         // only use size - 1 so that nodes aren't counted twice for multi-edge paths
         this.graph.setEdgeWeight(edge, edge.pipes.size() - 1);
     }
 
-    private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean allAround) {
+    public BlockPos getNodeFromPipe(BlockPos pos) {
+        if (this.isNode(pos))
+            return pos;
+        BlockState state = this.world.getBlockState(pos);
+        if (!(state.getBlock() instanceof PipeBlock))
+            return null;
+        for (Direction dir : Direction.values()) {
+            NetworkEdge edge = this.createEdge(pos, state, dir, false);
+            if (edge != null)
+                return edge.getEndPipe();
+        }
+        return null;
+    }
+
+    private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {
         this.startProfile("create_all_edges");
         List<NetworkEdge> edges = new ArrayList<>();
         for (Direction dir : Direction.values()) {
-            NetworkEdge edge = this.createEdge(pos, state, dir, allAround);
+            NetworkEdge edge = this.createEdge(pos, state, dir, ignoreCurrBlocked);
             if (edge != null)
                 edges.add(edge);
         }
@@ -231,8 +249,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return edges;
     }
 
-    private NetworkEdge createEdge(BlockPos pos, BlockState state, Direction dir, boolean allAround) {
-        if (!allAround && !state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
+    private NetworkEdge createEdge(BlockPos pos, BlockState state, Direction dir, boolean ignoreCurrBlocked) {
+        if (!ignoreCurrBlocked && !state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
             return null;
         BlockPos currPos = pos.offset(dir);
         BlockState currState = this.world.getBlockState(currPos);
@@ -240,7 +258,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             return null;
         this.startProfile("create_edge");
         NetworkEdge edge = new NetworkEdge();
-        edge.startPipe = pos;
         edge.pipes.add(pos);
         edge.pipes.add(currPos);
 
@@ -248,7 +265,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // if we found a vertex, we can stop since that's the next node
             // we do this here since the first offset pipe also needs to check this
             if (this.isNode(currPos)) {
-                edge.endPipe = edge.pipes.get(edge.pipes.size() - 1);
                 this.endProfile();
                 return edge;
             }
@@ -276,7 +292,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return null;
     }
 
-    private List<BlockPos> getOrderedDestinations(BlockPos node) {
+    private List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
         List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
             this.startProfile("compile_connected_nodes");
@@ -284,7 +300,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
-                    .filter(p -> !p.equals(node))
                     .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
                     .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);
@@ -296,9 +311,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public void clearDestinationCache(BlockPos... nodes) {
         this.startProfile("clear_node_cache");
         // remove caches for the nodes
-        for(BlockPos node : nodes)
+        for (BlockPos node : nodes)
             this.nodeToConnectedNodes.keySet().remove(node);
-        // remove caches that contain the node as a destination
+        // remove caches that contain the nodes as a destination
         this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
         this.endProfile();
     }
