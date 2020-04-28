@@ -14,7 +14,7 @@ issueTrackerURL="https://github.com/Ellpeck/PrettyPipes" #optional
 # The modid of the mod
 modId="prettypipes" #mandatory
 # The version number of the mod - there's a few well known ${} variables useable here or just hardcode it
-version="${version}" #mandatory
+version="${file.jarVersion}"
  # A display name for the mod
 displayName="Pretty Pipes" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification <here>
