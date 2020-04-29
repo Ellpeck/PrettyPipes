@@ -153,6 +153,8 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     }
 
     private void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
+        if (currPipe.getWorld().isRemote)
+            return;
         if (!this.dropOnObstruction && tryReturn) {
             PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
             if (network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, speed -> this)) {

@@ -94,20 +94,22 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             return;
         IProfiler profiler = this.world.getProfiler();
 
-        profiler.startSection("ticking_modules");
-        int prio = 0;
-        Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
-        while (modules.hasNext()) {
-            Pair<ItemStack, IModule> module = modules.next();
-            module.getRight().tick(module.getLeft(), this);
-            prio += module.getRight().getPriority(module.getLeft(), this);
+        if (!this.world.isRemote) {
+            profiler.startSection("ticking_modules");
+            int prio = 0;
+            Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
+            while (modules.hasNext()) {
+                Pair<ItemStack, IModule> module = modules.next();
+                module.getRight().tick(module.getLeft(), this);
+                prio += module.getRight().getPriority(module.getLeft(), this);
+            }
+            if (prio != this.priority) {
+                this.priority = prio;
+                // clear the cache so that it's reevaluated based on priority
+                PipeNetwork.get(this.world).clearDestinationCache(this.pos);
+            }
+            profiler.endSection();
         }
-        if (prio != this.priority) {
-            this.priority = prio;
-            // clear the cache so that it's reevaluated based on priority
-            PipeNetwork.get(this.world).clearDestinationCache(this.pos);
-        }
-        profiler.endSection();
 
         profiler.startSection("ticking_items");
         List<PipeItem> items = this.getItems();
