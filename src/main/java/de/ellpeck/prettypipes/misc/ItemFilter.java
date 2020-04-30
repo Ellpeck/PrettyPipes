@@ -97,7 +97,7 @@ public class ItemFilter extends ItemStackHandler {
     private boolean isFiltered(ItemStack stack) {
         for (int i = 0; i < this.getSlots(); i++) {
             ItemStack other = this.getStackInSlot(i);
-            if (ItemHandlerHelper.canItemStacksStack(stack, other))
+            if (ItemStack.areItemsEqual(stack, other))
                 return true;
         }
         return false;
