@@ -23,6 +23,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pipe.png");
     private final List<Tab> tabs = new ArrayList<>();
+    private final ItemStack[] lastItems = new ItemStack[this.container.tile.modules.getSlots()];
 
     public AbstractPipeGui(T screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -34,6 +35,22 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     protected void init() {
         super.init();
         this.initTabs();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        boolean changed = false;
+        for (int i = 0; i < this.container.tile.modules.getSlots(); i++) {
+            ItemStack stack = this.container.tile.modules.getStackInSlot(i);
+            if (stack != this.lastItems[i]) {
+                this.lastItems[i] = stack;
+                changed = true;
+            }
+        }
+        if (changed)
+            this.initTabs();
     }
 
     @Override
@@ -69,15 +86,6 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 continue;
             this.blit(this.guiLeft + slot.xPos - 1, this.guiTop + slot.yPos - 1, 176, 62, 18, 18);
         }
-    }
-
-    @Override
-    protected void handleMouseClick(Slot slotIn, int slotId, int mouseButton, ClickType type) {
-        super.handleMouseClick(slotIn, slotId, mouseButton, type);
-        // this might cause unnecessary tab initializations, but
-        // it's a pretty cheap operation so it should be fine
-        if (slotIn != null)
-            this.initTabs();
     }
 
     @Override
