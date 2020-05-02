@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
+import de.ellpeck.prettypipes.pipe.modules.FilterModifierModule;
 import de.ellpeck.prettypipes.pipe.modules.LowPriorityModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
@@ -52,6 +53,7 @@ import net.minecraftforge.registries.IForgeRegistry;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiFunction;
@@ -104,6 +106,7 @@ public final class Registry {
         registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
         registry.registerAll(createTieredModule("retrieval_module", RetrievalModuleItem::new));
         registry.register(new StackSizeModuleItem("stack_size_module"));
+        registry.registerAll(Arrays.stream(FilterModifierModule.Type.values()).map(t -> new FilterModifierModule(t.name().toLowerCase(Locale.ROOT) + "_filter_modifier", t)).toArray(Item[]::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))

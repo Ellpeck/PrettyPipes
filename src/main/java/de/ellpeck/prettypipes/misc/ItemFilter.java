@@ -1,9 +1,10 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.packets.PacketButton;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.modules.FilterModifierModule;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
@@ -18,10 +19,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ItemFilter extends ItemStackHandler {
 
@@ -95,10 +99,23 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
+        List<FilterModifierModule.Type> modifiers = this.pipe.streamModules()
+                .map(Pair::getRight)
+                .filter(m -> m instanceof FilterModifierModule)
+                .map(m -> ((FilterModifierModule) m).type)
+                .collect(Collectors.toList());
         for (int i = 0; i < this.getSlots(); i++) {
-            ItemStack other = this.getStackInSlot(i);
-            if (ItemStack.areItemsEqual(stack, other))
-                return true;
+            ItemStack filter = this.getStackInSlot(i);
+            if(filter.isEmpty())
+                continue;
+            boolean equal = ItemStack.areItemsEqual(stack, filter);
+            if (modifiers.isEmpty()) {
+                if (equal)
+                    return true;
+            } else {
+                if (modifiers.stream().allMatch(m -> (m.ignoreItemEquality || equal) && m.filter.apply(stack, filter)))
+                    return true;
+            }
         }
         return false;
     }

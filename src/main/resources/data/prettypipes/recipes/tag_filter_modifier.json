@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " H ",
+        "RMR",
+        " R "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "H": {
+            "item": "minecraft:iron_ore"
+        },
+        "M": {
+            "item": "prettypipes:blank_module"
+        }
+    },
+    "result": {
+        "item": "prettypipes:tag_filter_modifier"
+    }
+}

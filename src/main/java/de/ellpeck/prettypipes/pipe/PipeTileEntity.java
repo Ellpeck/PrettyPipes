@@ -201,7 +201,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().allMatch(m -> m.getRight().canNetworkSee(m.getLeft(), this));
     }
 
-    private Stream<Pair<ItemStack, IModule>> streamModules() {
+    public Stream<Pair<ItemStack, IModule>> streamModules() {
         Stream.Builder<Pair<ItemStack, IModule>> builder = Stream.builder();
         for (int i = 0; i < this.modules.getSlots(); i++) {
             ItemStack stack = this.modules.getStackInSlot(i);
