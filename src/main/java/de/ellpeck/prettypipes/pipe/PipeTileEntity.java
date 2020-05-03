@@ -54,6 +54,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     private List<PipeItem> items;
+    private int lastItemAmount;
     private int priority;
 
     public PipeTileEntity() {
@@ -115,6 +116,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         List<PipeItem> items = this.getItems();
         for (int i = items.size() - 1; i >= 0; i--)
             items.get(i).updateInPipe(this);
+        if (items.size() != this.lastItemAmount) {
+            this.lastItemAmount = items.size();
+            this.world.updateComparatorOutputLevel(this.pos, this.getBlockState().getBlock());
+        }
         profiler.endSection();
     }
 

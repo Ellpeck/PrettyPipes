@@ -227,6 +227,19 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         }
     }
 
+    @Override
+    public boolean hasComparatorInputOverride(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getComparatorInputOverride(BlockState blockState, World worldIn, BlockPos pos) {
+        PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (pipe == null)
+            return 0;
+        return Math.min(15, pipe.getItems().size());
+    }
+
     @Nullable
     @Override
     public TileEntity createNewTileEntity(IBlockReader worldIn) {
