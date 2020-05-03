@@ -26,4 +26,6 @@ public interface IModule {
     AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex);
 
     float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile);
+
+    boolean canPipeWork(ItemStack module, PipeTileEntity tile);
 }

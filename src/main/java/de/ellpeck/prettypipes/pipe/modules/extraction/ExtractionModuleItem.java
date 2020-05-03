@@ -33,6 +33,8 @@ public class ExtractionModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeTileEntity tile) {
         if (tile.getWorld().getGameTime() % this.speed != 0)
             return;
+        if(!tile.canWork())
+            return;
         ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
 
         PipeNetwork network = PipeNetwork.get(tile.getWorld());

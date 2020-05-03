@@ -134,6 +134,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public BlockPos getAvailableDestination(ItemStack stack, boolean internal, boolean preventOversending) {
+        if (!this.canWork())
+            return null;
         if (!internal && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
@@ -177,6 +179,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public float getItemSpeed() {
         float speed = (float) this.streamModules().mapToDouble(m -> m.getRight().getItemSpeedIncrease(m.getLeft(), this)).sum();
         return 0.05F + speed;
+    }
+
+    public boolean canWork() {
+        return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
     }
 
     public IItemHandler getItemHandler(Direction dir) {

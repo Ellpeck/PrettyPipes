@@ -71,4 +71,9 @@ public abstract class ModuleItem extends Item implements IModule {
     public float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile) {
         return 0;
     }
+
+    @Override
+    public boolean canPipeWork(ItemStack module, PipeTileEntity tile) {
+        return true;
+    }
 }

@@ -38,6 +38,8 @@ public class RetrievalModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeTileEntity tile) {
         if (tile.getWorld().getGameTime() % this.speed != 0)
             return;
+        if (!tile.canWork())
+            return;
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> locations = null;
 
