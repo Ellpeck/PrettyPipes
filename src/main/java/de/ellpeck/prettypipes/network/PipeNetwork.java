@@ -6,7 +6,6 @@ import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.packets.PacketHandler;
@@ -16,7 +15,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -24,9 +22,6 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.CapabilityEnergy;
-import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.GraphPath;
@@ -53,7 +48,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
     private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
-    private final Map<BlockPos, Pair<TileEntity, Direction>> energyStorageCache = new HashMap<>();
     private final ListMultimap<BlockPos, PipeItem> pipeItems = ArrayListMultimap.create();
     private final World world;
 
@@ -182,30 +176,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             this.tileCache.put(pos, tile);
         }
         return tile;
-    }
-
-    public IEnergyStorage getEnergyStorage(BlockPos node) {
-        Pair<TileEntity, Direction> value = this.energyStorageCache.get(node);
-        isNull:
-        if (value == null || value.getLeft().isRemoved()) {
-            for (BlockPos other : this.getOrderedNetworkNodes(node)) {
-                PipeTileEntity pipe = this.getPipe(other);
-                for (Direction dir : Direction.values()) {
-                    IPipeConnectable connectable = pipe.getConnectable(dir);
-                    if (connectable == null)
-                        continue;
-                    BlockPos pos = other.offset(dir);
-                    if (!connectable.provideEnergyStorage(this.world, pos, other, dir.getOpposite()))
-                        continue;
-                    value = Pair.of(this.world.getTileEntity(pos), dir.getOpposite());
-                    this.energyStorageCache.put(node, value);
-                    break isNull;
-                }
-            }
-        }
-        if (value == null)
-            return null;
-        return value.getLeft().getCapability(CapabilityEnergy.ENERGY, value.getRight()).orElse(null);
     }
 
     public List<NetworkLocation> getOrderedNetworkItems(BlockPos node) {

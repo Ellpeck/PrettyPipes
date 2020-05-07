@@ -9,7 +9,4 @@ public interface IPipeConnectable {
 
     ConnectionType getConnectionType(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction);
 
-    default boolean provideEnergyStorage(World world, BlockPos pos, BlockPos pipePos, Direction direction) {
-        return false;
-    }
 }

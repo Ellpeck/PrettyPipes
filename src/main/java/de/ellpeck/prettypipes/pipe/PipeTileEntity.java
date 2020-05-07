@@ -6,7 +6,6 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.modules.containers.MainPipeContainer;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;
@@ -199,17 +198,6 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 return new InvWrapper(ChestBlock.func_226916_a_((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
         }
         return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
-    }
-
-    public IPipeConnectable getConnectable(Direction dir) {
-        if (!this.isConnected(dir))
-            return null;
-        BlockPos offset = this.pos.offset(dir);
-        BlockState state = this.world.getBlockState(offset);
-        Block block = state.getBlock();
-        if (block instanceof IPipeConnectable)
-            return (IPipeConnectable) block;
-        return null;
     }
 
     public boolean isConnectedInventory(Direction dir) {
