@@ -11,6 +11,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private Button plusButton;
     private Button requestButton;
     private int requestAmount = 1;
+    private int scrollOffset;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -77,14 +79,14 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     public void updateItemList(List<ItemStack> items) {
         this.items = items;
-        this.updateWidgets(0);
+        this.updateWidgets();
     }
 
-    private void updateWidgets(int scrollOffset) {
+    private void updateWidgets() {
         List<ItemTerminalWidget> widgets = this.streamWidgets().collect(Collectors.toList());
         for (int i = 0; i < widgets.size(); i++) {
             ItemTerminalWidget widget = widgets.get(i);
-            int index = i + scrollOffset * 9;
+            int index = i + this.scrollOffset * 9;
             if (index >= this.items.size()) {
                 widget.stack = ItemStack.EMPTY;
                 widget.visible = false;
@@ -119,6 +121,25 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
         this.blit(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
+
+        if (this.items != null && this.items.size() >= 9 * 4) {
+            float percentage = this.scrollOffset / (float) (this.items.size() / 9 - 3);
+            this.blit(this.guiLeft + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 244, 0, 12, 15);
+        } else {
+            this.blit(this.guiLeft + 172, this.guiTop + 18, 244, 15, 12, 15);
+        }
+    }
+
+    @Override
+    public boolean mouseScrolled(double x, double y, double scroll) {
+        if (this.items != null && this.items.size() >= 9 * 4) {
+            int offset = MathHelper.clamp(this.scrollOffset - (int) Math.signum(scroll), 0, this.items.size() / 9 - 3);
+            if (offset != this.scrollOffset) {
+                this.scrollOffset = offset;
+                this.updateWidgets();
+            }
+        }
+        return true;
     }
 
     public Stream<ItemTerminalWidget> streamWidgets() {
