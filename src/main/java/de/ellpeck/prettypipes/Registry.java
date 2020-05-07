@@ -141,7 +141,7 @@ public final class Registry {
         );
     }
 
-    private static <T extends AbstractPipeContainer<?>> ContainerType<T> createPipeContainer(String name) {
+    public static <T extends AbstractPipeContainer<?>> ContainerType<T> createPipeContainer(String name) {
         return (ContainerType<T>) IForgeContainerType.create((windowId, inv, data) -> {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
             int moduleIndex = data.readInt();
@@ -150,7 +150,7 @@ public final class Registry {
         }).setRegistryName(name);
     }
 
-    private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
+    public static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
         List<Item> items = new ArrayList<>();
         for (ModuleTier tier : ModuleTier.values())
             items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
