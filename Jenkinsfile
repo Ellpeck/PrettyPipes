@@ -19,5 +19,17 @@ pipeline {
         archiveArtifacts 'build/libs/**.jar'
       }
     }
+
+    stage('Publish') {
+      when {
+        branch 'master'
+      }
+      steps {
+        sh './gradlew publish --no-daemon'
+      }
+    }
+  }
+  environment {
+    local_maven = '/var/www/maven'
   }
 }
