@@ -8,10 +8,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class NetworkLocation {
 
@@ -44,10 +41,14 @@ public class NetworkLocation {
         return -1;
     }
 
-    public int getItemAmount(ItemStack stack) {
+    public int getItemAmount(ItemStack stack, boolean compareTag) {
         return this.items.values().stream()
-                .filter(i -> i.isItemEqual(stack))
+                .filter(i -> ItemStack.areItemsEqual(i, stack) && (!compareTag || ItemStack.areItemStackTagsEqual(i, stack)))
                 .mapToInt(ItemStack::getCount).sum();
+    }
+
+    public Collection<ItemStack> getItems() {
+        return this.items.values();
     }
 
     public boolean isEmpty() {

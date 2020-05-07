@@ -1,7 +1,6 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
-import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.modules.FilterModifierModule;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ItemFilter extends ItemStackHandler {
 
@@ -47,7 +45,7 @@ public class ItemFilter extends ItemStackHandler {
     public List<Slot> getSlots(int x, int y) {
         List<Slot> slots = new ArrayList<>();
         for (int i = 0; i < this.getSlots(); i++)
-            slots.add(new SlotFilter(this, i, x + i % 9 * 18, y + i / 9 * 18));
+            slots.add(new FilterSlot(this, i, x + i % 9 * 18, y + i / 9 * 18));
         return slots;
     }
 

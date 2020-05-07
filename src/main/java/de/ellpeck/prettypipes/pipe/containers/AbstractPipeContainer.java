@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.pipe.containers;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.SlotFilter;
+import de.ellpeck.prettypipes.misc.FilterSlot;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ClickType;
@@ -11,6 +11,7 @@ import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 
@@ -45,50 +46,16 @@ public abstract class AbstractPipeContainer<T extends IModule> extends Container
 
     @Override
     public ItemStack transferStackInSlot(PlayerEntity player, int slotIndex) {
-        int inventoryStart = (int) this.inventorySlots.stream().filter(slot -> slot.inventory != player.inventory).count();
-        int inventoryEnd = inventoryStart + 26;
-        int hotbarStart = inventoryEnd + 1;
-        int hotbarEnd = hotbarStart + 8;
-
-        Slot slot = this.inventorySlots.get(slotIndex);
-        if (slot != null && slot.getHasStack()) {
-            ItemStack newStack = slot.getStack();
-            ItemStack currentStack = newStack.copy();
-
-            if (slotIndex >= inventoryStart) {
-                // shift into this container here
-                // mergeItemStack with the slots that newStack should go into
-                // return an empty stack if mergeItemStack fails
-                if (newStack.getItem() instanceof IModule) {
-                    if (!this.mergeItemStack(newStack, 0, 3, false))
-                        return ItemStack.EMPTY;
-                }
-                // end custom code
-                else if (slotIndex >= inventoryStart && slotIndex <= inventoryEnd) {
-                    if (!this.mergeItemStack(newStack, hotbarStart, hotbarEnd + 1, false))
-                        return ItemStack.EMPTY;
-                } else if (slotIndex >= inventoryEnd + 1 && slotIndex < hotbarEnd + 1 && !this.mergeItemStack(newStack, inventoryStart, inventoryEnd + 1, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.mergeItemStack(newStack, inventoryStart, hotbarEnd + 1, false)) {
-                return ItemStack.EMPTY;
-            }
-            if (newStack.isEmpty()) {
-                slot.putStack(ItemStack.EMPTY);
-            } else {
-                slot.onSlotChanged();
-            }
-            if (newStack.getCount() == currentStack.getCount())
-                return ItemStack.EMPTY;
-            slot.onTake(player, newStack);
-            return currentStack;
-        }
-        return ItemStack.EMPTY;
+        return Utility.transferStackInSlot(this, this::mergeItemStack, player, slotIndex, stack -> {
+            if (stack.getItem() instanceof IModule)
+                return Pair.of(0, 3);
+            return null;
+        });
     }
 
     @Override
     public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
-        if (SlotFilter.checkFilter(this, slotId, player))
+        if (FilterSlot.checkFilter(this, slotId, player))
             return ItemStack.EMPTY;
         return super.slotClick(slotId, dragType, clickTypeIn, player);
     }

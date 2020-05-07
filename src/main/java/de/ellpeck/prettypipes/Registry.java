@@ -23,6 +23,10 @@ import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
+import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
+import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.renderer.RenderType;
@@ -77,10 +81,14 @@ public final class Registry {
 
     public static Block pipeBlock;
     public static TileEntityType<PipeTileEntity> pipeTileEntity;
+    public static ContainerType<MainPipeContainer> pipeContainer;
+
+    public static Block itemTerminalBlock;
+    public static TileEntityType<ItemTerminalTileEntity> itemTerminalTileEntity;
+    public static ContainerType<ItemTerminalContainer> itemTerminalContainer;
 
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
-    public static ContainerType<MainPipeContainer> pipeContainer;
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
     public static ContainerType<FilterModuleContainer> filterModuleContainer;
     public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
@@ -89,7 +97,8 @@ public final class Registry {
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         event.getRegistry().registerAll(
-                pipeBlock = new PipeBlock().setRegistryName("pipe")
+                pipeBlock = new PipeBlock().setRegistryName("pipe"),
+                itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal")
         );
     }
 
@@ -118,7 +127,8 @@ public final class Registry {
     @SubscribeEvent
     public static void registerTiles(RegistryEvent.Register<TileEntityType<?>> event) {
         event.getRegistry().registerAll(
-                pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe")
+                pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
+                itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal")
         );
     }
 
@@ -132,8 +142,8 @@ public final class Registry {
     @SubscribeEvent
     public static void registerContainers(RegistryEvent.Register<ContainerType<?>> event) {
         event.getRegistry().registerAll(
-                // this needs to be registered manually since it doesn't send the module slot
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
+                itemTerminalContainer = (ContainerType<ItemTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
@@ -180,6 +190,7 @@ public final class Registry {
             RenderingRegistry.registerEntityRenderingHandler(pipeFrameEntity, PipeFrameRenderer::new);
 
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
+            ScreenManager.registerFactory(itemTerminalContainer, ItemTerminalGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
             ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);

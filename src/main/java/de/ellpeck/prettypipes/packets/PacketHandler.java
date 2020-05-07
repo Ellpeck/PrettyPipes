@@ -20,14 +20,15 @@ public final class PacketHandler {
         network = NetworkRegistry.newSimpleChannel(new ResourceLocation(PrettyPipes.ID, "network"), () -> VERSION, VERSION::equals, VERSION::equals);
         network.registerMessage(0, PacketItemEnterPipe.class, PacketItemEnterPipe::toBytes, PacketItemEnterPipe::fromBytes, PacketItemEnterPipe::onMessage);
         network.registerMessage(1, PacketButton.class, PacketButton::toBytes, PacketButton::fromBytes, PacketButton::onMessage);
+        network.registerMessage(2, PacketNetworkItems.class, PacketNetworkItems::toBytes, PacketNetworkItems::fromBytes, PacketNetworkItems::onMessage);
     }
 
     public static void sendToAllLoaded(World world, BlockPos pos, Object message) {
         network.send(PacketDistributor.TRACKING_CHUNK.with(() -> world.getChunkAt(pos)), message);
     }
 
-    public static void sendToAllAround(IWorld world, BlockPos pos, int range, Object message) {
-        network.send(PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, world.getDimension().getType())), message);
+    public static void sendTo(PlayerEntity player, Object message) {
+        network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), message);
     }
 
     public static void sendToServer(Object message) {

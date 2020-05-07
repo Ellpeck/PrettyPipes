@@ -353,11 +353,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public void vertexRemoved(GraphVertexChangeEvent<BlockPos> e) {
     }
 
-    private void startProfile(String name) {
+    public void startProfile(String name) {
         this.world.getProfiler().startSection(() -> PrettyPipes.ID + ":pipe_network_" + name);
     }
 
-    private void endProfile() {
+    public void endProfile() {
         this.world.getProfiler().endSection();
     }
 

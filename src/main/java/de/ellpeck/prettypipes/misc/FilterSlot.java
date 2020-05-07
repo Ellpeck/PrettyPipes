@@ -7,16 +7,16 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
-public class SlotFilter extends SlotItemHandler {
-    public SlotFilter(IItemHandler itemHandler, int index, int xPosition, int yPosition) {
+public class FilterSlot extends SlotItemHandler {
+    public FilterSlot(IItemHandler itemHandler, int index, int xPosition, int yPosition) {
         super(itemHandler, index, xPosition, yPosition);
     }
 
     public static boolean checkFilter(Container container, int slotId, PlayerEntity player) {
         if (slotId >= 0 && slotId < container.inventorySlots.size()) {
             Slot slot = container.getSlot(slotId);
-            if (slot instanceof SlotFilter) {
-                ((SlotFilter) slot).slotClick(player);
+            if (slot instanceof FilterSlot) {
+                ((FilterSlot) slot).slotClick(player);
                 return true;
             }
         }
