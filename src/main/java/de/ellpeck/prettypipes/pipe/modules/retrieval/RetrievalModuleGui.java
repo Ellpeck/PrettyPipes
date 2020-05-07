@@ -1,7 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.retrieval;
 
-import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeGui;
-import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.text.ITextComponent;

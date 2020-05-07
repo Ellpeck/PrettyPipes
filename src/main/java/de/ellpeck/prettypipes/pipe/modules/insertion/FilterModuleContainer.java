@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.pipe.modules.insertion;
 
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
-import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;

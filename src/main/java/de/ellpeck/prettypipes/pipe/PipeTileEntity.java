@@ -5,7 +5,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.pipe.modules.containers.MainPipeContainer;
+import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;

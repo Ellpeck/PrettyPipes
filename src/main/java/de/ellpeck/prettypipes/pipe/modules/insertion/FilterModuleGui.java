@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.insertion;
 
-import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeGui;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.math.MathHelper;

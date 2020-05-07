@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.pipe.modules.containers;
+package de.ellpeck.prettypipes.pipe.containers;
 
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.text.ITextComponent;

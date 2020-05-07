@@ -1,4 +1,4 @@
-package de.ellpeck.prettypipes.pipe.modules.containers;
+package de.ellpeck.prettypipes.pipe.containers;
 
 import de.ellpeck.prettypipes.items.IModule;
 import net.minecraft.entity.player.PlayerEntity;

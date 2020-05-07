@@ -13,7 +13,7 @@ import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.*;
-import de.ellpeck.prettypipes.pipe.modules.containers.*;
+import de.ellpeck.prettypipes.pipe.containers.*;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleItem;

@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.stacksize;
 
-import de.ellpeck.prettypipes.pipe.modules.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.util.math.BlockPos;
