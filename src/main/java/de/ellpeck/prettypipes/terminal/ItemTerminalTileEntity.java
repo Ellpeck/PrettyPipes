@@ -63,6 +63,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         if (pipe == null)
             return;
 
+        boolean update = false;
         if (this.world.getGameTime() % 10 == 0) {
             for (int i = 6; i < 12; i++) {
                 ItemStack extracted = this.items.extractItem(i, Integer.MAX_VALUE, true);
@@ -80,12 +81,14 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 int slot = request.getMiddle();
                 int amount = request.getRight();
                 ItemStack extracted = location.handler.extractItem(slot, amount, true);
-                if (network.routeItemToLocation(location.pipePos, location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed)))
+                if (network.routeItemToLocation(location.pipePos, location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
                     location.handler.extractItem(slot, extracted.getCount(), false);
+                    update = true;
+                }
             }
         }
 
-        if (this.world.getGameTime() % 100 == 0) {
+        if (this.world.getGameTime() % 100 == 0 || update) {
             PlayerEntity[] lookingPlayers = this.getLookingPlayers();
             if (lookingPlayers.length > 0)
                 this.updateItems(lookingPlayers);
@@ -137,7 +140,6 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 }
             }
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", stack.getCount() - remain, stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.GREEN)));
-            this.updateItems(player);
         } else {
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.RED)));
         }
