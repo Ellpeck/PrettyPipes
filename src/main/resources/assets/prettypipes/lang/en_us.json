@@ -33,7 +33,9 @@
     "info.prettypipes.nbt_filter_modifier": "Causes any filter slots to filter by item data (NBT)",
     "info.prettypipes.tag_filter_modifier": "Causes any filter slots to filter by tags\n(Modern equivalent of the Ore Dictionary)",
     "info.prettypipes.redstone_module": "Allows disabling the pipe with a redstone signal\nWorks for both extraction and retrieval",
+    "info.prettypipes.item_terminal": "Allows viewing and requesting all items in a pipe network\nAlso has slots for putting items into the network",
     "block.prettypipes.pipe": "Pipe",
+    "block.prettypipes.item_terminal": "Item Terminal",
     "itemGroup.prettypipes": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe",
     "container.prettypipes.item_terminal": "Item Terminal",
@@ -47,5 +49,11 @@
     "info.prettypipes.limit_to_max_off": "Don't limit to one stack",
     "info.prettypipes.request": "Request",
     "info.prettypipes.not_found": "%s not found",
-    "info.prettypipes.sending": "Sending %s %s"
+    "info.prettypipes.sending": "Sending %s %s",
+    "info.prettypipes.order": "Order by %s",
+    "info.prettypipes.order.amount": "Amount",
+    "info.prettypipes.order.name": "Name",
+    "info.prettypipes.order.mod": "Mod",
+    "info.prettypipes.ascending": "Ascending",
+    "info.prettypipes.descending": "Descending"
 }

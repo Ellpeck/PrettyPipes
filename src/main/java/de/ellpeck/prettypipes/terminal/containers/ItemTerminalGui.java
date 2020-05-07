@@ -1,7 +1,9 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
+import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
@@ -14,8 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,8 +26,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private Button minusButton;
     private Button plusButton;
     private Button requestButton;
+    private Button orderButton;
+    private Button ascendingButton;
     private int requestAmount = 1;
     private int scrollOffset;
+    private ItemOrder order;
+    private boolean ascending;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -63,6 +68,18 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             this.requestAmount = 1;
         }));
         this.requestButton.active = false;
+        this.orderButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop, 20, 20, "", button -> {
+            if (this.items == null)
+                return;
+            int order = (this.order.ordinal() + 1) % ItemOrder.values().length;
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.TERMINAL_ORDER, order));
+        }));
+        this.ascendingButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop + 22, 20, 20, "", button -> {
+            if (this.items == null)
+                return;
+            int asc = !this.ascending ? 1 : 0;
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.TERMINAL_ASCENDING, asc));
+        }));
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
@@ -77,12 +94,22 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.minusButton.active = this.requestAmount > 1;
     }
 
-    public void updateItemList(List<ItemStack> items) {
-        this.items = items;
+    public void updateItemList(List<ItemStack> items, ItemOrder order, boolean ascending) {
+        this.order = order;
+        this.ascending = ascending;
+        this.items = new ArrayList<>(items);
         this.updateWidgets();
+
+        this.ascendingButton.setMessage(this.ascending ? "^" : "v");
+        this.orderButton.setMessage(this.order.name().substring(0, 1));
     }
 
     private void updateWidgets() {
+        Comparator<ItemStack> comparator = this.order.comparator;
+        if (!this.ascending)
+            comparator = comparator.reversed();
+        this.items.sort(comparator);
+
         List<ItemTerminalWidget> widgets = this.streamWidgets().collect(Collectors.toList());
         for (int i = 0; i < widgets.size(); i++) {
             ItemTerminalWidget widget = widgets.get(i);
@@ -104,6 +131,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         for (Widget widget : this.buttons) {
             if (widget instanceof ItemTerminalWidget)
                 widget.renderToolTip(mouseX, mouseY);
+        }
+        if (this.items != null) {
+            if (this.orderButton.isHovered())
+                this.renderTooltip(I18n.format("info." + PrettyPipes.ID + ".order", I18n.format("info." + PrettyPipes.ID + ".order." + this.order.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
+            if (this.ascendingButton.isHovered())
+                this.renderTooltip(I18n.format("info." + PrettyPipes.ID + "." + (this.ascending ? "ascending" : "descending")), mouseX, mouseY);
         }
         this.renderHoveredToolTip(mouseX, mouseY);
     }

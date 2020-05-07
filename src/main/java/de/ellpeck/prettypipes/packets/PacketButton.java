@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.packets;
 
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter;
@@ -7,6 +8,7 @@ import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -107,6 +109,14 @@ public class PacketButton {
         STACK_SIZE_AMOUNT((pos, data, player) -> {
             AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.openContainer;
             StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
+        }),
+        TERMINAL_ORDER((pos, data, player) -> {
+            player.getPersistentData().putInt(PrettyPipes.ID + ":item_order", data[0]);
+            Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos).updateItems(player);
+        }),
+        TERMINAL_ASCENDING((pos, data, player) -> {
+            player.getPersistentData().putBoolean(PrettyPipes.ID + ":ascending", data[0] > 0);
+            Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos).updateItems(player);
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;

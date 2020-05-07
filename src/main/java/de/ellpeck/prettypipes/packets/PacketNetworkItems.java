@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
@@ -21,9 +22,13 @@ import java.util.function.Supplier;
 public class PacketNetworkItems {
 
     private List<ItemStack> items;
+    private ItemOrder order;
+    private boolean ascending;
 
-    public PacketNetworkItems(List<ItemStack> items) {
+    public PacketNetworkItems(List<ItemStack> items, ItemOrder order, boolean ascending) {
         this.items = items;
+        this.order = order;
+        this.ascending = ascending;
     }
 
     private PacketNetworkItems() {
@@ -38,6 +43,8 @@ public class PacketNetworkItems {
             stack.setCount(buf.readVarInt());
             client.items.add(stack);
         }
+        client.order = ItemOrder.values()[buf.readByte()];
+        client.ascending = buf.readBoolean();
         return client;
     }
 
@@ -49,6 +56,8 @@ public class PacketNetworkItems {
             buf.writeItemStack(copy);
             buf.writeVarInt(stack.getCount());
         }
+        buf.writeByte(packet.order.ordinal());
+        buf.writeBoolean(packet.ascending);
     }
 
     @SuppressWarnings("Convert2Lambda")
@@ -58,7 +67,7 @@ public class PacketNetworkItems {
             public void run() {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.currentScreen instanceof ItemTerminalGui)
-                    ((ItemTerminalGui) mc.currentScreen).updateItemList(message.items);
+                    ((ItemTerminalGui) mc.currentScreen).updateItemList(message.items, message.order, message.ascending);
             }
         });
         ctx.get().setPacketHandled(true);

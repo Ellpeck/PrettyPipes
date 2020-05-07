@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
+import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeItem;
@@ -48,7 +49,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     };
     public Map<EquatableItemStack, NetworkItem> networkItems;
-    private Queue<Triple<NetworkLocation, Integer, Integer>> pendingRequests = new ArrayDeque<>();
+    private final Queue<Triple<NetworkLocation, Integer, Integer>> pendingRequests = new ArrayDeque<>();
 
     public ItemTerminalTileEntity() {
         super(Registry.itemTerminalTileEntity);
@@ -95,7 +96,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     }
 
-    private PipeTileEntity getConnectedPipe() {
+    public PipeTileEntity getConnectedPipe() {
         PipeNetwork network = PipeNetwork.get(this.world);
         for (Direction dir : Direction.values()) {
             PipeTileEntity pipe = network.getPipe(this.pos.offset(dir));
@@ -106,6 +107,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     public void updateItems(PlayerEntity... playersToSync) {
+        if (this.getConnectedPipe() == null)
+            return;
         this.networkItems = this.collectItems();
         if (playersToSync.length > 0) {
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
@@ -115,7 +118,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
                 if (tile != this)
                     continue;
-                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems));
+
+                CompoundNBT nbt = player.getPersistentData();
+                ItemOrder order = ItemOrder.values()[nbt.getInt(PrettyPipes.ID + ":item_order")];
+                boolean ascending = nbt.getBoolean(PrettyPipes.ID + ":ascending");
+                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems, order, ascending));
             }
         }
     }

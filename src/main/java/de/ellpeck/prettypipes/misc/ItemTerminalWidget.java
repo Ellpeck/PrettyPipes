@@ -29,6 +29,7 @@ public class ItemTerminalWidget extends Widget {
         this.gridX = gridX;
         this.gridY = gridY;
         this.screen = screen;
+        this.visible = false;
     }
 
     @Override

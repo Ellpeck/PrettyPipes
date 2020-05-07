@@ -1,0 +1,31 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "DPI",
+        "RCE",
+        "IPD"
+    ],
+    "key": {
+        "E": {
+            "item": "prettypipes:high_extraction_module"
+        },
+        "R": {
+            "item": "prettypipes:high_retrieval_module"
+        },
+        "P": {
+            "item": "minecraft:ender_pearl"
+        },
+        "I": {
+            "item": "minecraft:iron_block"
+        },
+        "C": {
+            "item": "minecraft:chest"
+        },
+        "D": {
+            "item": "minecraft:diamond_block"
+        }
+    },
+    "result": {
+        "item": "prettypipes:item_terminal"
+    }
+}
