@@ -72,7 +72,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
-        if (!tile.isConnectedInventory())
+        if (!tile.isConnectedInventory(false))
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
             NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
@@ -185,7 +185,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
-        if (tile != null && !tile.isConnectedInventory())
+        if (tile != null && !tile.isConnectedInventory(false))
             Utility.dropInventory(tile, tile.modules);
 
         PipeNetwork network = PipeNetwork.get(world);

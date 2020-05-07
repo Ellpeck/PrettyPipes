@@ -9,6 +9,7 @@ import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class NetworkLocation {
 
@@ -31,14 +32,13 @@ public class NetworkLocation {
         this.items.put(slot, stack);
     }
 
-    public int getStackSlot(ItemStack stack) {
+    public List<Integer> getStackSlots(ItemStack stack) {
         if (this.isEmpty())
-            return -1;
-        for (Map.Entry<Integer, ItemStack> entry : this.items.entrySet()) {
-            if (entry.getValue().isItemEqual(stack))
-                return entry.getKey();
-        }
-        return -1;
+            return Collections.emptyList();
+        return this.items.entrySet().stream()
+                .filter(e -> e.getValue().isItemEqual(stack))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     public int getItemAmount(ItemStack stack, boolean compareTag) {

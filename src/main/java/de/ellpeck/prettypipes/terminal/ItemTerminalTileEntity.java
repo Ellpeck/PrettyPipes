@@ -6,6 +6,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
+import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
@@ -24,10 +25,14 @@ import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,10 +44,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     public final ItemStackHandler items = new ItemStackHandler(12) {
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return slot >= 6;
+            return true;
         }
     };
-    public Collection<NetworkItem> networkItems;
+    public Map<EquatableItemStack, NetworkItem> networkItems;
+    private Queue<Triple<NetworkLocation, Integer, Integer>> pendingRequests = new ArrayDeque<>();
 
     public ItemTerminalTileEntity() {
         super(Registry.itemTerminalTileEntity);
@@ -67,13 +73,20 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 this.items.extractItem(i, extracted.getCount(), false);
                 break;
             }
+
+            if (!this.pendingRequests.isEmpty()) {
+                Triple<NetworkLocation, Integer, Integer> request = this.pendingRequests.remove();
+                NetworkLocation location = request.getLeft();
+                int slot = request.getMiddle();
+                int amount = request.getRight();
+                ItemStack extracted = location.handler.extractItem(slot, amount, true);
+                if (network.routeItemToLocation(location.pipePos, location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed)))
+                    location.handler.extractItem(slot, extracted.getCount(), false);
+            }
         }
 
         if (this.world.getGameTime() % 100 == 0) {
-            PlayerEntity[] lookingPlayers = this.world.getPlayers().stream()
-                    .filter(p -> p.openContainer instanceof ItemTerminalContainer)
-                    .filter(p -> ((ItemTerminalContainer) p.openContainer).tile == this)
-                    .toArray(PlayerEntity[]::new);
+            PlayerEntity[] lookingPlayers = this.getLookingPlayers();
             if (lookingPlayers.length > 0)
                 this.updateItems(lookingPlayers);
         }
@@ -91,18 +104,54 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
 
     public void updateItems(PlayerEntity... playersToSync) {
         this.networkItems = this.collectItems();
-        List<ItemStack> clientItems = this.networkItems.stream().map(NetworkItem::asStack).collect(Collectors.toList());
-        for (PlayerEntity player : playersToSync) {
-            if (!(player.openContainer instanceof ItemTerminalContainer))
-                continue;
-            ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
-            if (tile != this)
-                continue;
-            PacketHandler.sendTo(player, new PacketNetworkItems(clientItems));
+        if (playersToSync.length > 0) {
+            List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
+            for (PlayerEntity player : playersToSync) {
+                if (!(player.openContainer instanceof ItemTerminalContainer))
+                    continue;
+                ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
+                if (tile != this)
+                    continue;
+                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems));
+            }
         }
     }
 
-    private Collection<NetworkItem> collectItems() {
+    public void requestItem(PlayerEntity player, ItemStack stack) {
+        PipeNetwork network = PipeNetwork.get(this.world);
+        network.startProfile("terminal_request_item");
+        EquatableItemStack equatable = new EquatableItemStack(stack);
+        NetworkItem item = this.networkItems.get(equatable);
+        if (item != null) {
+            int remain = stack.getCount();
+            locations:
+            for (NetworkLocation location : item.getLocations()) {
+                for (int slot : location.getStackSlots(stack)) {
+                    ItemStack extracted = location.handler.extractItem(slot, remain, true);
+                    if (!extracted.isEmpty()) {
+                        this.pendingRequests.add(Triple.of(location, slot, extracted.getCount()));
+                        remain -= extracted.getCount();
+                        if (remain <= 0)
+                            break locations;
+                    }
+                }
+            }
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", stack.getCount() - remain, stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.GREEN)));
+            this.updateItems(player);
+        } else {
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.RED)));
+        }
+        network.endProfile();
+    }
+
+    private PlayerEntity[] getLookingPlayers() {
+        return this.world.getPlayers().stream()
+                .filter(p -> p.openContainer instanceof ItemTerminalContainer)
+                .filter(p -> ((ItemTerminalContainer) p.openContainer).tile == this)
+                .toArray(PlayerEntity[]::new);
+    }
+
+    private Map<EquatableItemStack, NetworkItem> collectItems() {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_collect_items");
         PipeTileEntity pipe = this.getConnectedPipe();
@@ -115,7 +164,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             }
         }
         network.endProfile();
-        return items.values();
+        return items;
     }
 
     @Override

@@ -36,6 +36,7 @@
     "block.prettypipes.pipe": "Pipe",
     "itemGroup.prettypipes": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe",
+    "container.prettypipes.item_terminal": "Item Terminal",
     "info.prettypipes.whitelist": "Allowed",
     "info.prettypipes.blacklist": "Disallowed",
     "info.prettypipes.shift": "Hold Shift for info",
@@ -43,5 +44,8 @@
     "info.prettypipes.populate.description": "Filters items from adjacent inventories",
     "info.prettypipes.max_stack_size": "Maximum item amount",
     "info.prettypipes.limit_to_max_on": "Limit to one stack",
-    "info.prettypipes.limit_to_max_off": "Don't limit to one stack"
+    "info.prettypipes.limit_to_max_off": "Don't limit to one stack",
+    "info.prettypipes.request": "Request",
+    "info.prettypipes.not_found": "%s not found",
+    "info.prettypipes.sending": "Sending %s %s"
 }

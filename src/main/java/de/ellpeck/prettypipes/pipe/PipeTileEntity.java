@@ -133,13 +133,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
     }
 
-    public BlockPos getAvailableDestination(ItemStack stack, boolean internal, boolean preventOversending) {
+    public BlockPos getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {
         if (!this.canWork())
             return null;
-        if (!internal && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
+        if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
-            IItemHandler handler = this.getItemHandler(dir);
+            IItemHandler handler = this.getItemHandler(dir, force);
             if (handler == null)
                 continue;
             if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
@@ -185,27 +185,37 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
     }
 
-    public IItemHandler getItemHandler(Direction dir) {
+    public IItemHandler getItemHandler(Direction dir, boolean force) {
         if (!this.isConnected(dir))
             return null;
-        TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
-        if (tile == null)
-            return null;
-        // if we don't do this, then chests get really weird
-        if (tile instanceof ChestTileEntity) {
-            BlockState state = this.world.getBlockState(tile.getPos());
-            if (state.getBlock() instanceof ChestBlock)
-                return new InvWrapper(ChestBlock.func_226916_a_((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
+        BlockPos pos = this.pos.offset(dir);
+        TileEntity tile = this.world.getTileEntity(pos);
+        if (tile != null) {
+            // if we don't do this, then chests get really weird
+            if (tile instanceof ChestTileEntity) {
+                BlockState state = this.world.getBlockState(tile.getPos());
+                if (state.getBlock() instanceof ChestBlock)
+                    return new InvWrapper(ChestBlock.func_226916_a_((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
+            }
+            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
+            if (handler != null)
+                return handler;
         }
-        return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
+        BlockState state = this.world.getBlockState(pos);
+        if (state.getBlock() instanceof IPipeConnectable) {
+            IItemHandler handler = ((IPipeConnectable) state.getBlock()).getItemHandler(this.world, pos, state, this.pos, dir, force);
+            if (handler != null)
+                return handler;
+        }
+        return null;
     }
 
-    public boolean isConnectedInventory(Direction dir) {
-        return this.getItemHandler(dir) != null;
+    public boolean isConnectedInventory(Direction dir, boolean force) {
+        return this.getItemHandler(dir, force) != null;
     }
 
-    public boolean isConnectedInventory() {
-        return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
+    public boolean isConnectedInventory(boolean force) {
+        return Arrays.stream(Direction.values()).anyMatch(dir -> this.isConnectedInventory(dir, force));
     }
 
     public boolean canNetworkSee() {

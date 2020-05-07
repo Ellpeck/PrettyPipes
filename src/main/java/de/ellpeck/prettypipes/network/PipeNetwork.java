@@ -188,7 +188,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             if (!pipe.canNetworkSee())
                 continue;
             for (Direction dir : Direction.values()) {
-                IItemHandler handler = pipe.getItemHandler(dir);
+                IItemHandler handler = pipe.getItemHandler(dir, false);
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)

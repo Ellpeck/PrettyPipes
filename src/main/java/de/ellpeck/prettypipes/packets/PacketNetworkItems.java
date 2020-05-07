@@ -44,7 +44,9 @@ public class PacketNetworkItems {
     public static void toBytes(PacketNetworkItems packet, PacketBuffer buf) {
         buf.writeVarInt(packet.items.size());
         for (ItemStack stack : packet.items) {
-            buf.writeItemStack(stack);
+            ItemStack copy = stack.copy();
+            copy.setCount(1);
+            buf.writeItemStack(copy);
             buf.writeVarInt(stack.getCount());
         }
     }

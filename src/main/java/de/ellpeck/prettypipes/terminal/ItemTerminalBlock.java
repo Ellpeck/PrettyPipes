@@ -20,6 +20,7 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 
@@ -30,8 +31,6 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
 
     @Override
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        if (!player.getHeldItem(handIn).isEmpty())
-            return ActionResultType.PASS;
         ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
@@ -51,6 +50,16 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
     @Override
     public ConnectionType getConnectionType(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction) {
         return ConnectionType.CONNECTED;
+    }
+
+    @Override
+    public IItemHandler getItemHandler(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction, boolean force) {
+        if (force) {
+            ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
+            if (tile != null)
+                return tile.items;
+        }
+        return null;
     }
 
     @Override

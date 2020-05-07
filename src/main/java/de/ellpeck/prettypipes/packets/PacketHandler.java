@@ -21,6 +21,7 @@ public final class PacketHandler {
         network.registerMessage(0, PacketItemEnterPipe.class, PacketItemEnterPipe::toBytes, PacketItemEnterPipe::fromBytes, PacketItemEnterPipe::onMessage);
         network.registerMessage(1, PacketButton.class, PacketButton::toBytes, PacketButton::fromBytes, PacketButton::onMessage);
         network.registerMessage(2, PacketNetworkItems.class, PacketNetworkItems::toBytes, PacketNetworkItems::fromBytes, PacketNetworkItems::onMessage);
+        network.registerMessage(3, PacketRequest.class, PacketRequest::toBytes, PacketRequest::fromBytes, PacketRequest::onMessage);
     }
 
     public static void sendToAllLoaded(World world, BlockPos pos, Object message) {

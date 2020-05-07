@@ -58,14 +58,13 @@ public class RetrievalModuleItem extends ModuleItem {
             for (NetworkLocation location : locations) {
                 if (location.pipePos.equals(tile.getPos()))
                     continue;
-                int slot = location.getStackSlot(filtered);
-                if (slot < 0)
-                    continue;
-                // try to extract from that location's inventory and send the item
-                ItemStack stack = location.handler.extractItem(slot, this.maxExtraction, true);
-                if (network.routeItemToLocation(location.pipePos, location.pos, tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
-                    location.handler.extractItem(slot, stack.getCount(), false);
-                    return;
+                for (int slot : location.getStackSlots(filtered)) {
+                    // try to extract from that location's inventory and send the item
+                    ItemStack stack = location.handler.extractItem(slot, this.maxExtraction, true);
+                    if (network.routeItemToLocation(location.pipePos, location.pos, tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
+                        location.handler.extractItem(slot, stack.getCount(), false);
+                        return;
+                    }
                 }
             }
         }

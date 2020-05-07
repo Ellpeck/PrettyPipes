@@ -3,14 +3,11 @@ package de.ellpeck.prettypipes.network;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import net.minecraft.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class NetworkItem {
 
-    private final Set<NetworkLocation> locations = new HashSet<>();
+    private final List<NetworkLocation> locations = new ArrayList<>();
     private final EquatableItemStack item;
     private int amount;
 
@@ -19,8 +16,13 @@ public class NetworkItem {
     }
 
     public void add(NetworkLocation location, ItemStack stack) {
-        this.locations.add(location);
         this.amount += stack.getCount();
+        if (!this.locations.contains(location))
+            this.locations.add(location);
+    }
+
+    public Collection<NetworkLocation> getLocations() {
+        return this.locations;
     }
 
     public ItemStack asStack() {

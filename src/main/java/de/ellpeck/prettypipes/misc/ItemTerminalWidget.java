@@ -18,29 +18,23 @@ import java.util.List;
 public class ItemTerminalWidget extends Widget {
 
     private static final ResourceLocation FONT = new ResourceLocation(PrettyPipes.ID, "unicode");
-    private final ItemStack stack;
     private final ItemTerminalGui screen;
     public final int gridX;
     public final int gridY;
-    public boolean hidden;
+    public boolean selected;
+    public ItemStack stack = ItemStack.EMPTY;
 
-    public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemStack stack, ItemTerminalGui screen) {
-        super(xIn, yIn, 16, 16, stack.getDisplayName().getFormattedText());
+    public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemTerminalGui screen) {
+        super(xIn, yIn, 16, 16, "");
         this.gridX = gridX;
         this.gridY = gridY;
-        this.stack = stack;
         this.screen = screen;
     }
 
     @Override
-    protected boolean clicked(double x, double y) {
-        return false;
-    }
-
-    @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        if (!this.hidden)
-            super.render(mouseX, mouseY, partialTicks);
+    public void onClick(double x, double y) {
+        this.screen.streamWidgets().forEach(w -> w.selected = false);
+        this.selected = true;
     }
 
     @Override
@@ -49,6 +43,8 @@ public class ItemTerminalWidget extends Widget {
         ItemRenderer renderer = mc.getItemRenderer();
         this.setBlitOffset(100);
         renderer.zLevel = 100;
+        if (this.selected)
+            fill(this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
         renderer.renderItemAndEffectIntoGUI(mc.player, this.stack, this.x, this.y);
         int amount = this.stack.getCount();
@@ -69,7 +65,7 @@ public class ItemTerminalWidget extends Widget {
 
     @Override
     public void renderToolTip(int mouseX, int mouseY) {
-        if (this.isHovered()) {
+        if (this.visible && this.isHovered()) {
             FontRenderer font = this.stack.getItem().getFontRenderer(this.stack);
             if (font == null)
                 font = this.screen.getMinecraft().fontRenderer;
