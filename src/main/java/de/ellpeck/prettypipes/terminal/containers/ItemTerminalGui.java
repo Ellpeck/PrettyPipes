@@ -6,10 +6,13 @@ import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
+import joptsimple.internal.Strings;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -23,11 +26,14 @@ import java.util.stream.Stream;
 public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
     private List<ItemStack> items;
+    private List<ItemStack> sortedItems;
     private Button minusButton;
     private Button plusButton;
     private Button requestButton;
     private Button orderButton;
     private Button ascendingButton;
+    private TextFieldWidget search;
+    private String lastSearchText;
     private int requestAmount = 1;
     private int scrollOffset;
     private ItemOrder order;
@@ -69,13 +75,13 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         }));
         this.requestButton.active = false;
         this.orderButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop, 20, 20, "", button -> {
-            if (this.items == null)
+            if (this.sortedItems == null)
                 return;
             int order = (this.order.ordinal() + 1) % ItemOrder.values().length;
             PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.TERMINAL_ORDER, order));
         }));
         this.ascendingButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop + 22, 20, 20, "", button -> {
-            if (this.items == null)
+            if (this.sortedItems == null)
                 return;
             int asc = !this.ascending ? 1 : 0;
             PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.TERMINAL_ASCENDING, asc));
@@ -84,6 +90,9 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
         }
+        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + 97, this.guiTop + 6, 86, 8, ""));
+        this.search.setEnableBackgroundDrawing(false);
+        this.lastSearchText = "";
     }
 
     @Override
@@ -92,12 +101,30 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.requestButton.active = this.streamWidgets().anyMatch(w -> w.selected);
         this.plusButton.active = this.requestAmount < 384;
         this.minusButton.active = this.requestAmount > 1;
+
+        this.search.tick();
+        String text = this.search.getText();
+        if (!this.lastSearchText.equals(text)) {
+            this.lastSearchText = text;
+            this.updateWidgets();
+        }
+    }
+
+    @Override
+    public boolean keyPressed(int x, int y, int z) {
+        // for some reason we have to do this to make the text field allow the inventory key to be typed
+        if (this.search.isFocused()) {
+            InputMappings.Input mouseKey = InputMappings.getInputByCode(x, y);
+            if (this.minecraft.gameSettings.keyBindInventory.isActiveAndMatches(mouseKey))
+                return false;
+        }
+        return super.keyPressed(x, y, z);
     }
 
     public void updateItemList(List<ItemStack> items, ItemOrder order, boolean ascending) {
         this.order = order;
         this.ascending = ascending;
-        this.items = new ArrayList<>(items);
+        this.items = items;
         this.updateWidgets();
 
         this.ascendingButton.setMessage(this.ascending ? "^" : "v");
@@ -108,17 +135,38 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         Comparator<ItemStack> comparator = this.order.comparator;
         if (!this.ascending)
             comparator = comparator.reversed();
-        this.items.sort(comparator);
+
+        this.sortedItems = new ArrayList<>(this.items);
+        this.sortedItems.sort(comparator);
+
+        String searchText = this.search.getText();
+        if (!Strings.isNullOrEmpty(searchText)) {
+            this.sortedItems.removeIf(s -> {
+                String search = searchText;
+                String toCompare;
+                if (search.startsWith("@")) {
+                    toCompare = s.getItem().getRegistryName().getNamespace();
+                    search = search.substring(1);
+                } else {
+                    // don't use formatted text here since we want to search for name
+                    toCompare = s.getDisplayName().getString();
+                }
+                return !toCompare.toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT));
+            });
+        }
+
+        if (this.sortedItems.size() < 9 * 4)
+            this.scrollOffset = 0;
 
         List<ItemTerminalWidget> widgets = this.streamWidgets().collect(Collectors.toList());
         for (int i = 0; i < widgets.size(); i++) {
             ItemTerminalWidget widget = widgets.get(i);
             int index = i + this.scrollOffset * 9;
-            if (index >= this.items.size()) {
+            if (index >= this.sortedItems.size()) {
                 widget.stack = ItemStack.EMPTY;
                 widget.visible = false;
             } else {
-                widget.stack = this.items.get(index);
+                widget.stack = this.sortedItems.get(index);
                 widget.visible = true;
             }
         }
@@ -132,7 +180,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (widget instanceof ItemTerminalWidget)
                 widget.renderToolTip(mouseX, mouseY);
         }
-        if (this.items != null) {
+        if (this.sortedItems != null) {
             if (this.orderButton.isHovered())
                 this.renderTooltip(I18n.format("info." + PrettyPipes.ID + ".order", I18n.format("info." + PrettyPipes.ID + ".order." + this.order.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
             if (this.ascendingButton.isHovered())
@@ -155,8 +203,8 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
         this.blit(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
 
-        if (this.items != null && this.items.size() >= 9 * 4) {
-            float percentage = this.scrollOffset / (float) (this.items.size() / 9 - 3);
+        if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
+            float percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
             this.blit(this.guiLeft + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 244, 0, 12, 15);
         } else {
             this.blit(this.guiLeft + 172, this.guiTop + 18, 244, 15, 12, 15);
@@ -165,8 +213,8 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     @Override
     public boolean mouseScrolled(double x, double y, double scroll) {
-        if (this.items != null && this.items.size() >= 9 * 4) {
-            int offset = MathHelper.clamp(this.scrollOffset - (int) Math.signum(scroll), 0, this.items.size() / 9 - 3);
+        if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
+            int offset = MathHelper.clamp(this.scrollOffset - (int) Math.signum(scroll), 0, this.sortedItems.size() / 9 - 3);
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
                 this.updateWidgets();
