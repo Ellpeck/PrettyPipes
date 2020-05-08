@@ -72,7 +72,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
-        if (!tile.isConnectedInventory(false))
+        if (!tile.isConnectedInventory())
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
             NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
@@ -161,7 +161,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         BlockState offState = world.getBlockState(offset);
         Block block = offState.getBlock();
         if (block instanceof IPipeConnectable)
-            return ((IPipeConnectable) block).getConnectionType(world, offset, offState, pos, direction.getOpposite());
+            return ((IPipeConnectable) block).getConnectionType(world, pos, direction);
         TileEntity tile = world.getTileEntity(offset);
         if (tile != null) {
             IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
@@ -185,7 +185,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
-        if (tile != null && !tile.isConnectedInventory(false))
+        if (tile != null && !tile.isConnectedInventory())
             Utility.dropInventory(tile, tile.modules);
 
         PipeNetwork network = PipeNetwork.get(world);
@@ -252,8 +252,9 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     }
 
     @Override
-    public ConnectionType getConnectionType(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction) {
-        if (state.get(DIRECTIONS.get(direction)) == ConnectionType.BLOCKED)
+    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
+        BlockState state = world.getBlockState(pipePos.offset(direction));
+        if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
             return ConnectionType.BLOCKED;
         return ConnectionType.CONNECTED;
     }

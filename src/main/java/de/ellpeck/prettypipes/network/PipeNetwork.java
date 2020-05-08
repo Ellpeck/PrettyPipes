@@ -50,6 +50,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
     private final ListMultimap<BlockPos, PipeItem> pipeItems = ArrayListMultimap.create();
+    private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
     private final World world;
 
     public PipeNetwork(World world) {
@@ -189,7 +190,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             if (!pipe.canNetworkSee())
                 continue;
             for (Direction dir : Direction.values()) {
-                IItemHandler handler = pipe.getItemHandler(dir, false);
+                IItemHandler handler = pipe.getItemHandler(dir, null);
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
@@ -208,6 +209,24 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         }
         this.endProfile();
         return info;
+    }
+
+    public void createNetworkLock(NetworkLock lock) {
+        this.networkLocks.put(lock.location.pos, lock);
+    }
+
+    public void resolveNetworkLock(NetworkLock lock) {
+        this.networkLocks.remove(lock.location.pos, lock);
+    }
+
+    public List<NetworkLock> getNetworkLocks(BlockPos pos) {
+        return this.networkLocks.get(pos);
+    }
+
+    public int getLockedAmount(BlockPos pos, int slot) {
+        return this.getNetworkLocks(pos).stream()
+                .filter(l -> l.slot == slot)
+                .mapToInt(l -> l.amount).sum();
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {

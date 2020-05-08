@@ -139,7 +139,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
-            IItemHandler handler = this.getItemHandler(dir, force);
+            IItemHandler handler = this.getItemHandler(dir, null);
             if (handler == null)
                 continue;
             if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
@@ -192,7 +192,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
     }
 
-    public IItemHandler getItemHandler(Direction dir, boolean force) {
+    public IItemHandler getItemHandler(Direction dir, PipeItem item) {
         if (!this.isConnected(dir))
             return null;
         BlockPos pos = this.pos.offset(dir);
@@ -208,21 +208,25 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             if (handler != null)
                 return handler;
         }
-        BlockState state = this.world.getBlockState(pos);
-        if (state.getBlock() instanceof IPipeConnectable) {
-            IItemHandler handler = ((IPipeConnectable) state.getBlock()).getItemHandler(this.world, pos, state, this.pos, dir, force);
-            if (handler != null)
-                return handler;
-        }
+        IPipeConnectable connectable = this.getPipeConnectable(dir);
+        if (connectable != null)
+            return connectable.getItemHandler(this.world, this.pos, dir, item);
         return null;
     }
 
-    public boolean isConnectedInventory(Direction dir, boolean force) {
-        return this.getItemHandler(dir, force) != null;
+    public IPipeConnectable getPipeConnectable(Direction dir) {
+        BlockState state = this.world.getBlockState(this.pos.offset(dir));
+        if (state.getBlock() instanceof IPipeConnectable)
+            return (IPipeConnectable) state.getBlock();
+        return null;
     }
 
-    public boolean isConnectedInventory(boolean force) {
-        return Arrays.stream(Direction.values()).anyMatch(dir -> this.isConnectedInventory(dir, force));
+    public boolean isConnectedInventory(Direction dir) {
+        return this.getItemHandler(dir, null) != null;
+    }
+
+    public boolean isConnectedInventory() {
+        return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
     }
 
     public boolean canNetworkSee() {

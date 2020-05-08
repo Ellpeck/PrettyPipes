@@ -6,10 +6,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.misc.ItemOrder;
-import de.ellpeck.prettypipes.network.NetworkItem;
-import de.ellpeck.prettypipes.network.NetworkLocation;
-import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.network.*;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
@@ -50,7 +47,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     };
     public Map<EquatableItemStack, NetworkItem> networkItems;
-    private final Queue<Triple<NetworkLocation, Integer, Integer>> pendingRequests = new ArrayDeque<>();
+    private final Queue<NetworkLock> pendingRequests = new ArrayDeque<>();
 
     protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
         super(tileEntityTypeIn);
@@ -82,13 +79,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             }
 
             if (!this.pendingRequests.isEmpty()) {
-                Triple<NetworkLocation, Integer, Integer> request = this.pendingRequests.remove();
-                NetworkLocation location = request.getLeft();
-                int slot = request.getMiddle();
-                int amount = request.getRight();
-                ItemStack extracted = location.handler.extractItem(slot, amount, true);
-                if (network.routeItemToLocation(location.pipePos, location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
-                    location.handler.extractItem(slot, extracted.getCount(), false);
+                NetworkLock request = this.pendingRequests.remove();
+                network.resolveNetworkLock(request);
+                ItemStack extracted = request.location.handler.extractItem(request.slot, request.amount, true);
+                if (network.routeItemToLocation(request.location.pipePos, request.location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
+                    request.location.handler.extractItem(request.slot, extracted.getCount(), false);
                     update = true;
                 }
             }
@@ -132,16 +127,23 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_item");
         EquatableItemStack equatable = new EquatableItemStack(stack);
+        this.updateItems();
         NetworkItem item = this.networkItems.get(equatable);
         if (item != null) {
             int remain = stack.getCount();
             locations:
             for (NetworkLocation location : item.getLocations()) {
                 for (int slot : location.getStackSlots(stack, ItemEqualityType.NBT)) {
-                    ItemStack extracted = location.handler.extractItem(slot, remain, true);
-                    if (!extracted.isEmpty()) {
-                        this.pendingRequests.add(Triple.of(location, slot, extracted.getCount()));
-                        remain -= extracted.getCount();
+                    ItemStack inSlot = location.handler.extractItem(slot, Integer.MAX_VALUE, true);
+                    if (inSlot.isEmpty())
+                        continue;
+                    inSlot.shrink(network.getLockedAmount(location.pos, slot));
+                    if (inSlot.getCount() > 0) {
+                        int extract = Math.min(inSlot.getCount(), remain);
+                        NetworkLock lock = new NetworkLock(location, slot, extract);
+                        this.pendingRequests.add(lock);
+                        network.createNetworkLock(lock);
+                        remain -= extract;
                         if (remain <= 0)
                             break locations;
                     }

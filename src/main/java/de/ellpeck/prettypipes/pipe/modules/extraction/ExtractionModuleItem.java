@@ -39,7 +39,7 @@ public class ExtractionModuleItem extends ModuleItem {
 
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         for (Direction dir : Direction.values()) {
-            IItemHandler handler = tile.getItemHandler(dir, false);
+            IItemHandler handler = tile.getItemHandler(dir, null);
             if (handler == null)
                 continue;
             for (int j = 0; j < handler.getSlots(); j++) {

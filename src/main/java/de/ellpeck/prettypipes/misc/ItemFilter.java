@@ -76,7 +76,7 @@ public class ItemFilter extends ItemStackHandler {
         } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
             for (Direction direction : Direction.values()) {
-                IItemHandler handler = this.pipe.getItemHandler(direction, false);
+                IItemHandler handler = this.pipe.getItemHandler(direction, null);
                 if (handler == null)
                     continue;
                 for (int i = 0; i < handler.getSlots(); i++) {

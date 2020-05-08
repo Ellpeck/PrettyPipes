@@ -25,6 +25,7 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -63,18 +64,17 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
     }
 
     @Override
-    public ConnectionType getConnectionType(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction) {
+    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
         return ConnectionType.CONNECTED;
     }
 
     @Override
-    public IItemHandler getItemHandler(World world, BlockPos pos, BlockState state, BlockPos pipePos, Direction direction, boolean force) {
-        if (force) {
-            ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
-            if (tile != null)
-                return tile.items;
-        }
-        return null;
+    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
+        BlockPos pos = pipePos.offset(direction);
+        ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
+        if (tile != null)
+            return ItemHandlerHelper.insertItemStacked(tile.items, item.stack, false);
+        return item.stack;
     }
 
     @Override

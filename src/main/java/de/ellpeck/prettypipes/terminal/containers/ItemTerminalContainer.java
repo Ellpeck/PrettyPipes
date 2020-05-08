@@ -31,17 +31,22 @@ public class ItemTerminalContainer extends Container {
         super(type, id);
         this.tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos);
 
-        int off = this.getSlotXOffset();
-        for (int i = 0; i < 6; i++)
-            this.addSlot(new SlotItemHandler(this.tile.items, i, 8 + off + i % 3 * 18, 102 + i / 3 * 18));
-        for (int i = 0; i < 6; i++)
-            this.addSlot(new SlotItemHandler(this.tile.items, i + 6, 116 + off + i % 3 * 18, 102 + i / 3 * 18));
+        this.addOwnSlots(player);
 
+        int off = this.getSlotXOffset();
         for (int l = 0; l < 3; ++l)
             for (int j1 = 0; j1 < 9; ++j1)
                 this.addSlot(new Slot(player.inventory, j1 + l * 9 + 9, 8 + off + j1 * 18, 154 + l * 18));
         for (int i1 = 0; i1 < 9; ++i1)
             this.addSlot(new Slot(player.inventory, i1, 8 + off + i1 * 18, 212));
+    }
+
+    protected void addOwnSlots(PlayerEntity player) {
+        int off = this.getSlotXOffset();
+        for (int i = 0; i < 6; i++)
+            this.addSlot(new SlotItemHandler(this.tile.items, i, 8 + off + i % 3 * 18, 102 + i / 3 * 18));
+        for (int i = 0; i < 6; i++)
+            this.addSlot(new SlotItemHandler(this.tile.items, i + 6, 116 + off + i % 3 * 18, 102 + i / 3 * 18));
     }
 
     protected int getSlotXOffset() {
@@ -50,9 +55,7 @@ public class ItemTerminalContainer extends Container {
 
     @Override
     public ItemStack transferStackInSlot(PlayerEntity player, int slotIndex) {
-        return Utility.transferStackInSlot(this, this::mergeItemStack, player, slotIndex, stack -> {
-            return Pair.of(6, 12);
-        });
+        return Utility.transferStackInSlot(this, this::mergeItemStack, player, slotIndex, stack -> Pair.of(6, 12));
     }
 
     @Override

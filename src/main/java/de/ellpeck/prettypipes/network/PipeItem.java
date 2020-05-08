@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ILiquidContainer;
@@ -172,10 +173,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
 
     private ItemStack store(PipeTileEntity currPipe) {
         Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
-        IItemHandler handler = currPipe.getItemHandler(dir, true);
-        if (handler == null)
-            return this.stack;
-        return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
+        IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
+        if (connectable != null)
+            return connectable.insertItem(currPipe.getWorld(), currPipe.getPos(), dir, this);
+        IItemHandler handler = currPipe.getItemHandler(dir, this);
+        if (handler != null)
+            return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
+        return this.stack;
     }
 
     private PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
