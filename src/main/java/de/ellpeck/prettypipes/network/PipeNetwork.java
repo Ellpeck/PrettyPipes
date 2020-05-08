@@ -332,7 +332,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
 
     public int getItemsOnTheWay(BlockPos goalPipe, ItemStack type, ItemEqualityType... equalityTypes) {
         return this.getPipeItemsOnTheWay(goalPipe)
-                .filter(i -> ItemEqualityType.compareItems(i.stack, type, equalityTypes))
+                .filter(i -> type == null || ItemEqualityType.compareItems(i.stack, type, equalityTypes))
                 .mapToInt(i -> i.stack.getCount()).sum();
     }
 

@@ -148,17 +148,24 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             if (maxAmount < stack.getCount())
                 continue;
             if (preventOversending || maxAmount < Integer.MAX_VALUE) {
+                PipeNetwork network = PipeNetwork.get(this.world);
                 // these are the items that are currently in the pipes, going to this pipe
-                int onTheWay = PipeNetwork.get(this.world).getItemsOnTheWay(this.pos, stack);
+                int onTheWay = network.getItemsOnTheWay(this.pos, null);
                 if (onTheWay > 0) {
-                    // check if any modules are limiting us
-                    if (onTheWay + stack.getCount() > maxAmount)
-                        continue;
+                    if (maxAmount < Integer.MAX_VALUE) {
+                        // these are the items on the way, limited to items of the same type as stack
+                        int onTheWaySame = network.getItemsOnTheWay(this.pos, stack);
+                        // check if any modules are limiting us
+                        if (onTheWaySame + stack.getCount() > maxAmount)
+                            continue;
+                    }
                     ItemStack copy = stack.copy();
                     copy.setCount(copy.getMaxStackSize());
                     // totalSpace will be the amount of items that fit into the attached container
                     int totalSpace = 0;
                     for (int i = 0; i < handler.getSlots(); i++) {
+                        // this is an inaccurate check since it ignores the fact that some slots might
+                        // have space for items of other types, but it'll be good enough for us
                         ItemStack remain = handler.insertItem(i, copy, true);
                         totalSpace += copy.getMaxStackSize() - remain.getCount();
                     }
