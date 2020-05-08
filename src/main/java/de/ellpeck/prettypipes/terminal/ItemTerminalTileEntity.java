@@ -52,8 +52,12 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     public Map<EquatableItemStack, NetworkItem> networkItems;
     private final Queue<Triple<NetworkLocation, Integer, Integer>> pendingRequests = new ArrayDeque<>();
 
+    protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
+        super(tileEntityTypeIn);
+    }
+
     public ItemTerminalTileEntity() {
-        super(Registry.itemTerminalTileEntity);
+        this(Registry.itemTerminalTileEntity);
     }
 
     @Override

@@ -47,7 +47,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     @Override
     protected void init() {
         super.init();
-        this.plusButton = this.addButton(new Button(this.guiLeft + this.xSize / 2 - 7 + 12, this.guiTop + 103, 12, 12, "+", button -> {
+        this.plusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 + 12, this.guiTop + 103, 12, 12, "+", button -> {
             int modifier = requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
@@ -57,13 +57,13 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
-        this.minusButton = this.addButton(new Button(this.guiLeft + this.xSize / 2 - 7 - 24, this.guiTop + 103, 12, 12, "-", button -> {
+        this.minusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 24, this.guiTop + 103, 12, 12, "-", button -> {
             this.requestAmount -= requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }));
         this.minusButton.active = false;
-        this.requestButton = this.addButton(new Button(this.guiLeft + this.xSize / 2 - 7 - 25, this.guiTop + 115, 50, 20, I18n.format("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 25, this.guiTop + 115, 50, 20, I18n.format("info." + PrettyPipes.ID + ".request"), button -> {
             Optional<ItemTerminalWidget> widget = this.streamWidgets().filter(w -> w.selected).findFirst();
             if (!widget.isPresent())
                 return;
@@ -91,11 +91,15 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         }));
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 9; x++)
-                this.addButton(new ItemTerminalWidget(this.guiLeft + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
+                this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
         }
-        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + 97, this.guiTop + 6, 86, 8, ""));
+        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, ""));
         this.search.setEnableBackgroundDrawing(false);
         this.lastSearchText = "";
+    }
+
+    protected int getXOffset() {
+        return 0;
     }
 
     @Override
@@ -194,24 +198,28 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8, this.ySize - 96 + 2, 4210752);
+        this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8 + this.getXOffset(), this.ySize - 96 + 2, 4210752);
         this.font.drawString(this.title.getFormattedText(), 8, 6, 4210752);
 
         String amount = String.valueOf(this.requestAmount);
-        this.font.drawString(amount, (this.xSize - this.font.getStringWidth(amount)) / 2F - 7, 106, 4210752);
+        this.font.drawString(amount, (176 + 15 - this.font.getStringWidth(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
     }
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-        this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
+        this.getMinecraft().getTextureManager().bindTexture(this.getTexture());
         this.blit(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
             float percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
-            this.blit(this.guiLeft + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 244, 0, 12, 15);
+            this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
-            this.blit(this.guiLeft + 172, this.guiTop + 18, 244, 15, 12, 15);
+            this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
         }
+    }
+
+    protected ResourceLocation getTexture() {
+        return TEXTURE;
     }
 
     @Override

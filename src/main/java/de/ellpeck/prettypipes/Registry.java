@@ -24,8 +24,12 @@ import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
+import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.block.Block;
@@ -88,6 +92,10 @@ public final class Registry {
     public static TileEntityType<ItemTerminalTileEntity> itemTerminalTileEntity;
     public static ContainerType<ItemTerminalContainer> itemTerminalContainer;
 
+    public static Block craftingTerminalBlock;
+    public static TileEntityType<CraftingTerminalTileEntity> craftingTerminalTileEntity;
+    public static ContainerType<CraftingTerminalContainer> craftingTerminalContainer;
+
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
@@ -99,7 +107,8 @@ public final class Registry {
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         event.getRegistry().registerAll(
                 pipeBlock = new PipeBlock().setRegistryName("pipe"),
-                itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal")
+                itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal"),
+                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal")
         );
     }
 
@@ -129,7 +138,8 @@ public final class Registry {
     public static void registerTiles(RegistryEvent.Register<TileEntityType<?>> event) {
         event.getRegistry().registerAll(
                 pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
-                itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal")
+                itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
+                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal")
         );
     }
 
@@ -145,6 +155,7 @@ public final class Registry {
         event.getRegistry().registerAll(
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
                 itemTerminalContainer = (ContainerType<ItemTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
+                craftingTerminalContainer = (ContainerType<CraftingTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
@@ -192,6 +203,7 @@ public final class Registry {
 
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
             ScreenManager.registerFactory(itemTerminalContainer, ItemTerminalGui::new);
+            ScreenManager.registerFactory(craftingTerminalContainer, CraftingTerminalGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
             ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
