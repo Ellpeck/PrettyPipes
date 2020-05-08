@@ -119,11 +119,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
                 if (tile != this)
                     continue;
-
-                CompoundNBT nbt = player.getPersistentData();
-                ItemOrder order = ItemOrder.values()[nbt.getInt(PrettyPipes.ID + ":item_order")];
-                boolean ascending = nbt.getBoolean(PrettyPipes.ID + ":ascending");
-                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems, order, ascending));
+                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems));
             }
         }
     }

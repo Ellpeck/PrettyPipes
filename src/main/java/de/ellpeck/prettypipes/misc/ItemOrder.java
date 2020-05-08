@@ -14,4 +14,8 @@ public enum ItemOrder {
     ItemOrder(Comparator<ItemStack> comparator) {
         this.comparator = comparator;
     }
+
+    public ItemOrder next() {
+        return values()[(this.ordinal() + 1) % values().length];
+    }
 }
