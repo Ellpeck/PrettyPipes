@@ -68,7 +68,7 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
                 ItemStack stack = this.getDisplayedItem();
                 if (!stack.isEmpty()) {
                     List<NetworkLocation> items = network.getOrderedNetworkItems(node);
-                    int amount = items.stream().mapToInt(i -> i.getItemAmount(stack, false)).sum();
+                    int amount = items.stream().mapToInt(i -> i.getItemAmount(stack)).sum();
                     this.dataManager.set(AMOUNT, amount);
                     return;
                 }

@@ -58,7 +58,7 @@ public class RetrievalModuleItem extends ModuleItem {
             for (NetworkLocation location : locations) {
                 if (location.pipePos.equals(tile.getPos()))
                     continue;
-                for (int slot : location.getStackSlots(filtered)) {
+                for (int slot : location.getStackSlots(filtered, filter.getEqualityTypes())) {
                     // try to extract from that location's inventory and send the item
                     ItemStack stack = location.handler.extractItem(slot, this.maxExtraction, true);
                     if (network.routeItemToLocation(location.pipePos, location.pos, tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {

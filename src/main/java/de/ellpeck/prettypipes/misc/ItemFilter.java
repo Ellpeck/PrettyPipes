@@ -97,25 +97,23 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
-        List<FilterModifierModule.Type> modifiers = this.pipe.streamModules()
-                .map(Pair::getRight)
-                .filter(m -> m instanceof FilterModifierModule)
-                .map(m -> ((FilterModifierModule) m).type)
-                .collect(Collectors.toList());
+        ItemEqualityType[] types = this.getEqualityTypes();
         for (int i = 0; i < this.getSlots(); i++) {
             ItemStack filter = this.getStackInSlot(i);
             if (filter.isEmpty())
                 continue;
-            boolean equal = ItemStack.areItemsEqual(stack, filter);
-            if (modifiers.isEmpty()) {
-                if (equal)
-                    return true;
-            } else {
-                if (modifiers.stream().allMatch(m -> (m.ignoreItemEquality || equal) && m.filter.apply(stack, filter)))
-                    return true;
-            }
+            if (ItemEqualityType.compareItems(stack, filter, types))
+                return true;
         }
         return false;
+    }
+
+    public ItemEqualityType[] getEqualityTypes() {
+        return this.pipe.streamModules()
+                .map(Pair::getRight)
+                .filter(m -> m instanceof FilterModifierModule)
+                .map(m -> ((FilterModifierModule) m).type)
+                .toArray(ItemEqualityType[]::new);
     }
 
     public void save() {

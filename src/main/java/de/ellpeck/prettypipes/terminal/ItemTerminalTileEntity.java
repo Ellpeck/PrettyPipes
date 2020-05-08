@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
@@ -136,7 +137,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             int remain = stack.getCount();
             locations:
             for (NetworkLocation location : item.getLocations()) {
-                for (int slot : location.getStackSlots(stack)) {
+                for (int slot : location.getStackSlots(stack, ItemEqualityType.NBT)) {
                     ItemStack extracted = location.handler.extractItem(slot, remain, true);
                     if (!extracted.isEmpty()) {
                         this.pendingRequests.add(Triple.of(location, slot, extracted.getCount()));

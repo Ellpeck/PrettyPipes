@@ -15,7 +15,7 @@ public class EquatableItemStack {
     public boolean equals(Object o) {
         if (o instanceof EquatableItemStack) {
             ItemStack other = ((EquatableItemStack) o).stack;
-            return ItemStack.areItemsEqual(this.stack, other) && ItemStack.areItemStackTagsEqual(this.stack, other);
+            return ItemEqualityType.compareItems(this.stack, other, ItemEqualityType.NBT);
         }
         return false;
     }

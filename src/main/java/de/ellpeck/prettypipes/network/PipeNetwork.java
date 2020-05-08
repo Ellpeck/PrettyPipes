@@ -6,6 +6,7 @@ import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.packets.PacketHandler;
@@ -329,9 +330,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return ret;
     }
 
-    public int getItemsOnTheWay(BlockPos goalPipe, ItemStack type) {
+    public int getItemsOnTheWay(BlockPos goalPipe, ItemStack type, ItemEqualityType... equalityTypes) {
         return this.getPipeItemsOnTheWay(goalPipe)
-                .filter(i -> i.stack.isItemEqual(type))
+                .filter(i -> ItemEqualityType.compareItems(i.stack, type, equalityTypes))
                 .mapToInt(i -> i.stack.getCount()).sum();
     }
 

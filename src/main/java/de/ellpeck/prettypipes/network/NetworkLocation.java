@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.network;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -32,18 +33,18 @@ public class NetworkLocation {
         this.items.put(slot, stack);
     }
 
-    public List<Integer> getStackSlots(ItemStack stack) {
+    public List<Integer> getStackSlots(ItemStack stack, ItemEqualityType... equalityTypes) {
         if (this.isEmpty())
             return Collections.emptyList();
         return this.items.entrySet().stream()
-                .filter(e -> e.getValue().isItemEqual(stack))
+                .filter(e -> ItemEqualityType.compareItems(e.getValue(), stack, equalityTypes))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
-    public int getItemAmount(ItemStack stack, boolean compareTag) {
+    public int getItemAmount(ItemStack stack, ItemEqualityType... equalityTypes) {
         return this.items.values().stream()
-                .filter(i -> ItemStack.areItemsEqual(i, stack) && (!compareTag || ItemStack.areItemStackTagsEqual(i, stack)))
+                .filter(i -> ItemEqualityType.compareItems(stack, i, equalityTypes))
                 .mapToInt(ItemStack::getCount).sum();
     }
 
