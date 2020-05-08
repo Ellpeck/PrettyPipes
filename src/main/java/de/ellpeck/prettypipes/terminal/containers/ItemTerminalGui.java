@@ -33,10 +33,10 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private Button requestButton;
     private Button orderButton;
     private Button ascendingButton;
-    private TextFieldWidget search;
     private String lastSearchText;
     private int requestAmount = 1;
     private int scrollOffset;
+    public TextFieldWidget search;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -129,7 +129,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.updateWidgets();
     }
 
-    private void updateWidgets() {
+    public void updateWidgets() {
         PlayerPrefs prefs = PlayerPrefs.get();
         this.ascendingButton.setMessage(prefs.terminalAscending ? "^" : "v");
         this.orderButton.setMessage(prefs.terminalItemOrder.name().substring(0, 1));

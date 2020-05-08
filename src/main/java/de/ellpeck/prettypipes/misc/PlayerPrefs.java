@@ -16,6 +16,7 @@ public class PlayerPrefs {
 
     public ItemOrder terminalItemOrder = ItemOrder.AMOUNT;
     public boolean terminalAscending;
+    public boolean syncJei = true;
 
     public void save() {
         File file = getFile();

@@ -55,5 +55,7 @@
     "info.prettypipes.order.name": "Name",
     "info.prettypipes.order.mod": "Mod",
     "info.prettypipes.ascending": "Ascending",
-    "info.prettypipes.descending": "Descending"
+    "info.prettypipes.descending": "Descending",
+    "info.prettypipes.sync_jei.on": "Sync JEI Search",
+    "info.prettypipes.sync_jei.off": "Don't Sync JEI Search"
 }
