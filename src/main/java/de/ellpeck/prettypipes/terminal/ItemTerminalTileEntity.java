@@ -28,6 +28,9 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
@@ -81,9 +84,10 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             if (!this.pendingRequests.isEmpty()) {
                 NetworkLock request = this.pendingRequests.remove();
                 network.resolveNetworkLock(request);
-                ItemStack extracted = request.location.handler.extractItem(request.slot, request.amount, true);
-                if (network.routeItemToLocation(request.location.pipePos, request.location.pos, pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
-                    request.location.handler.extractItem(request.slot, extracted.getCount(), false);
+                IItemHandler handler = request.location.getItemHandler(this.world);
+                ItemStack extracted = handler.extractItem(request.slot, request.amount, true);
+                if (network.routeItemToLocation(request.location.pipePos, request.location.getPos(), pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
+                    handler.extractItem(request.slot, extracted.getCount(), false);
                     update = true;
                 }
             }
@@ -141,11 +145,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             int remain = stack.getCount();
             locations:
             for (NetworkLocation location : item.getLocations()) {
-                for (int slot : location.getStackSlots(stack, ItemEqualityType.NBT)) {
-                    ItemStack inSlot = location.handler.extractItem(slot, Integer.MAX_VALUE, true);
+                for (int slot : location.getStackSlots(this.world, stack, ItemEqualityType.NBT)) {
+                    ItemStack inSlot = location.getItemHandler(this.world).extractItem(slot, Integer.MAX_VALUE, true);
                     if (inSlot.isEmpty())
                         continue;
-                    inSlot.shrink(network.getLockedAmount(location.pos, slot));
+                    inSlot.shrink(network.getLockedAmount(location.getPos(), slot));
                     if (inSlot.getCount() > 0) {
                         int extract = Math.min(inSlot.getCount(), remain);
                         NetworkLock lock = new NetworkLock(location, slot, extract);
@@ -177,7 +181,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeTileEntity pipe = this.getConnectedPipe();
         Map<EquatableItemStack, NetworkItem> items = new HashMap<>();
         for (NetworkLocation location : network.getOrderedNetworkItems(pipe.getPos())) {
-            for (ItemStack stack : location.getItems()) {
+            for (ItemStack stack : location.getItems(this.world).values()) {
                 EquatableItemStack equatable = new EquatableItemStack(stack);
                 NetworkItem item = items.computeIfAbsent(equatable, NetworkItem::new);
                 item.add(location, stack);
@@ -190,12 +194,15 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         compound.put("items", this.items.serializeNBT());
+        compound.put("requests", Utility.serializeAll(this.pendingRequests));
         return super.write(compound);
     }
 
     @Override
     public void read(CompoundNBT compound) {
         this.items.deserializeNBT(compound.getCompound("items"));
+        this.pendingRequests.clear();
+        this.pendingRequests.addAll(Utility.deserializeAll(compound.getList("requests", NBT.TAG_COMPOUND), NetworkLock::new));
         super.read(compound);
     }
 

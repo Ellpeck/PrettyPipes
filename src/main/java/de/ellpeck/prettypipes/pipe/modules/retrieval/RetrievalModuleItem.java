@@ -14,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
 
@@ -58,11 +59,12 @@ public class RetrievalModuleItem extends ModuleItem {
             for (NetworkLocation location : locations) {
                 if (location.pipePos.equals(tile.getPos()))
                     continue;
-                for (int slot : location.getStackSlots(filtered, filter.getEqualityTypes())) {
+                for (int slot : location.getStackSlots(tile.getWorld(), filtered, filter.getEqualityTypes())) {
                     // try to extract from that location's inventory and send the item
-                    ItemStack stack = location.handler.extractItem(slot, this.maxExtraction, true);
-                    if (network.routeItemToLocation(location.pipePos, location.pos, tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
-                        location.handler.extractItem(slot, stack.getCount(), false);
+                    IItemHandler handler = location.getItemHandler(tile.getWorld());
+                    ItemStack stack = handler.extractItem(slot, this.maxExtraction, true);
+                    if (network.routeItemToLocation(location.pipePos, location.getPos(), tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
+                        handler.extractItem(slot, stack.getCount(), false);
                         return;
                     }
                 }

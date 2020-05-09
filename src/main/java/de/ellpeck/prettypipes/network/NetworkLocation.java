@@ -3,61 +3,99 @@ package de.ellpeck.prettypipes.network;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class NetworkLocation {
+public class NetworkLocation implements INBTSerializable<CompoundNBT> {
 
-    public final BlockPos pipePos;
-    public final Direction direction;
-    public final BlockPos pos;
-    public final IItemHandler handler;
-    private Map<Integer, ItemStack> items;
+    public BlockPos pipePos;
+    public Direction direction;
+    private Map<Integer, ItemStack> itemCache;
+    private IItemHandler handlerCache;
 
-    public NetworkLocation(BlockPos pipePos, Direction direction, IItemHandler handler) {
+    public NetworkLocation(BlockPos pipePos, Direction direction) {
         this.pipePos = pipePos;
         this.direction = direction;
-        this.pos = pipePos.offset(direction);
-        this.handler = handler;
     }
 
-    public void addItem(int slot, ItemStack stack) {
-        if (this.items == null)
-            this.items = new HashMap<>();
-        this.items.put(slot, stack);
+    public NetworkLocation(CompoundNBT nbt) {
+        this.deserializeNBT(nbt);
     }
 
-    public List<Integer> getStackSlots(ItemStack stack, ItemEqualityType... equalityTypes) {
-        if (this.isEmpty())
+    public List<Integer> getStackSlots(World world, ItemStack stack, ItemEqualityType... equalityTypes) {
+        if (this.isEmpty(world))
             return Collections.emptyList();
-        return this.items.entrySet().stream()
+        return this.getItems(world).entrySet().stream()
                 .filter(e -> ItemEqualityType.compareItems(e.getValue(), stack, equalityTypes))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
-    public int getItemAmount(ItemStack stack, ItemEqualityType... equalityTypes) {
-        return this.items.values().stream()
+    public int getItemAmount(World world, ItemStack stack, ItemEqualityType... equalityTypes) {
+        if (this.isEmpty(world))
+            return 0;
+        return this.getItems(world).values().stream()
                 .filter(i -> ItemEqualityType.compareItems(stack, i, equalityTypes))
                 .mapToInt(ItemStack::getCount).sum();
     }
 
-    public Collection<ItemStack> getItems() {
-        return this.items.values();
+    public Map<Integer, ItemStack> getItems(World world) {
+        if (this.itemCache == null) {
+            IItemHandler handler = this.getItemHandler(world);
+            if (handler != null) {
+                for (int i = 0; i < handler.getSlots(); i++) {
+                    ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
+                    if (found.isEmpty())
+                        continue;
+                    if (this.itemCache == null)
+                        this.itemCache = new HashMap<>();
+                    this.itemCache.put(i, found);
+                }
+            }
+        }
+        return this.itemCache;
     }
 
-    public boolean isEmpty() {
-        return this.items == null || this.items.isEmpty();
+    public IItemHandler getItemHandler(World world) {
+        if (this.handlerCache == null) {
+            PipeNetwork network = PipeNetwork.get(world);
+            PipeTileEntity pipe = network.getPipe(this.pipePos);
+            this.handlerCache = pipe.getItemHandler(this.direction, null);
+        }
+        return this.handlerCache;
+    }
+
+    public boolean isEmpty(World world) {
+        Map<Integer, ItemStack> items = this.getItems(world);
+        return items == null || items.isEmpty();
+    }
+
+    public BlockPos getPos() {
+        return this.pipePos.offset(this.direction);
     }
 
     @Override
-    public String toString() {
-        return this.items.values().toString();
+    public CompoundNBT serializeNBT() {
+        CompoundNBT nbt = new CompoundNBT();
+        nbt.put("pipe_pos", NBTUtil.writeBlockPos(this.pipePos));
+        nbt.putInt("direction", this.direction.getIndex());
+        return nbt;
+    }
+
+    @Override
+    public void deserializeNBT(CompoundNBT nbt) {
+        this.pipePos = NBTUtil.readBlockPos(nbt.getCompound("pipe_pos"));
+        this.direction = Direction.byIndex(nbt.getInt("direction"));
     }
 }

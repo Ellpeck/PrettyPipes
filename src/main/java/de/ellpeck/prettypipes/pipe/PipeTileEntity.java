@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.pipe;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -24,6 +25,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -77,7 +79,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public CompoundNBT getUpdateTag() {
         // sync pipe items on load
         CompoundNBT nbt = this.write(new CompoundNBT());
-        nbt.put("items", PipeItem.serializeAll(this.getItems()));
+        nbt.put("items", Utility.serializeAll(this.getItems()));
         return nbt;
     }
 
@@ -86,7 +88,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         this.read(nbt);
         List<PipeItem> items = this.getItems();
         items.clear();
-        items.addAll(PipeItem.deserializeAll(nbt.getList("items", Constants.NBT.TAG_COMPOUND)));
+        items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new));
     }
 
     @Override

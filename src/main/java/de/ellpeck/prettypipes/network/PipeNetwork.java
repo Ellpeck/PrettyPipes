@@ -17,11 +17,13 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
@@ -77,7 +79,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         for (NetworkEdge edge : this.graph.edgeSet())
             edges.add(edge.serializeNBT());
         nbt.put("edges", edges);
-        nbt.put("items", PipeItem.serializeAll(this.pipeItems.values()));
+        nbt.put("items", Utility.serializeAll(this.pipeItems.values()));
+        nbt.put("locks", Utility.serializeAll(this.networkLocks.values()));
         return nbt;
     }
 
@@ -85,15 +88,18 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public void deserializeNBT(CompoundNBT nbt) {
         this.graph.removeAllVertices(new ArrayList<>(this.graph.vertexSet()));
         this.pipeItems.clear();
+        this.networkLocks.clear();
 
-        ListNBT nodes = nbt.getList("nodes", Constants.NBT.TAG_COMPOUND);
+        ListNBT nodes = nbt.getList("nodes", NBT.TAG_COMPOUND);
         for (int i = 0; i < nodes.size(); i++)
             this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
-        ListNBT edges = nbt.getList("edges", Constants.NBT.TAG_COMPOUND);
+        ListNBT edges = nbt.getList("edges", NBT.TAG_COMPOUND);
         for (int i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (PipeItem item : PipeItem.deserializeAll(nbt.getList("items", Constants.NBT.TAG_COMPOUND)))
+        for (PipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new))
             this.pipeItems.put(item.getCurrentPipe(), item);
+        for (NetworkLock lock : Utility.deserializeAll(nbt.getList("locks", NBT.TAG_COMPOUND), NetworkLock::new))
+            this.createNetworkLock(lock);
     }
 
     public void addNode(BlockPos pos, BlockState state) {
@@ -194,16 +200,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
-                if (info.stream().anyMatch(l -> l.handler == handler))
+                if (info.stream().anyMatch(l -> l.getItemHandler(this.world) == handler))
                     continue;
-                NetworkLocation location = new NetworkLocation(dest, dir, handler);
-                for (int i = 0; i < handler.getSlots(); i++) {
-                    ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
-                    if (found.isEmpty())
-                        continue;
-                    location.addItem(i, found);
-                }
-                if (!location.isEmpty())
+                NetworkLocation location = new NetworkLocation(dest, dir);
+                if (!location.isEmpty(this.world))
                     info.add(location);
             }
         }
@@ -212,11 +212,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public void createNetworkLock(NetworkLock lock) {
-        this.networkLocks.put(lock.location.pos, lock);
+        this.networkLocks.put(lock.location.getPos(), lock);
     }
 
     public void resolveNetworkLock(NetworkLock lock) {
-        this.networkLocks.remove(lock.location.pos, lock);
+        this.networkLocks.remove(lock.location.getPos(), lock);
     }
 
     public List<NetworkLock> getNetworkLocks(BlockPos pos) {

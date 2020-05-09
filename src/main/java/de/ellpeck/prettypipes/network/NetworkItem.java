@@ -30,9 +30,4 @@ public class NetworkItem {
         stack.setCount(this.amount);
         return stack;
     }
-
-    @Override
-    public String toString() {
-        return "NetworkItem{" + "locations=" + this.locations + ", item=" + this.item + ", amount=" + this.amount + '}';
-    }
 }

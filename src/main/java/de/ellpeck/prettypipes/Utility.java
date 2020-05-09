@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes;
 
 import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
@@ -8,14 +9,19 @@ import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.*;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -92,6 +98,20 @@ public final class Utility {
             return currentStack;
         }
         return ItemStack.EMPTY;
+    }
+
+    public static ListNBT serializeAll(Collection<? extends INBTSerializable<CompoundNBT>> items) {
+        ListNBT list = new ListNBT();
+        for (INBTSerializable<CompoundNBT> item : items)
+            list.add(item.serializeNBT());
+        return list;
+    }
+
+    public static <T extends INBTSerializable<CompoundNBT>> List<T> deserializeAll(ListNBT list, Function<CompoundNBT, T> supplier) {
+        List<T> items = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++)
+            items.add(supplier.apply(list.getCompound(i)));
+        return items;
     }
 
     public interface IMergeItemStack {

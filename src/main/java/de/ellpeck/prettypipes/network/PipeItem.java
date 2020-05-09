@@ -268,20 +268,6 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return ret;
     }
 
-    public static ListNBT serializeAll(Collection<PipeItem> items) {
-        ListNBT list = new ListNBT();
-        for (PipeItem item : items)
-            list.add(item.serializeNBT());
-        return list;
-    }
-
-    public static List<PipeItem> deserializeAll(ListNBT list) {
-        List<PipeItem> items = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++)
-            items.add(new PipeItem(list.getCompound(i)));
-        return items;
-    }
-
     @Override
     public boolean canContainFluid(IBlockReader worldIn, BlockPos pos, BlockState state, Fluid fluidIn) {
         return true;
