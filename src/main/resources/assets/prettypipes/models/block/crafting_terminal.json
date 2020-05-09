@@ -1,0 +1,7 @@
+{
+    "parent": "block/cube_column",
+    "textures": {
+        "end": "prettypipes:block/item_terminal_top",
+        "side": "prettypipes:block/crafting_terminal"
+    }
+}

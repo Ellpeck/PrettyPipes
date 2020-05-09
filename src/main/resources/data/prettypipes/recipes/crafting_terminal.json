@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " C ",
+        "RTR",
+        " R "
+    ],
+    "key": {
+        "T": {
+            "item": "prettypipes:item_terminal"
+        },
+        "C": {
+            "item": "minecraft:crafting_table"
+        },
+        "R": {
+            "item": "minecraft:redstone"
+        }
+    },
+    "result": {
+        "item": "prettypipes:crafting_terminal"
+    }
+}

@@ -32,7 +32,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             int all = hasShiftDown() ? 1 : 0;
             PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, all));
         }));
-        this.requestButton.active = false;
+        this.tick();
     }
 
     @Override
@@ -41,7 +41,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         CraftingTerminalTileEntity tile = this.getCraftingContainer().getTile();
         this.requestButton.active = false;
         for (int i = 0; i < tile.craftItems.getSlots(); i++) {
-            if (!tile.getRequestedCraftItem(i).isEmpty()) {
+            ItemStack stack = tile.getRequestedCraftItem(i);
+            if (!stack.isEmpty() && stack.getCount() < stack.getMaxStackSize()) {
                 this.requestButton.active = true;
                 break;
             }
