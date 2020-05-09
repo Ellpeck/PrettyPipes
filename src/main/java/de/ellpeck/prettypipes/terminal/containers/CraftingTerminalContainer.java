@@ -8,6 +8,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.CraftResultInventory;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.CraftingResultSlot;
 import net.minecraft.inventory.container.Slot;
@@ -68,7 +69,17 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
         return 65;
     }
 
-    protected CraftingTerminalTileEntity getTile() {
+    @Override
+    public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
+        if (slotId > 0) {
+            Slot slot = this.inventorySlots.get(slotId);
+            if (slot.inventory == this.craftInventory)
+                this.getTile().ghostItems.setStackInSlot(slot.getSlotIndex(), ItemStack.EMPTY);
+        }
+        return super.slotClick(slotId, dragType, clickTypeIn, player);
+    }
+
+    public CraftingTerminalTileEntity getTile() {
         return (CraftingTerminalTileEntity) this.tile;
     }
 }

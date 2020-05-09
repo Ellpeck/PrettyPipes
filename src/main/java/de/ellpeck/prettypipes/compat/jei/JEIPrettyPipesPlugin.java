@@ -5,6 +5,8 @@ import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.VanillaRecipeCategoryUid;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.runtime.IIngredientFilter;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.Minecraft;
@@ -44,6 +46,11 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     @Override
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
         this.runtime = jeiRuntime;
+    }
+
+    @Override
+    public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        registration.addRecipeTransferHandler(new CraftingTerminalTransferHandler(), VanillaRecipeCategoryUid.CRAFTING);
     }
 
     @SubscribeEvent

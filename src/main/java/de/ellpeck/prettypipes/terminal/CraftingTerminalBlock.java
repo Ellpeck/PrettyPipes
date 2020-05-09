@@ -28,22 +28,25 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
         CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, world, pos);
         if (tile != null) {
             ItemStack remain = item.stack;
-            int lowestFitting = -1;
+            int lowestSlot = -1;
             do {
                 for (int i = 0; i < tile.craftItems.getSlots(); i++) {
                     ItemStack stack = tile.getRequestedCraftItem(i);
+                    int count = tile.isGhostItem(i) ? 0 : stack.getCount();
                     if (!ItemHandlerHelper.canItemStacksStackRelaxed(stack, remain))
                         continue;
-                    if (lowestFitting < 0 || stack.getCount() < tile.getRequestedCraftItem(lowestFitting).getCount())
-                        lowestFitting = i;
+                    if (lowestSlot < 0 || !tile.isGhostItem(lowestSlot) && count < tile.getRequestedCraftItem(lowestSlot).getCount())
+                        lowestSlot = i;
                 }
-                if (lowestFitting >= 0) {
-                    remain = tile.craftItems.insertItem(lowestFitting, remain, false);
+                if (lowestSlot >= 0) {
+                    ItemStack copy = remain.copy();
+                    copy.setCount(1);
+                    remain.shrink(1 - tile.craftItems.insertItem(lowestSlot, copy, false).getCount());
                     if (remain.isEmpty())
                         return ItemStack.EMPTY;
                 }
             }
-            while (lowestFitting >= 0);
+            while (lowestSlot >= 0);
             return ItemHandlerHelper.insertItemStacked(tile.items, remain, false);
         }
         return item.stack;

@@ -96,6 +96,8 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, ""));
         this.search.setEnableBackgroundDrawing(false);
         this.lastSearchText = "";
+        if (this.items != null)
+            this.updateWidgets();
     }
 
     protected int getXOffset() {
