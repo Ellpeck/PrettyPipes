@@ -143,14 +143,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             return false;
         this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedNetworkNodes(startPipePos)) {
-            if (pipePos.equals(startPipePos))
-                continue;
             PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack, false, preventOversending);
-            if (dest != null) {
-                this.endProfile();
-                return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
-            }
+            if (dest == null || dest.equals(startInventory))
+                continue;
+            this.endProfile();
+            return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
         }
         this.endProfile();
         return false;
@@ -191,7 +189,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public ItemStack requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
-        if (location.pipePos.equals(destPipe))
+        if (location.getPos().equals(destInventory))
             return stack;
         ItemStack remain = stack.copy();
         for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
