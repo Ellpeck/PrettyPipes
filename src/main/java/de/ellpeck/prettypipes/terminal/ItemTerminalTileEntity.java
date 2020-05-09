@@ -84,8 +84,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             if (!this.pendingRequests.isEmpty()) {
                 NetworkLock request = this.pendingRequests.remove();
                 network.resolveNetworkLock(request);
-                if (network.requestItem(request.location, pipe.getPos(), this.pos, request.stack, request.stack.getCount(), ItemEqualityType.NBT))
-                    update = true;
+                network.requestItem(request.location, pipe.getPos(), this.pos, request.stack, ItemEqualityType.NBT);
+                update = true;
             }
         }
 
@@ -158,10 +158,16 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 if (amount > 0) {
                     if (remain < amount)
                         amount = remain;
-                    NetworkLock lock = new NetworkLock(location, stack);
-                    this.pendingRequests.add(lock);
-                    network.createNetworkLock(lock);
                     remain -= amount;
+                    while (amount > 0) {
+                        ItemStack copy = stack.copy();
+                        copy.setCount(Math.min(stack.getMaxStackSize(), amount));
+                        NetworkLock lock = new NetworkLock(location, copy);
+                        this.pendingRequests.add(lock);
+                        network.createNetworkLock(lock);
+                        amount -= copy.getCount();
+
+                    }
                     if (remain <= 0)
                         break;
                 }

@@ -53,7 +53,7 @@ public class RetrievalModuleItem extends ModuleItem {
             BlockPos dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            if (network.requestItem(tile.getPos(), dest, filtered, this.maxExtraction, filter.getEqualityTypes()))
+            if (network.requestItem(tile.getPos(), dest, copy, filter.getEqualityTypes()).isEmpty())
                 break;
         }
     }

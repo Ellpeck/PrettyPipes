@@ -177,28 +177,35 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return true;
     }
 
-    public boolean requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, int amount, ItemEqualityType... equalityTypes) {
+    public ItemStack requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
         List<NetworkLocation> locations = this.getOrderedNetworkItems(destPipe);
+        if (locations.isEmpty())
+            return stack;
+        ItemStack remain = stack.copy();
         for (NetworkLocation location : locations) {
-            if (this.requestItem(location, destPipe, destInventory, stack, amount, equalityTypes))
-                return true;
+            remain = this.requestItem(location, destPipe, destInventory, remain, equalityTypes);
+            if (remain.isEmpty())
+                break;
         }
-        return false;
+        return remain;
     }
 
-    public boolean requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, int amount, ItemEqualityType... equalityTypes) {
+    public ItemStack requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (location.pipePos.equals(destPipe))
-            return false;
+            return stack;
+        ItemStack remain = stack.copy();
         for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             IItemHandler handler = location.getItemHandler(this.world);
-            ItemStack extracted = handler.extractItem(slot, amount, true);
+            ItemStack extracted = handler.extractItem(slot, remain.getCount(), true);
             if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, speed -> new PipeItem(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
-                return true;
+                remain.shrink(extracted.getCount());
+                if (remain.isEmpty())
+                    break;
             }
         }
-        return false;
+        return remain;
     }
 
     public PipeTileEntity getPipe(BlockPos pos) {

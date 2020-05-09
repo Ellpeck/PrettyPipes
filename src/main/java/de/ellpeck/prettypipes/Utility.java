@@ -114,6 +114,18 @@ public final class Utility {
         return items;
     }
 
+    public static List<ItemStack> splitStackToFitMax(ItemStack stack) {
+        List<ItemStack> ret = new ArrayList<>();
+        int amount = stack.getCount();
+        while (amount > 0) {
+            ItemStack copy = stack.copy();
+            copy.setCount(Math.min(amount, stack.getMaxStackSize()));
+            ret.add(copy);
+            amount -= copy.getCount();
+        }
+        return ret;
+    }
+
     public interface IMergeItemStack {
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);
     }
