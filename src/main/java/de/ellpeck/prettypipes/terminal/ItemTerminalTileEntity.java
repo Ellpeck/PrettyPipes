@@ -96,6 +96,14 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     }
 
+    @Override
+    public void remove() {
+        super.remove();
+        PipeNetwork network = PipeNetwork.get(this.world);
+        for (NetworkLock lock : this.pendingRequests)
+            network.resolveNetworkLock(lock);
+    }
+
     public PipeTileEntity getConnectedPipe() {
         PipeNetwork network = PipeNetwork.get(this.world);
         for (Direction dir : Direction.values()) {
