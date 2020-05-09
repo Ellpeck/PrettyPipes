@@ -177,6 +177,30 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return true;
     }
 
+    public boolean requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, int amount, ItemEqualityType... equalityTypes) {
+        List<NetworkLocation> locations = this.getOrderedNetworkItems(destPipe);
+        for (NetworkLocation location : locations) {
+            if (this.requestItem(location, destPipe, destInventory, stack, amount, equalityTypes))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, int amount, ItemEqualityType... equalityTypes) {
+        if (location.pipePos.equals(destPipe))
+            return false;
+        for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
+            // try to extract from that location's inventory and send the item
+            IItemHandler handler = location.getItemHandler(this.world);
+            ItemStack extracted = handler.extractItem(slot, amount, true);
+            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, speed -> new PipeItem(extracted, speed))) {
+                handler.extractItem(slot, extracted.getCount(), false);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public PipeTileEntity getPipe(BlockPos pos) {
         PipeTileEntity tile = this.tileCache.get(pos);
         if (tile == null || tile.isRemoved()) {
@@ -223,10 +247,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return this.networkLocks.get(pos);
     }
 
-    public int getLockedAmount(BlockPos pos, int slot) {
+    public int getLockedAmount(BlockPos pos, ItemStack stack, ItemEqualityType... equalityTypes) {
         return this.getNetworkLocks(pos).stream()
-                .filter(l -> l.slot == slot)
-                .mapToInt(l -> l.amount).sum();
+                .filter(l -> ItemEqualityType.compareItems(l.stack, stack, equalityTypes))
+                .mapToInt(l -> l.stack.getCount()).sum();
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {

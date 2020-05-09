@@ -84,12 +84,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             if (!this.pendingRequests.isEmpty()) {
                 NetworkLock request = this.pendingRequests.remove();
                 network.resolveNetworkLock(request);
-                IItemHandler handler = request.location.getItemHandler(this.world);
-                ItemStack extracted = handler.extractItem(request.slot, request.amount, true);
-                if (network.routeItemToLocation(request.location.pipePos, request.location.getPos(), pipe.getPos(), this.pos, speed -> new PipeItem(extracted, speed))) {
-                    handler.extractItem(request.slot, extracted.getCount(), false);
+                if (network.requestItem(request.location, pipe.getPos(), this.pos, request.stack, request.stack.getCount(), ItemEqualityType.NBT))
                     update = true;
-                }
             }
         }
 
@@ -154,22 +150,20 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         NetworkItem item = this.networkItems.get(equatable);
         if (item != null) {
             int remain = stack.getCount();
-            locations:
             for (NetworkLocation location : item.getLocations()) {
-                for (int slot : location.getStackSlots(this.world, stack, ItemEqualityType.NBT)) {
-                    ItemStack inSlot = location.getItemHandler(this.world).extractItem(slot, Integer.MAX_VALUE, true);
-                    if (inSlot.isEmpty())
-                        continue;
-                    inSlot.shrink(network.getLockedAmount(location.getPos(), slot));
-                    if (inSlot.getCount() > 0) {
-                        int extract = Math.min(inSlot.getCount(), remain);
-                        NetworkLock lock = new NetworkLock(location, slot, extract);
-                        this.pendingRequests.add(lock);
-                        network.createNetworkLock(lock);
-                        remain -= extract;
-                        if (remain <= 0)
-                            break locations;
-                    }
+                int amount = location.getItemAmount(this.world, stack, ItemEqualityType.NBT);
+                if (amount <= 0)
+                    continue;
+                amount -= network.getLockedAmount(location.getPos(), stack, ItemEqualityType.NBT);
+                if (amount > 0) {
+                    if (remain < amount)
+                        amount = remain;
+                    NetworkLock lock = new NetworkLock(location, stack);
+                    this.pendingRequests.add(lock);
+                    network.createNetworkLock(lock);
+                    remain -= amount;
+                    if (remain <= 0)
+                        break;
                 }
             }
             return stack.getCount() - remain;

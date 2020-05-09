@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeItem;
@@ -39,7 +40,6 @@ public class RetrievalModuleItem extends ModuleItem {
         if (!tile.canWork())
             return;
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
-        List<NetworkLocation> locations = null;
 
         ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
         filter.isWhitelist = true;
@@ -53,22 +53,8 @@ public class RetrievalModuleItem extends ModuleItem {
             BlockPos dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            // loop through locations to find a location that has the item
-            if (locations == null)
-                locations = network.getOrderedNetworkItems(tile.getPos());
-            for (NetworkLocation location : locations) {
-                if (location.pipePos.equals(tile.getPos()))
-                    continue;
-                for (int slot : location.getStackSlots(tile.getWorld(), filtered, filter.getEqualityTypes())) {
-                    // try to extract from that location's inventory and send the item
-                    IItemHandler handler = location.getItemHandler(tile.getWorld());
-                    ItemStack stack = handler.extractItem(slot, this.maxExtraction, true);
-                    if (network.routeItemToLocation(location.pipePos, location.getPos(), tile.getPos(), dest, speed -> new PipeItem(stack, speed))) {
-                        handler.extractItem(slot, stack.getCount(), false);
-                        return;
-                    }
-                }
-            }
+            if (network.requestItem(tile.getPos(), dest, filtered, this.maxExtraction, filter.getEqualityTypes()))
+                break;
         }
     }
 

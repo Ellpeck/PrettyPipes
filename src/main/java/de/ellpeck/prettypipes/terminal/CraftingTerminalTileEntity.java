@@ -118,13 +118,11 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             int available = 0;
             if (item != null) {
                 for (NetworkLocation location : item.getLocations()) {
-                    for (int slot : location.getStackSlots(this.world, stack.stack, ItemEqualityType.NBT)) {
-                        ItemStack inSlot = location.getItemHandler(this.world).extractItem(slot, Integer.MAX_VALUE, true);
-                        if (inSlot.isEmpty())
-                            continue;
-                        inSlot.shrink(network.getLockedAmount(location.getPos(), slot));
-                        available += inSlot.getCount();
-                    }
+                    int amount = location.getItemAmount(this.world, stack.stack, ItemEqualityType.NBT);
+                    if (amount <= 0)
+                        continue;
+                    amount -= network.getLockedAmount(location.getPos(), stack.stack, ItemEqualityType.NBT);
+                    available += amount;
                 }
                 // divide the total by the amount required to get the amount that
                 // we have available for each crafting slot that contains this item

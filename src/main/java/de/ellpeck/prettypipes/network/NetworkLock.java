@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -9,13 +10,11 @@ import java.util.Collection;
 public class NetworkLock implements INBTSerializable<CompoundNBT> {
 
     public NetworkLocation location;
-    public int slot;
-    public int amount;
+    public ItemStack stack;
 
-    public NetworkLock(NetworkLocation location, int slot, int amount) {
+    public NetworkLock(NetworkLocation location, ItemStack stack) {
         this.location = location;
-        this.slot = slot;
-        this.amount = amount;
+        this.stack = stack;
     }
 
     public NetworkLock(CompoundNBT nbt) {
@@ -26,15 +25,13 @@ public class NetworkLock implements INBTSerializable<CompoundNBT> {
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();
         nbt.put("location", this.location.serializeNBT());
-        nbt.putInt("slot", this.slot);
-        nbt.putInt("amount", this.amount);
+        nbt.put("stack", this.stack.write(new CompoundNBT()));
         return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
         this.location = new NetworkLocation(nbt.getCompound("location"));
-        this.slot = nbt.getInt("slot");
-        this.amount = nbt.getInt("amount");
+        this.stack = ItemStack.read(nbt.getCompound("stack"));
     }
 }
