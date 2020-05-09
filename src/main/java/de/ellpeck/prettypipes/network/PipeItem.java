@@ -246,6 +246,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         Graph<BlockPos, NetworkEdge> graph = path.getGraph();
         List<BlockPos> ret = new ArrayList<>();
         List<BlockPos> nodes = path.getVertexList();
+        if (nodes.size() == 1) {
+            // add the single pipe twice if there's only one
+            // this is a dirty hack but it works fine so eh
+            for (int i = 0; i < 2; i++)
+                ret.add(nodes.get(0));
+            return ret;
+        }
         for (int i = 0; i < nodes.size() - 1; i++) {
             BlockPos first = nodes.get(i);
             BlockPos second = nodes.get(i + 1);
