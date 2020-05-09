@@ -8,6 +8,7 @@ import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
@@ -109,6 +110,11 @@ public class PacketButton {
         STACK_SIZE_AMOUNT((pos, data, player) -> {
             AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.openContainer;
             StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
+        }),
+        CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
+            CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, player.world, pos);
+            boolean all = data[0] > 0;
+            tile.requestCraftingItems(player, all);
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;

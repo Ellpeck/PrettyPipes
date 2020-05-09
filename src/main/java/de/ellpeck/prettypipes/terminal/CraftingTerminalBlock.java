@@ -27,20 +27,23 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
         BlockPos pos = pipePos.offset(direction);
         CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, world, pos);
         if (tile != null) {
-            int lowestFitting = -1;
-            for (int i = 0; i < tile.craftItems.getSlots(); i++) {
-                ItemStack stack = tile.getRequestedCraftItem(i);
-                if (!ItemHandlerHelper.canItemStacksStackRelaxed(stack, item.stack))
-                    continue;
-                if (lowestFitting < 0 || stack.getCount() < tile.getRequestedCraftItem(lowestFitting).getCount())
-                    lowestFitting = i;
-            }
             ItemStack remain = item.stack;
-            if (lowestFitting >= 0) {
-                remain = tile.craftItems.insertItem(lowestFitting, item.stack, false);
-                if (remain.isEmpty())
-                    return ItemStack.EMPTY;
+            int lowestFitting = -1;
+            do {
+                for (int i = 0; i < tile.craftItems.getSlots(); i++) {
+                    ItemStack stack = tile.getRequestedCraftItem(i);
+                    if (!ItemHandlerHelper.canItemStacksStackRelaxed(stack, remain))
+                        continue;
+                    if (lowestFitting < 0 || stack.getCount() < tile.getRequestedCraftItem(lowestFitting).getCount())
+                        lowestFitting = i;
+                }
+                if (lowestFitting >= 0) {
+                    remain = tile.craftItems.insertItem(lowestFitting, remain, false);
+                    if (remain.isEmpty())
+                        return ItemStack.EMPTY;
+                }
             }
+            while (lowestFitting >= 0);
             return ItemHandlerHelper.insertItemStacked(tile.items, remain, false);
         }
         return item.stack;

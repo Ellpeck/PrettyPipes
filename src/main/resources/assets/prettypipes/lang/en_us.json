@@ -50,6 +50,7 @@
     "info.prettypipes.request": "Request",
     "info.prettypipes.not_found": "%s not found",
     "info.prettypipes.sending": "Sending %s %s",
+    "info.prettypipes.sending_ingredients": "Sending %s sets of ingredients",
     "info.prettypipes.order": "Order by %s",
     "info.prettypipes.order.amount": "Amount",
     "info.prettypipes.order.name": "Name",

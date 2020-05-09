@@ -138,8 +138,19 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     public void requestItem(PlayerEntity player, ItemStack stack) {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_item");
-        EquatableItemStack equatable = new EquatableItemStack(stack);
         this.updateItems();
+        int requested = this.requestItemImpl(stack);
+        if (requested > 0) {
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.GREEN)));
+        } else {
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.RED)));
+        }
+        network.endProfile();
+    }
+
+    protected int requestItemImpl(ItemStack stack) {
+        PipeNetwork network = PipeNetwork.get(this.world);
+        EquatableItemStack equatable = new EquatableItemStack(stack);
         NetworkItem item = this.networkItems.get(equatable);
         if (item != null) {
             int remain = stack.getCount();
@@ -161,11 +172,9 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                     }
                 }
             }
-            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", stack.getCount() - remain, stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.GREEN)));
-        } else {
-            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.RED)));
+            return stack.getCount() - remain;
         }
-        network.endProfile();
+        return 0;
     }
 
     private PlayerEntity[] getLookingPlayers() {
