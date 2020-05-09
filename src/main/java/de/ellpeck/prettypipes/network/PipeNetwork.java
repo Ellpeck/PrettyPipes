@@ -143,6 +143,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             return false;
         this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedNetworkNodes(startPipePos)) {
+            if (!this.world.isBlockLoaded(pipePos))
+                continue;
             PipeTileEntity pipe = this.getPipe(pipePos);
             BlockPos dest = pipe.getAvailableDestination(stack, false, preventOversending);
             if (dest == null || dest.equals(startInventory))
@@ -221,6 +223,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.startProfile("get_network_items");
         List<NetworkLocation> info = new ArrayList<>();
         for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
+            if (!this.world.isBlockLoaded(dest))
+                continue;
             PipeTileEntity pipe = this.getPipe(dest);
             if (!pipe.canNetworkSee())
                 continue;
