@@ -204,6 +204,10 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return this.path.get(this.currentTile);
     }
 
+    public BlockPos getDestInventory(){
+        return this.destInventory;
+    }
+
     @Override
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();

@@ -149,14 +149,15 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             int maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
             if (maxAmount < stack.getCount())
                 continue;
+            BlockPos offset = this.pos.offset(dir);
             if (preventOversending || maxAmount < Integer.MAX_VALUE) {
                 PipeNetwork network = PipeNetwork.get(this.world);
-                // these are the items that are currently in the pipes, going to this pipe
-                int onTheWay = network.getItemsOnTheWay(this.pos, null);
+                // these are the items that are currently in the pipes, going to this inventory
+                int onTheWay = network.getItemsOnTheWay(offset, null);
                 if (onTheWay > 0) {
                     if (maxAmount < Integer.MAX_VALUE) {
                         // these are the items on the way, limited to items of the same type as stack
-                        int onTheWaySame = network.getItemsOnTheWay(this.pos, stack);
+                        int onTheWaySame = network.getItemsOnTheWay(offset, stack);
                         // check if any modules are limiting us
                         if (onTheWaySame + stack.getCount() > maxAmount)
                             continue;
@@ -176,7 +177,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                         continue;
                 }
             }
-            return this.pos.offset(dir);
+            return offset;
         }
         return null;
     }
