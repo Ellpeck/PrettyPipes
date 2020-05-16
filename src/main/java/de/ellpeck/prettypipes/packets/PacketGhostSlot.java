@@ -13,6 +13,7 @@ import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class PacketGhostSlot {
@@ -49,17 +50,32 @@ public class PacketGhostSlot {
 
     @SuppressWarnings("Convert2Lambda")
     public static void onMessage(PacketGhostSlot message, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(new Runnable() {
-            @Override
-            public void run() {
-                PlayerEntity player = ctx.get().getSender();
-                if (player == null)
-                    player = Minecraft.getInstance().player;
-                CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, player.world, message.pos);
-                if (tile != null)
-                    tile.setGhostItems(message.stacks);
-            }
-        });
+        Consumer<PlayerEntity> doIt = p -> {
+            CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, p.world, message.pos);
+            if (tile != null)
+                tile.setGhostItems(message.stacks);
+        };
+
+        // this whole thing is a dirty hack for allowing the same packet to be used
+        // both client -> server and server -> client without any classloading issues
+        PlayerEntity player = ctx.get().getSender();
+        // are we on the client?
+        if (player == null) {
+            ctx.get().enqueueWork(new Runnable() {
+                @Override
+                public void run() {
+                    doIt.accept(Minecraft.getInstance().player);
+                }
+            });
+        } else {
+            ctx.get().enqueueWork(new Runnable() {
+                @Override
+                public void run() {
+                    doIt.accept(player);
+                }
+            });
+        }
+
         ctx.get().setPacketHandled(true);
     }
 }
