@@ -78,6 +78,11 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
     }
 
     @Override
+    public boolean allowsModules(World world, BlockPos pipePos, Direction direction) {
+        return true;
+    }
+
+    @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
     }

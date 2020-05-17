@@ -228,8 +228,15 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.getItemHandler(dir, null) != null;
     }
 
-    public boolean isConnectedInventory() {
-        return Arrays.stream(Direction.values()).anyMatch(this::isConnectedInventory);
+    public boolean canHaveModules() {
+        for (Direction dir : Direction.values()) {
+            if (this.isConnectedInventory(dir))
+                return true;
+            IPipeConnectable connectable = this.getPipeConnectable(dir);
+            if (connectable != null && connectable.allowsModules(this.world, this.pos, dir))
+                return true;
+        }
+        return false;
     }
 
     public boolean canNetworkSee() {

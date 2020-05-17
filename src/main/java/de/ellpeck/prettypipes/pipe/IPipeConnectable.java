@@ -19,4 +19,8 @@ public interface IPipeConnectable {
     default ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
         return item.stack;
     }
+
+    default boolean allowsModules(World world, BlockPos pipePos, Direction direction) {
+        return false;
+    }
 }
