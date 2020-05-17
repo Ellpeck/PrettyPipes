@@ -10,7 +10,7 @@
             "item": "minecraft:redstone"
         },
         "D": {
-            "item": "minecraft:dispenser"
+            "item": "minecraft:dropper"
         },
         "M": {
             "item": "prettypipes:blank_module"
