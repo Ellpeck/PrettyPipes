@@ -26,6 +26,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.ListenableGraph;
@@ -41,6 +42,7 @@ import org.jgrapht.traverse.BreadthFirstIterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -129,31 +131,36 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         }
     }
 
-    public boolean tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
-        return this.routeItem(startPipePos, startInventory, stack, speed -> new PipeItem(stack, speed), preventOversending);
+    public ItemStack tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
+        return this.routeItem(startPipePos, startInventory, stack, PipeItem::new, preventOversending);
     }
 
-    public boolean routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, Function<Float, PipeItem> itemSupplier, boolean preventOversending) {
+    public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, BiFunction<ItemStack, Float, PipeItem> itemSupplier, boolean preventOversending) {
         if (!this.isNode(startPipePos))
-            return false;
+            return stack;
         if (!this.world.isBlockLoaded(startPipePos))
-            return false;
+            return stack;
         PipeTileEntity startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
-            return false;
+            return stack;
         this.startProfile("find_destination");
         for (BlockPos pipePos : this.getOrderedNetworkNodes(startPipePos)) {
             if (!this.world.isBlockLoaded(pipePos))
                 continue;
             PipeTileEntity pipe = this.getPipe(pipePos);
-            BlockPos dest = pipe.getAvailableDestination(stack, false, preventOversending);
-            if (dest == null || dest.equals(startInventory))
+            Pair<BlockPos, ItemStack> dest = pipe.getAvailableDestination(stack, false, preventOversending);
+            if (dest == null || dest.getLeft().equals(startInventory))
                 continue;
-            this.endProfile();
-            return this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest, itemSupplier);
+            Function<Float, PipeItem> sup = speed -> itemSupplier.apply(dest.getRight(), speed);
+            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), sup)) {
+                ItemStack remain = stack.copy();
+                remain.shrink(dest.getRight().getCount());
+                this.endProfile();
+                return remain;
+            }
         }
         this.endProfile();
-        return false;
+        return stack;
     }
 
     public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {

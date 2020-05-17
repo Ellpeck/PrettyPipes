@@ -75,9 +75,10 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 ItemStack extracted = this.items.extractItem(i, Integer.MAX_VALUE, true);
                 if (extracted.isEmpty())
                     continue;
-                if (!network.tryInsertItem(pipe.getPos(), this.pos, extracted, true))
+                ItemStack remain = network.tryInsertItem(pipe.getPos(), this.pos, extracted, true);
+                if (remain.getCount() == extracted.getCount())
                     continue;
-                this.items.extractItem(i, extracted.getCount(), false);
+                this.items.extractItem(i, extracted.getCount() - remain.getCount(), false);
                 break;
             }
 

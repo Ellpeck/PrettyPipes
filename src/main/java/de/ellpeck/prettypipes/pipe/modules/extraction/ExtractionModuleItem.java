@@ -48,8 +48,9 @@ public class ExtractionModuleItem extends ModuleItem {
                     continue;
                 if (!filter.isAllowed(stack))
                     continue;
-                if (network.tryInsertItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending)) {
-                    handler.extractItem(j, this.maxExtraction, false);
+                ItemStack remain = network.tryInsertItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending);
+                if (remain.getCount() != stack.getCount()) {
+                    handler.extractItem(j, stack.getCount() - remain.getCount(), false);
                     return;
                 }
             }

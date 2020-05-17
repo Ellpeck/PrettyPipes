@@ -135,7 +135,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
     }
 
-    public BlockPos getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {
+    public Pair<BlockPos, ItemStack> getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {
         if (!this.canWork())
             return null;
         if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
@@ -144,11 +144,16 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             IItemHandler handler = this.getItemHandler(dir, null);
             if (handler == null)
                 continue;
-            if (!ItemHandlerHelper.insertItem(handler, stack, true).isEmpty())
+            ItemStack remain = ItemHandlerHelper.insertItem(handler, stack, true);
+            // did we insert anything?
+            if (remain.getCount() == stack.getCount())
                 continue;
+            ItemStack toInsert = stack.copy();
+            toInsert.shrink(remain.getCount());
+            // limit to the max amount that modules allow us to insert
             int maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
-            if (maxAmount < stack.getCount())
-                continue;
+            if (maxAmount < toInsert.getCount())
+                toInsert.setCount(maxAmount);
             BlockPos offset = this.pos.offset(dir);
             if (preventOversending || maxAmount < Integer.MAX_VALUE) {
                 PipeNetwork network = PipeNetwork.get(this.world);
@@ -159,8 +164,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                         // these are the items on the way, limited to items of the same type as stack
                         int onTheWaySame = network.getItemsOnTheWay(offset, stack);
                         // check if any modules are limiting us
-                        if (onTheWaySame + stack.getCount() > maxAmount)
-                            continue;
+                        if (toInsert.getCount() + onTheWaySame > maxAmount)
+                            toInsert.setCount(maxAmount - onTheWaySame);
                     }
                     ItemStack copy = stack.copy();
                     copy.setCount(copy.getMaxStackSize());
@@ -169,15 +174,17 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                     for (int i = 0; i < handler.getSlots(); i++) {
                         // this is an inaccurate check since it ignores the fact that some slots might
                         // have space for items of other types, but it'll be good enough for us
-                        ItemStack remain = handler.insertItem(i, copy, true);
-                        totalSpace += copy.getMaxStackSize() - remain.getCount();
+                        ItemStack left = handler.insertItem(i, copy, true);
+                        totalSpace += copy.getMaxStackSize() - left.getCount();
                     }
-                    // if the items on the way plus the items we're trying to move are too much, abort
-                    if (onTheWay + stack.getCount() > totalSpace)
-                        continue;
+                    // if the items on the way plus the items we're trying to move are too much, reduce
+                    if (onTheWay + toInsert.getCount() > totalSpace)
+                        toInsert.setCount(totalSpace - onTheWay);
                 }
             }
-            return offset;
+            // we return the item that can actually be inserted, NOT the remainder!
+            if (!toInsert.isEmpty())
+                return Pair.of(offset, toInsert);
         }
         return null;
     }

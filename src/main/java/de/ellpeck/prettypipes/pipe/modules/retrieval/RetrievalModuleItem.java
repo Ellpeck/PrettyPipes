@@ -16,6 +16,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -50,10 +51,10 @@ public class RetrievalModuleItem extends ModuleItem {
                 continue;
             ItemStack copy = filtered.copy();
             copy.setCount(this.maxExtraction);
-            BlockPos dest = tile.getAvailableDestination(copy, true, this.preventOversending);
+            Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            if (network.requestItem(tile.getPos(), dest, copy, filter.getEqualityTypes()).isEmpty())
+            if (network.requestItem(tile.getPos(), dest.getLeft(), dest.getRight(), filter.getEqualityTypes()).isEmpty())
                 break;
         }
     }
