@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
@@ -32,6 +33,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -67,13 +69,21 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     @Override
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        if (!player.getHeldItem(handIn).isEmpty())
-            return ActionResultType.PASS;
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
         if (!tile.canHaveModules())
             return ActionResultType.PASS;
+        ItemStack stack = player.getHeldItem(handIn);
+        if (stack.getItem() instanceof IModule) {
+            ItemStack copy = stack.copy();
+            copy.setCount(1);
+            ItemStack remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
+            if (remain.isEmpty()) {
+                stack.shrink(1);
+                return ActionResultType.SUCCESS;
+            }
+        }
         if (!worldIn.isRemote)
             NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
         return ActionResultType.SUCCESS;
