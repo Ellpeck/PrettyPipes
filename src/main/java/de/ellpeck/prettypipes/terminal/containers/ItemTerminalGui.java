@@ -112,10 +112,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         this.minusButton.active = this.requestAmount > 1;
 
         this.search.tick();
-        String text = this.search.getText();
-        if (!this.lastSearchText.equals(text)) {
-            this.lastSearchText = text;
-            this.updateWidgets();
+        if (this.items != null) {
+            String text = this.search.getText();
+            if (!this.lastSearchText.equals(text)) {
+                this.lastSearchText = text;
+                this.updateWidgets();
+            }
         }
     }
 
