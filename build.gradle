@@ -119,7 +119,7 @@ jar {
 }
 
 task deobfJar(type: Jar) {
-    from(sourceSets.main.output)
+    from(sourceSets.main.allSource)
     archiveName = "${baseName}-${version}-sources.${extension}"
 }
 artifacts {
