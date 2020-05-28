@@ -83,10 +83,12 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
                 stack.shrink(1);
                 return ActionResultType.SUCCESS;
             }
+        } else if (handIn == Hand.MAIN_HAND && stack.isEmpty()) {
+            if (!worldIn.isRemote)
+                NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
+            return ActionResultType.SUCCESS;
         }
-        if (!worldIn.isRemote)
-            NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
-        return ActionResultType.SUCCESS;
+        return ActionResultType.PASS;
     }
 
     @Override
