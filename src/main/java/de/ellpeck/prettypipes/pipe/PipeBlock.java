@@ -166,7 +166,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         return state;
     }
 
-    private static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction, BlockState state) {
+    protected static ConnectionType getConnectionType(World world, BlockPos pos, Direction direction, BlockState state) {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
@@ -187,7 +187,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         return ConnectionType.DISCONNECTED;
     }
 
-    private static boolean hasLegsTo(World world, BlockState state, BlockPos pos, Direction direction) {
+    protected static boolean hasLegsTo(World world, BlockState state, BlockPos pos, Direction direction) {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
         if (state.getMaterial() == Material.ROCK || state.getMaterial() == Material.IRON)

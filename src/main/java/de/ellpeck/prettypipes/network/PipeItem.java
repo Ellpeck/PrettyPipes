@@ -44,13 +44,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     public float lastY;
     public float lastZ;
 
-    private List<BlockPos> path;
-    private BlockPos startInventory;
-    private BlockPos destInventory;
-    private BlockPos currGoalPos;
-    private int currentTile;
-    private boolean dropOnObstruction;
-    private long lastWorldTick;
+    protected List<BlockPos> path;
+    protected BlockPos startInventory;
+    protected BlockPos destInventory;
+    protected BlockPos currGoalPos;
+    protected int currentTile;
+    protected boolean dropOnObstruction;
+    protected long lastWorldTick;
 
     public PipeItem(ItemStack stack, float speed) {
         this.stack = stack;
@@ -153,7 +153,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         this.z += dist.z * currSpeed;
     }
 
-    private void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
+    protected void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
         if (currPipe.getWorld().isRemote)
             return;
         if (!this.dropOnObstruction && tryReturn) {
@@ -171,7 +171,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         item.world.addEntity(item);
     }
 
-    private ItemStack store(PipeTileEntity currPipe) {
+    protected ItemStack store(PipeTileEntity currPipe) {
         Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
         IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
@@ -182,7 +182,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return this.stack;
     }
 
-    private PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
+    protected PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
         if (this.path.size() <= this.currentTile + 1)
             return null;
         BlockPos pos = this.path.get(this.currentTile + 1);
@@ -192,7 +192,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return network.getPipe(pos);
     }
 
-    private BlockPos getStartPipe() {
+    protected BlockPos getStartPipe() {
         return this.path.get(0);
     }
 
@@ -246,7 +246,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }
 
-    private static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
+    protected static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
         Graph<BlockPos, NetworkEdge> graph = path.getGraph();
         List<BlockPos> ret = new ArrayList<>();
         List<BlockPos> nodes = path.getVertexList();

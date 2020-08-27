@@ -20,6 +20,7 @@ import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ChestTileEntity;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -60,7 +61,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     private int priority;
 
     public PipeTileEntity() {
-        super(Registry.pipeTileEntity);
+        this(Registry.pipeTileEntity);
+    }
+
+    protected PipeTileEntity(TileEntityType<?> type) {
+        super(type);
     }
 
     @Override
