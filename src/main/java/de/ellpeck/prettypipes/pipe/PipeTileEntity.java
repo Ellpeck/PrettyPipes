@@ -56,7 +56,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             return 1;
         }
     };
-    private List<PipeItem> items;
+    protected List<PipeItem> items;
     private int lastItemAmount;
     private int priority;
 
