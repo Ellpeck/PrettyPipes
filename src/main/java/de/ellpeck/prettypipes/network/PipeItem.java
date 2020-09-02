@@ -49,7 +49,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     protected BlockPos destInventory;
     protected BlockPos currGoalPos;
     protected int currentTile;
-    protected boolean dropOnObstruction;
+    protected boolean retryOnObstruction;
     protected long lastWorldTick;
 
     public PipeItem(ItemStack stack, float speed) {
@@ -156,13 +156,20 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     protected void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
         if (currPipe.getWorld().isRemote)
             return;
-        if (!this.dropOnObstruction && tryReturn) {
-            PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
-            if (network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, speed -> this)) {
-                this.dropOnObstruction = true;
+        PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
+        if (tryReturn) {
+            // first time: we try to return to our input chest
+            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, speed -> this)) {
+                this.retryOnObstruction = true;
                 return;
             }
+            // second time: we arrived at our input chest, it is full, so we try to find a different goal location
+            ItemStack remain = network.routeItem(currPipe.getPos(), this.startInventory, this.stack, (stack, speed) -> this, false);
+            if (remain.isEmpty())
+                return;
+            this.stack = remain;
         }
+        // if all re-routing attempts fail, we drop
         this.drop(currPipe.getWorld());
     }
 
@@ -204,7 +211,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return this.path.get(this.currentTile);
     }
 
-    public BlockPos getDestInventory(){
+    public BlockPos getDestInventory() {
         return this.destInventory;
     }
 
@@ -216,7 +223,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         nbt.put("start_inv", NBTUtil.writeBlockPos(this.startInventory));
         nbt.put("dest_inv", NBTUtil.writeBlockPos(this.destInventory));
         nbt.put("curr_goal", NBTUtil.writeBlockPos(this.currGoalPos));
-        nbt.putBoolean("drop_on_obstruction", this.dropOnObstruction);
+        nbt.putBoolean("drop_on_obstruction", this.retryOnObstruction);
         nbt.putInt("tile", this.currentTile);
         nbt.putFloat("x", this.x);
         nbt.putFloat("y", this.y);
@@ -235,7 +242,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         this.startInventory = NBTUtil.readBlockPos(nbt.getCompound("start_inv"));
         this.destInventory = NBTUtil.readBlockPos(nbt.getCompound("dest_inv"));
         this.currGoalPos = NBTUtil.readBlockPos(nbt.getCompound("curr_goal"));
-        this.dropOnObstruction = nbt.getBoolean("drop_on_obstruction");
+        this.retryOnObstruction = nbt.getBoolean("drop_on_obstruction");
         this.currentTile = nbt.getInt("tile");
         this.x = nbt.getFloat("x");
         this.y = nbt.getFloat("y");
