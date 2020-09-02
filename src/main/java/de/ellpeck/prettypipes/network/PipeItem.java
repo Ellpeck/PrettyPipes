@@ -164,7 +164,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
                 return;
             }
             // second time: we arrived at our input chest, it is full, so we try to find a different goal location
-            ItemStack remain = network.routeItem(currPipe.getPos(), this.startInventory, this.stack, (stack, speed) -> this, false);
+            ItemStack remain = network.routeItem(currPipe.getPos(), this.destInventory, this.stack, (stack, speed) -> this, false);
             if (remain.isEmpty())
                 return;
             this.stack = remain;
