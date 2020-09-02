@@ -33,6 +33,7 @@ public class ItemFilter extends ItemStackHandler {
 
     public boolean canPopulateFromInventories;
     public boolean canModifyWhitelist = true;
+    private boolean modified;
 
     public ItemFilter(int size, ItemStack stack, PipeTileEntity pipe) {
         super(size);
@@ -73,6 +74,7 @@ public class ItemFilter extends ItemStackHandler {
     public void onButtonPacket(int id) {
         if (id == 0 && this.canModifyWhitelist) {
             this.isWhitelist = !this.isWhitelist;
+            this.modified = true;
         } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
             for (Direction direction : Direction.values()) {
@@ -88,6 +90,7 @@ public class ItemFilter extends ItemStackHandler {
                     ItemHandlerHelper.insertItem(this, copy, false);
                 }
             }
+            this.modified = true;
         }
         this.save();
     }
@@ -117,7 +120,10 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     public void save() {
-        this.stack.getOrCreateTag().put("filter", this.serializeNBT());
+        if (this.modified) {
+            this.stack.getOrCreateTag().put("filter", this.serializeNBT());
+            this.modified = false;
+        }
     }
 
     @Override
@@ -131,6 +137,11 @@ public class ItemFilter extends ItemStackHandler {
     public void deserializeNBT(CompoundNBT nbt) {
         super.deserializeNBT(nbt);
         this.isWhitelist = nbt.getBoolean("whitelist");
+    }
+
+    @Override
+    protected void onContentsChanged(int slot) {
+        this.modified = true;
     }
 
     public interface IFilteredContainer {
