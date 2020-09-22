@@ -54,9 +54,10 @@ public class ItemTerminalWidget extends Widget {
         renderer.renderItemAndEffectIntoGUI(mc.player, this.stack, this.x, this.y);
         int amount = this.stack.getCount();
         String amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        // TODO figure out how to get the unicode font renderer for the terminal
-        FontRenderer font = mc.fontRenderer;//mc.getFontResourceManager().getFontRenderer(FONT);
-        renderer.renderItemOverlayIntoGUI(font, this.stack, this.x, this.y, amountStrg);
+        RenderSystem.pushMatrix();
+        RenderSystem.scalef(0.8F, 0.8F, 1);
+        renderer.renderItemOverlayIntoGUI(mc.fontRenderer, this.stack, (int) (this.x / 0.8F) + 4, (int) (this.y / 0.8F) + 4, amountStrg);
+        RenderSystem.popMatrix();
         renderer.zLevel = 0;
         this.setBlitOffset(0);
 

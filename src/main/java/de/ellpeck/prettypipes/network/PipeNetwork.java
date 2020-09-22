@@ -390,7 +390,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public int getItemsOnTheWay(BlockPos goalInv, ItemStack type, ItemEqualityType... equalityTypes) {
-        // TODO pending auto-crafting requests should be marked as "on the way" here to allow over-sending prevention
         return this.getPipeItemsOnTheWay(goalInv)
                 .filter(i -> type == null || ItemEqualityType.compareItems(i.stack, type, equalityTypes))
                 .mapToInt(i -> i.stack.getCount()).sum();
