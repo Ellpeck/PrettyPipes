@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
@@ -19,6 +20,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,7 +50,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     @Override
     protected void init() {
         super.init();
-        this.plusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 + 12, this.guiTop + 103, 12, 12, "+", button -> {
+        this.plusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 + 12, this.guiTop + 103, 12, 12, new StringTextComponent("+"), button -> {
             int modifier = requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
@@ -57,13 +60,13 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
-        this.minusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 24, this.guiTop + 103, 12, 12, "-", button -> {
+        this.minusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 24, this.guiTop + 103, 12, 12, new StringTextComponent("-"), button -> {
             this.requestAmount -= requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }));
         this.minusButton.active = false;
-        this.requestButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 25, this.guiTop + 115, 50, 20, I18n.format("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 25, this.guiTop + 115, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
             Optional<ItemTerminalWidget> widget = this.streamWidgets().filter(w -> w.selected).findFirst();
             if (!widget.isPresent())
                 return;
@@ -73,7 +76,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             this.requestAmount = 1;
         }));
         this.requestButton.active = false;
-        this.orderButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop, 20, 20, "", button -> {
+        this.orderButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop, 20, 20, new StringTextComponent(""), button -> {
             if (this.sortedItems == null)
                 return;
             PlayerPrefs prefs = PlayerPrefs.get();
@@ -81,7 +84,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
-        this.ascendingButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop + 22, 20, 20, "", button -> {
+        this.ascendingButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop + 22, 20, 20, new StringTextComponent(""), button -> {
             if (this.sortedItems == null)
                 return;
             PlayerPrefs prefs = PlayerPrefs.get();
@@ -93,7 +96,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
         }
-        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, ""));
+        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, new StringTextComponent("")));
         this.search.setEnableBackgroundDrawing(false);
         this.lastSearchText = "";
         if (this.items != null)
@@ -139,8 +142,8 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     public void updateWidgets() {
         PlayerPrefs prefs = PlayerPrefs.get();
-        this.ascendingButton.setMessage(prefs.terminalAscending ? "^" : "v");
-        this.orderButton.setMessage(prefs.terminalItemOrder.name().substring(0, 1));
+        this.ascendingButton.setMessage(new StringTextComponent(prefs.terminalAscending ? "^" : "v"));
+        this.orderButton.setMessage(new StringTextComponent(prefs.terminalItemOrder.name().substring(0, 1)));
 
         Comparator<ItemStack> comparator = prefs.terminalItemOrder.comparator;
         if (!prefs.terminalAscending)
@@ -183,42 +186,42 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground();
-        super.render(mouseX, mouseY, partialTicks);
+    public void render(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(matrix);
+        super.render(matrix, mouseX, mouseY, partialTicks);
         for (Widget widget : this.buttons) {
             if (widget instanceof ItemTerminalWidget)
-                widget.renderToolTip(mouseX, mouseY);
+                widget.renderToolTip(matrix, mouseX, mouseY);
         }
         if (this.sortedItems != null) {
             PlayerPrefs prefs = PlayerPrefs.get();
             if (this.orderButton.isHovered())
-                this.renderTooltip(I18n.format("info." + PrettyPipes.ID + ".order", I18n.format("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
+                this.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + ".order", I18n.format("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
             if (this.ascendingButton.isHovered())
-                this.renderTooltip(I18n.format("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
+                this.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
-        this.renderHoveredToolTip(mouseX, mouseY);
+        this.func_230459_a_(matrix, mouseX, mouseY);
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8 + this.getXOffset(), this.ySize - 96 + 2, 4210752);
-        this.font.drawString(this.title.getFormattedText(), 8, 6, 4210752);
+    protected void drawGuiContainerForegroundLayer(MatrixStack matrix, int mouseX, int mouseY) {
+        this.font.drawString(matrix, this.playerInventory.getDisplayName().getString(), 8 + this.getXOffset(), this.ySize - 96 + 2, 4210752);
+        this.font.drawString(matrix, this.title.getString(), 8, 6, 4210752);
 
         String amount = String.valueOf(this.requestAmount);
-        this.font.drawString(amount, (176 + 15 - this.font.getStringWidth(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
+        this.font.drawString(matrix, amount, (176 + 15 - this.font.getStringWidth(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+    protected void drawGuiContainerBackgroundLayer(MatrixStack matrix, float partialTicks, int mouseX, int mouseY) {
         this.getMinecraft().getTextureManager().bindTexture(this.getTexture());
-        this.blit(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
+        this.blit(matrix, this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
             float percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
-            this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
+            this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
-            this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
+            this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
         }
     }
 

@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe.containers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
@@ -53,37 +54,37 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground();
-        super.render(mouseX, mouseY, partialTicks);
+    public void render(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(matrix);
+        super.render(matrix, mouseX, mouseY, partialTicks);
         for (Widget widget : this.buttons) {
             if (widget.isHovered())
-                widget.renderToolTip(mouseX, mouseY);
+                widget.renderToolTip(matrix, mouseX, mouseY);
         }
-        this.renderHoveredToolTip(mouseX, mouseY);
+        this.func_230459_a_(matrix, mouseX, mouseY);
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8, this.ySize - 96 + 2, 4210752);
-        this.font.drawString(this.title.getFormattedText(), 8, 6 + 32, 4210752);
+    protected void drawGuiContainerForegroundLayer(MatrixStack matrix, int mouseX, int mouseY) {
+        this.font.drawString(matrix, this.playerInventory.getDisplayName().getString(), 8, this.ySize - 96 + 2, 4210752);
+        this.font.drawString(matrix, this.title.getString(), 8, 6 + 32, 4210752);
         for (Tab tab : this.tabs)
-            tab.drawForeground(mouseX, mouseY);
+            tab.drawForeground(matrix, mouseX, mouseY);
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+    protected void drawGuiContainerBackgroundLayer(MatrixStack matrix, float partialTicks, int mouseX, int mouseY) {
         this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
-        this.blit(this.guiLeft, this.guiTop + 32, 0, 0, 176, 171);
+        this.blit(matrix, this.guiLeft, this.guiTop + 32, 0, 0, 176, 171);
 
         for (Tab tab : this.tabs)
-            tab.draw();
+            tab.draw(matrix);
 
         // draw the slots since we're using a blank ui
         for (Slot slot : this.container.inventorySlots) {
             if (slot.inventory == this.playerInventory)
                 continue;
-            this.blit(this.guiLeft + slot.xPos - 1, this.guiTop + slot.yPos - 1, 176, 62, 18, 18);
+            this.blit(matrix, this.guiLeft + slot.xPos - 1, this.guiTop + slot.yPos - 1, 176, 62, 18, 18);
         }
     }
 
@@ -124,7 +125,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             this.y = AbstractPipeGui.this.guiTop;
         }
 
-        private void draw() {
+        private void draw(MatrixStack matrix) {
             int y = 2;
             int v = 0;
             int height = 30;
@@ -135,16 +136,16 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 height = 32;
                 itemOffset = 7;
             }
-            AbstractPipeGui.this.blit(this.x, this.y + y, 176, v, 28, height);
+            AbstractPipeGui.this.blit(matrix, this.x, this.y + y, 176, v, 28, height);
 
             AbstractPipeGui.this.itemRenderer.renderItemIntoGUI(this.moduleStack, this.x + 6, this.y + itemOffset);
             AbstractPipeGui.this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
         }
 
-        private void drawForeground(int mouseX, int mouseY) {
+        private void drawForeground(MatrixStack matrix, int mouseX, int mouseY) {
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return;
-            AbstractPipeGui.this.renderTooltip(this.moduleStack.getDisplayName().getFormattedText(), mouseX - AbstractPipeGui.this.guiLeft, mouseY - AbstractPipeGui.this.guiTop);
+            AbstractPipeGui.this.renderTooltip(matrix, this.moduleStack.getDisplayName(), mouseX - AbstractPipeGui.this.guiLeft, mouseY - AbstractPipeGui.this.guiTop);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

@@ -14,7 +14,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.DrawScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
@@ -59,7 +61,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         if (!(screen instanceof ItemTerminalGui))
             return;
         ItemTerminalGui terminal = (ItemTerminalGui) screen;
-        event.addWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, "", button -> {
+        event.addWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, new StringTextComponent(""), button -> {
             PlayerPrefs prefs = PlayerPrefs.get();
             prefs.syncJei = !prefs.syncJei;
             prefs.save();
@@ -78,9 +80,9 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         boolean sync = PlayerPrefs.get().syncJei;
         if (event instanceof DrawScreenEvent.Post) {
             if (this.jeiSyncButton.isHovered())
-                terminal.renderTooltip(I18n.format("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
+                terminal.renderTooltip(event.getMatrixStack(), new TranslationTextComponent("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
         } else if (event instanceof DrawScreenEvent.Pre) {
-            this.jeiSyncButton.setMessage((sync ? TextFormatting.GREEN : TextFormatting.RED) + "J");
+            this.jeiSyncButton.setMessage(new StringTextComponent((sync ? TextFormatting.GREEN : TextFormatting.RED) + "J"));
         }
     }
 

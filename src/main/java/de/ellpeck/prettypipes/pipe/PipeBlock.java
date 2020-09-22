@@ -10,8 +10,8 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.EnumProperty;
@@ -55,7 +55,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     static {
         for (Direction dir : Direction.values())
-            DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
+            DIRECTIONS.put(dir, EnumProperty.create(dir.getName2(), ConnectionType.class));
     }
 
     public PipeBlock() {
@@ -98,7 +98,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     }
 
     @Override
-    public IFluidState getFluidState(BlockState state) {
+    public FluidState getFluidState(BlockState state) {
         return state.get(BlockStateProperties.WATERLOGGED) ? Fluids.WATER.getStillFluidState(false) : super.getFluidState(state);
     }
 
@@ -130,11 +130,6 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     }
 
     @Override
-    public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos) {
-        return false;
-    }
-
-    @Override
     public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
         VoxelShape shape = SHAPE_CACHE.get(state);
         if (shape != null)
@@ -151,7 +146,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     private BlockState createState(World world, BlockPos pos, BlockState curr) {
         BlockState state = this.getDefaultState();
-        IFluidState fluid = world.getFluidState(pos);
+        FluidState fluid = world.getFluidState(pos);
         if (fluid.isTagged(FluidTags.WATER) && fluid.getLevel() == 8)
             state = state.with(BlockStateProperties.WATERLOGGED, true);
 
@@ -191,7 +186,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
         if (state.getMaterial() == Material.ROCK || state.getMaterial() == Material.IRON)
-            return hasSolidSide(state, world, pos, direction.getOpposite());
+            return hasEnoughSolidSide(world, pos, direction.getOpposite());
         return false;
     }
 

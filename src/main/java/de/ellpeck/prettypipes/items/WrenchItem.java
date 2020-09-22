@@ -33,7 +33,7 @@ public class WrenchItem extends Item {
         if (!(state.getBlock() instanceof PipeBlock))
             return ActionResultType.PASS;
 
-        if (context.getPlayer().isShiftKeyDown()) {
+        if (context.getPlayer().isSneaking()) {
             if (!world.isRemote) {
                 Block.spawnDrops(state, world, pos, world.getTileEntity(pos), null, ItemStack.EMPTY);
                 world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_REMOVE_ITEM, SoundCategory.PLAYERS, 1, 1);

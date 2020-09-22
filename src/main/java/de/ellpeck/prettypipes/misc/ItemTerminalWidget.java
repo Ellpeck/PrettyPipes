@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
@@ -10,6 +11,9 @@ import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
@@ -25,7 +29,7 @@ public class ItemTerminalWidget extends Widget {
     public ItemStack stack = ItemStack.EMPTY;
 
     public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemTerminalGui screen) {
-        super(xIn, yIn, 16, 16, "");
+        super(xIn, yIn, 16, 16, new StringTextComponent(""));
         this.gridX = gridX;
         this.gridY = gridY;
         this.screen = screen;
@@ -39,18 +43,19 @@ public class ItemTerminalWidget extends Widget {
     }
 
     @Override
-    public void renderButton(int mouseX, int mouseY, float partialTicks) {
+    public void renderButton(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
         Minecraft mc = this.screen.getMinecraft();
         ItemRenderer renderer = mc.getItemRenderer();
         this.setBlitOffset(100);
         renderer.zLevel = 100;
         if (this.selected)
-            fill(this.x, this.y, this.x + 16, this.y + 16, -2130706433);
+            fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
         renderer.renderItemAndEffectIntoGUI(mc.player, this.stack, this.x, this.y);
         int amount = this.stack.getCount();
         String amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        FontRenderer font = mc.getFontResourceManager().getFontRenderer(FONT);
+        // TODO figure out how to get the unicode font renderer for the terminal
+        FontRenderer font = mc.fontRenderer;//mc.getFontResourceManager().getFontRenderer(FONT);
         renderer.renderItemOverlayIntoGUI(font, this.stack, this.x, this.y, amountStrg);
         renderer.zLevel = 0;
         this.setBlitOffset(0);
@@ -58,23 +63,24 @@ public class ItemTerminalWidget extends Widget {
         if (this.isHovered()) {
             RenderSystem.disableDepthTest();
             RenderSystem.colorMask(true, true, true, false);
-            this.fillGradient(this.x, this.y, this.x + 16, this.y + 16, -2130706433, -2130706433);
+            this.fillGradient(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433, -2130706433);
             RenderSystem.colorMask(true, true, true, true);
             RenderSystem.enableDepthTest();
         }
     }
 
     @Override
-    public void renderToolTip(int mouseX, int mouseY) {
+    public void renderToolTip(MatrixStack matrix, int mouseX, int mouseY) {
         if (this.visible && this.isHovered()) {
-            FontRenderer font = this.stack.getItem().getFontRenderer(this.stack);
-            if (font == null)
-                font = this.screen.getMinecraft().fontRenderer;
             GuiUtils.preItemToolTip(this.stack);
-            List<String> tooltip = this.screen.getTooltipFromItem(this.stack);
-            if (this.stack.getCount() >= 1000)
-                tooltip.set(0, tooltip.get(0) + TextFormatting.BOLD + " (" + this.stack.getCount() + ')');
-            this.screen.renderTooltip(tooltip, mouseX, mouseY, font);
+            List<ITextComponent> tooltip = this.screen.getTooltipFromItem(this.stack);
+            if (this.stack.getCount() >= 1000) {
+                ITextComponent comp = tooltip.get(0);
+                if (comp instanceof TextComponent) {
+                    tooltip.set(0, ((TextComponent) comp).append(new StringTextComponent(" (" + this.stack.getCount() + ')').mergeStyle(TextFormatting.BOLD)));
+                }
+            }
+            this.screen.func_243308_b(matrix, tooltip, mouseX, mouseY);
             GuiUtils.postItemToolTip();
         }
     }

@@ -14,6 +14,7 @@ import de.ellpeck.prettypipes.packets.PacketGhostSlot;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -133,7 +134,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 lowestAvailable = 0;
             }
             if (available <= 0)
-                player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.stack.getDisplayName()).setStyle(new Style().setColor(TextFormatting.RED)));
+                player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
         }
         if (lowestAvailable > 0) {
             // if we're only crafting one item, pretend we only have enough for one
@@ -147,7 +148,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 requested.setCount(lowestAvailable);
                 this.requestItemImpl(requested);
             }
-            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(new Style().setColor(TextFormatting.GREEN)));
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
         }
         network.endProfile();
     }
@@ -159,9 +160,9 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     }
 
     @Override
-    public void read(CompoundNBT compound) {
+    public void read(BlockState state, CompoundNBT compound) {
         this.craftItems.deserializeNBT(compound.getCompound("craft_items"));
-        super.read(compound);
+        super.read(state, compound);
     }
 
     @Override

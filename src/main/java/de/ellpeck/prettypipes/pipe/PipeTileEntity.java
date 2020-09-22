@@ -75,9 +75,9 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     @Override
-    public void read(CompoundNBT compound) {
+    public void read(BlockState state, CompoundNBT compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
-        super.read(compound);
+        super.read(state, compound);
     }
 
     @Override
@@ -89,8 +89,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     @Override
-    public void handleUpdateTag(CompoundNBT nbt) {
-        this.read(nbt);
+    public void handleUpdateTag(BlockState state, CompoundNBT nbt) {
+        this.read(state, nbt);
         List<PipeItem> items = this.getItems();
         items.clear();
         items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new));
@@ -217,7 +217,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             if (tile instanceof ChestTileEntity) {
                 BlockState state = this.world.getBlockState(tile.getPos());
                 if (state.getBlock() instanceof ChestBlock)
-                    return new InvWrapper(ChestBlock.func_226916_a_((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
+                    return new InvWrapper(ChestBlock.getChestInventory((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
             }
             IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
             if (handler != null)

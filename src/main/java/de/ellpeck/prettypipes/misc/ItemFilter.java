@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
@@ -13,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
@@ -54,17 +56,17 @@ public class ItemFilter extends ItemStackHandler {
     public List<Widget> getButtons(Screen gui, int x, int y) {
         List<Widget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
-            Supplier<String> whitelistText = () -> I18n.format("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
+            Supplier<TranslationTextComponent> whitelistText = () -> new TranslationTextComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
             buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
                 PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
                 button.setMessage(whitelistText.get());
             }));
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, I18n.format("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+            buttons.add(new Button(x + 72, y, 70, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
                 @Override
-                public void renderToolTip(int x, int y) {
-                    gui.renderTooltip(TextFormatting.GRAY + I18n.format("info." + PrettyPipes.ID + ".populate.description"), x, y);
+                public void renderToolTip(MatrixStack matrix, int x, int y) {
+                    gui.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + ".populate.description").mergeStyle(TextFormatting.GRAY), x, y);
                 }
             });
         }

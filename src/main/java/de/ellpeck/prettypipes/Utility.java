@@ -51,9 +51,9 @@ public final class Utility {
         if (Screen.hasShiftDown()) {
             String[] content = I18n.format("info." + PrettyPipes.ID + "." + name).split("\n");
             for (String s : content)
-                tooltip.add(new StringTextComponent(s).setStyle(new Style().setColor(TextFormatting.GRAY)));
+                tooltip.add(new StringTextComponent(s).setStyle(Style.EMPTY.setFormatting(TextFormatting.GRAY)));
         } else {
-            tooltip.add(new TranslationTextComponent("info." + PrettyPipes.ID + ".shift").setStyle(new Style().setColor(TextFormatting.DARK_GRAY)));
+            tooltip.add(new TranslationTextComponent("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.setFormatting(TextFormatting.DARK_GRAY)));
         }
     }
 

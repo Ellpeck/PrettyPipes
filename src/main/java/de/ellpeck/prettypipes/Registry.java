@@ -197,7 +197,7 @@ public final class Registry {
 
     public static final class Client {
         public static void setup(FMLClientSetupEvent event) {
-            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
+            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.getCutout());
             ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
             RenderingRegistry.registerEntityRenderingHandler(pipeFrameEntity, PipeFrameRenderer::new);
 

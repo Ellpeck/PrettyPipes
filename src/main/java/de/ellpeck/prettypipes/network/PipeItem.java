@@ -7,7 +7,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ILiquidContainer;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.fluid.Fluid;
-import net.minecraft.fluid.IFluidState;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -16,7 +16,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
@@ -107,7 +107,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
                 next.getItems().add(this);
             }
         } else {
-            double dist = new Vec3d(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
+            double dist = Vector3d.copy(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
             if (dist < this.speed * this.speed) {
                 // we're past the start of the pipe, so move to the center of the next pipe
                 BlockPos nextPos;
@@ -127,8 +127,8 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
                 float tolerance = 0.001F;
                 if (dist >= tolerance * tolerance) {
                     // when going around corners, we want to move right up to the corner
-                    Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
-                    Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                    Vector3d motion = new Vector3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                    Vector3d diff = new Vector3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
                     if (motion.crossProduct(diff).length() >= tolerance) {
                         currSpeed = (float) Math.sqrt(dist);
                     } else {
@@ -146,7 +146,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         this.lastY = this.y;
         this.lastZ = this.z;
 
-        Vec3d dist = new Vec3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
+        Vector3d dist = new Vector3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
         dist = dist.normalize();
         this.x += dist.x * currSpeed;
         this.y += dist.y * currSpeed;
@@ -292,7 +292,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     }
 
     @Override
-    public boolean receiveFluid(IWorld worldIn, BlockPos pos, BlockState state, IFluidState fluidStateIn) {
+    public boolean receiveFluid(IWorld worldIn, BlockPos pos, BlockState state, FluidState fluidStateIn) {
         return false;
     }
 }

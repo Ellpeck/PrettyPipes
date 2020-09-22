@@ -18,10 +18,7 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.SoundEvents;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.GameRules;
@@ -125,14 +122,14 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
     private void dropItemOrSelf(@Nullable Entity entityIn, boolean b) {
         if (!this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
             if (entityIn == null)
-                this.getDisplayedItem().setItemFrame(null);
+                this.getDisplayedItem().setAttachedEntity(null);
         } else {
             ItemStack itemstack = this.getDisplayedItem();
             this.setDisplayedItem(ItemStack.EMPTY);
             if (entityIn instanceof PlayerEntity) {
                 PlayerEntity playerentity = (PlayerEntity) entityIn;
                 if (playerentity.abilities.isCreativeMode) {
-                    itemstack.setItemFrame(null);
+                    itemstack.setAttachedEntity(null);
                     return;
                 }
             }
@@ -142,7 +139,7 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
 
             if (!itemstack.isEmpty()) {
                 itemstack = itemstack.copy();
-                itemstack.setItemFrame(null);
+                itemstack.setAttachedEntity(null);
                 this.entityDropItem(itemstack);
             }
 
@@ -150,10 +147,10 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
     }
 
     @Override
-    public boolean processInitialInteract(PlayerEntity player, Hand hand) {
+    public ActionResultType processInitialInteract(PlayerEntity player, Hand hand) {
         if (this.getDisplayedItem().isEmpty())
             return super.processInitialInteract(player, hand);
-        return false;
+        return ActionResultType.FAIL;
     }
 
     @Override
