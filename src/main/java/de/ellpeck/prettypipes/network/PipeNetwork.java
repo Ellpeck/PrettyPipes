@@ -360,6 +360,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
+                    .filter(p -> this.getPipe(p) != null)
                     .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
                     .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);
