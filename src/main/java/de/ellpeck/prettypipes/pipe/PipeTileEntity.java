@@ -59,8 +59,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             return 1;
         }
     };
+    public PressurizerTileEntity pressurizer;
     protected List<PipeItem> items;
-    private PressurizerTileEntity pressurizer;
     private int lastItemAmount;
     private int priority;
 
@@ -102,6 +102,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     @Override
     public void tick() {
+        // invalidate our pressurizer reference if it was removed
+        if(this.pressurizer != null && this.pressurizer.isRemoved())
+            this.pressurizer = null;
+
         if (!this.world.isAreaLoaded(this.pos, 1))
             return;
         IProfiler profiler = this.world.getProfiler();
@@ -121,13 +125,6 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 PipeNetwork.get(this.world).clearDestinationCache(this.pos);
             }
             profiler.endSection();
-
-            if (this.world.getGameTime() % 40 == 0) {
-                profiler.startSection("caching_data");
-                // figure out if we're pressurized
-                this.pressurizer = this.findPressurizer();
-                profiler.endSection();
-            }
         }
 
         profiler.startSection("ticking_items");
@@ -151,7 +148,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         // an item might be re-routed from a previous location, but it should still count as a new item then
         if (!this.getItems().contains(item))
             this.getItems().add(item);
-        if (this.pressurizer != null && !this.pressurizer.isRemoved())
+        if (this.pressurizer != null)
             this.pressurizer.pressurizeItem(item.stack, false);
     }
 
@@ -219,7 +216,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     public float getItemSpeed(ItemStack stack) {
         float moduleSpeed = (float) this.streamModules().mapToDouble(m -> m.getRight().getItemSpeedIncrease(m.getLeft(), this)).sum();
-        float pressureSpeed = this.pressurizer != null && !this.pressurizer.isRemoved() && this.pressurizer.pressurizeItem(stack, true) ? 0.45F : 0;
+        float pressureSpeed = this.pressurizer != null && this.pressurizer.pressurizeItem(stack, true) ? 0.45F : 0;
         return 0.05F + moduleSpeed + pressureSpeed;
     }
 
@@ -301,18 +298,5 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
         return new MainPipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this.pos);
-    }
-
-    private PressurizerTileEntity findPressurizer() {
-        PipeNetwork network = PipeNetwork.get(this.world);
-        for (BlockPos node : network.getOrderedNetworkNodes(this.pos)) {
-            PipeTileEntity pipe = network.getPipe(node);
-            for (Direction dir : Direction.values()) {
-                IPipeConnectable connectable = pipe.getPipeConnectable(dir);
-                if (connectable instanceof PressurizerBlock)
-                    return Utility.getTileEntity(PressurizerTileEntity.class, this.world, node.offset(dir));
-            }
-        }
-        return null;
     }
 }

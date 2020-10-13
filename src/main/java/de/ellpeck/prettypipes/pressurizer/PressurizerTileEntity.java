@@ -3,6 +3,8 @@ package de.ellpeck.prettypipes.pressurizer;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -17,6 +19,7 @@ import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.common.capabilities.Capability;
@@ -109,6 +112,20 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
     public void tick() {
         if (this.world.isRemote)
             return;
+        // notify pipes in network about us
+        if (this.world.getGameTime() % 10 == 0) {
+            PipeNetwork network = PipeNetwork.get(this.world);
+            for (Direction dir : Direction.values()) {
+                BlockPos offset = this.pos.offset(dir);
+                for (BlockPos node : network.getOrderedNetworkNodes(offset)) {
+                    PipeTileEntity pipe = network.getPipe(node);
+                    if (pipe != null)
+                        pipe.pressurizer = this;
+                }
+            }
+        }
+
+        // send energy update
         if (this.lastEnergy != this.storage.getEnergyStored() && this.world.getGameTime() % 10 == 0) {
             this.lastEnergy = this.storage.getEnergyStored();
             Utility.sendTileEntityToClients(this);
