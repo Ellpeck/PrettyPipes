@@ -304,11 +304,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     private PressurizerTileEntity findPressurizer() {
-        for (PipeTileEntity node : PipeNetwork.get(this.world).getNetworkNodes(this.pos, p -> true)) {
+        PipeNetwork network = PipeNetwork.get(this.world);
+        for (BlockPos node : network.getOrderedNetworkNodes(this.pos)) {
+            PipeTileEntity pipe = network.getPipe(node);
             for (Direction dir : Direction.values()) {
-                IPipeConnectable connectable = node.getPipeConnectable(dir);
+                IPipeConnectable connectable = pipe.getPipeConnectable(dir);
                 if (connectable instanceof PressurizerBlock)
-                    return Utility.getTileEntity(PressurizerTileEntity.class, this.world, node.pos.offset(dir));
+                    return Utility.getTileEntity(PressurizerTileEntity.class, this.world, node.offset(dir));
             }
         }
         return null;

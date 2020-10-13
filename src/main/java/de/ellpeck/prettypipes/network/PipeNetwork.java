@@ -297,15 +297,6 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return null;
     }
 
-    public List<PipeTileEntity> getNetworkNodes(BlockPos pos, Predicate<PipeTileEntity> predicate) {
-        if (!this.isNode(pos))
-            return Collections.emptyList();
-        return this.getOrderedNetworkNodes(pos).stream()
-                .map(this::getPipe)
-                .filter(predicate)
-                .collect(Collectors.toList());
-    }
-
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {
         this.startProfile("create_all_edges");
         List<NetworkEdge> edges = new ArrayList<>();
@@ -361,7 +352,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return null;
     }
 
-    private List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
+    public List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
+        if (!this.isNode(node))
+            return Collections.emptyList();
         List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
             this.startProfile("compile_connected_nodes");
