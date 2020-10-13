@@ -85,72 +85,78 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             return;
         this.lastWorldTick = worldTick;
 
-        float currSpeed = this.speed;
-        BlockPos myPos = new BlockPos(this.x, this.y, this.z);
-        if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
-            // we're done with the current pipe, so switch to the next one
-            currPipe.getItems().remove(this);
-            PipeTileEntity next = this.getNextTile(currPipe, true);
-            if (next == null) {
-                if (!currPipe.getWorld().isRemote) {
-                    if (currPipe.getPos().equals(this.getDestPipe())) {
-                        // ..or store in our destination container if we reached our destination
-                        this.stack = this.store(currPipe);
-                        if (!this.stack.isEmpty())
-                            this.onPathObstructed(currPipe, true);
-                    } else {
-                        this.onPathObstructed(currPipe, false);
-                    }
-                }
-                return;
-            } else {
-                next.getItems().add(this);
-            }
-        } else {
-            double dist = Vector3d.copy(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
-            if (dist < this.speed * this.speed) {
-                // we're past the start of the pipe, so move to the center of the next pipe
-                BlockPos nextPos;
-                PipeTileEntity next = this.getNextTile(currPipe, false);
+        float motionLeft = this.speed;
+        while (motionLeft > 0) {
+            float currSpeed = Math.min(0.25F, motionLeft);
+            motionLeft -= currSpeed;
+
+            BlockPos myPos = new BlockPos(this.x, this.y, this.z);
+            if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
+                // we're done with the current pipe, so switch to the next one
+                currPipe.getItems().remove(this);
+                PipeTileEntity next = this.getNextTile(currPipe, true);
                 if (next == null) {
-                    if (currPipe.getPos().equals(this.getDestPipe())) {
-                        nextPos = this.destInventory;
-                    } else {
-                        currPipe.getItems().remove(this);
-                        if (!currPipe.getWorld().isRemote)
+                    if (!currPipe.getWorld().isRemote) {
+                        if (currPipe.getPos().equals(this.getDestPipe())) {
+                            // ..or store in our destination container if we reached our destination
+                            this.stack = this.store(currPipe);
+                            if (!this.stack.isEmpty())
+                                this.onPathObstructed(currPipe, true);
+                        } else {
                             this.onPathObstructed(currPipe, false);
-                        return;
+                        }
                     }
+                    return;
                 } else {
-                    nextPos = next.getPos();
+                    next.getItems().add(this);
+                    currPipe = next;
                 }
-                float tolerance = 0.001F;
-                if (dist >= tolerance * tolerance) {
-                    // when going around corners, we want to move right up to the corner
-                    Vector3d motion = new Vector3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
-                    Vector3d diff = new Vector3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
-                    if (motion.crossProduct(diff).length() >= tolerance) {
-                        currSpeed = (float) Math.sqrt(dist);
+            } else {
+                double dist = Vector3d.copy(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
+                if (dist < currSpeed * currSpeed) {
+                    // we're past the start of the pipe, so move to the center of the next pipe
+                    BlockPos nextPos;
+                    PipeTileEntity next = this.getNextTile(currPipe, false);
+                    if (next == null) {
+                        if (currPipe.getPos().equals(this.getDestPipe())) {
+                            nextPos = this.destInventory;
+                        } else {
+                            currPipe.getItems().remove(this);
+                            if (!currPipe.getWorld().isRemote)
+                                this.onPathObstructed(currPipe, false);
+                            return;
+                        }
                     } else {
-                        // we're not going around a corner, so continue
+                        nextPos = next.getPos();
+                    }
+                    float tolerance = 0.001F;
+                    if (dist >= tolerance * tolerance) {
+                        // when going around corners, we want to move right up to the corner
+                        Vector3d motion = new Vector3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                        Vector3d diff = new Vector3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                        if (motion.crossProduct(diff).length() >= tolerance) {
+                            currSpeed = (float) Math.sqrt(dist);
+                        } else {
+                            // we're not going around a corner, so continue
+                            this.currGoalPos = nextPos;
+                        }
+                    } else {
+                        // distance is very small, so continue
                         this.currGoalPos = nextPos;
                     }
-                } else {
-                    // distance is very small, so continue
-                    this.currGoalPos = nextPos;
                 }
             }
+
+            this.lastX = this.x;
+            this.lastY = this.y;
+            this.lastZ = this.z;
+
+            Vector3d dist = new Vector3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
+            dist = dist.normalize();
+            this.x += dist.x * currSpeed;
+            this.y += dist.y * currSpeed;
+            this.z += dist.z * currSpeed;
         }
-
-        this.lastX = this.x;
-        this.lastY = this.y;
-        this.lastZ = this.z;
-
-        Vector3d dist = new Vector3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
-        dist = dist.normalize();
-        this.x += dist.x * currSpeed;
-        this.y += dist.y * currSpeed;
-        this.z += dist.z * currSpeed;
     }
 
     protected void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
