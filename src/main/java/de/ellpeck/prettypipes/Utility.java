@@ -5,17 +5,21 @@ import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.*;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class Utility {
 
@@ -105,6 +110,13 @@ public final class Utility {
         for (INBTSerializable<CompoundNBT> item : items)
             list.add(item.serializeNBT());
         return list;
+    }
+
+    public static void sendTileEntityToClients(TileEntity tile) {
+        ServerWorld world = (ServerWorld) tile.getWorld();
+        Stream<ServerPlayerEntity> entities = world.getChunkProvider().chunkManager.getTrackingPlayers(new ChunkPos(tile.getPos()), false);
+        SUpdateTileEntityPacket packet = tile.getUpdatePacket();
+        entities.forEach(e -> e.connection.sendPacket(packet));
     }
 
     public static <T extends INBTSerializable<CompoundNBT>> List<T> deserializeAll(ListNBT list, Function<CompoundNBT, T> supplier) {

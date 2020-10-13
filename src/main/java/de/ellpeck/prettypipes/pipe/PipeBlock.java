@@ -225,7 +225,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
             if (tile != null) {
                 Utility.dropInventory(tile, tile.modules);
                 for (PipeItem item : tile.getItems())
-                    item.drop(worldIn);
+                    item.drop(worldIn, item.stack);
             }
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);

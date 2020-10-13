@@ -24,6 +24,10 @@ import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
+import de.ellpeck.prettypipes.pressurizer.PressurizerContainer;
+import de.ellpeck.prettypipes.pressurizer.PressurizerGui;
+import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
@@ -98,6 +102,10 @@ public final class Registry {
 
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
+    public static Block pressurizerBlock;
+    public static TileEntityType<PressurizerTileEntity> pressurizerTileEntity;
+    public static ContainerType<PressurizerContainer> pressurizerContainer;
+
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
     public static ContainerType<FilterModuleContainer> filterModuleContainer;
     public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
@@ -108,7 +116,8 @@ public final class Registry {
         event.getRegistry().registerAll(
                 pipeBlock = new PipeBlock().setRegistryName("pipe"),
                 itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal"),
-                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal")
+                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal"),
+                pressurizerBlock = new PressurizerBlock().setRegistryName("pressurizer")
         );
     }
 
@@ -139,7 +148,8 @@ public final class Registry {
         event.getRegistry().registerAll(
                 pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
                 itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
-                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal")
+                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
+                pressurizerTileEntity = (TileEntityType<PressurizerTileEntity>) TileEntityType.Builder.create(PressurizerTileEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
         );
     }
 
@@ -156,6 +166,7 @@ public final class Registry {
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
                 itemTerminalContainer = (ContainerType<ItemTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
                 craftingTerminalContainer = (ContainerType<CraftingTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
+                pressurizerContainer = (ContainerType<PressurizerContainer>) IForgeContainerType.create((windowId, inv, data) -> new PressurizerContainer(pressurizerContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pressurizer"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
@@ -203,6 +214,7 @@ public final class Registry {
 
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
             ScreenManager.registerFactory(itemTerminalContainer, ItemTerminalGui::new);
+            ScreenManager.registerFactory(pressurizerContainer, PressurizerGui::new);
             ScreenManager.registerFactory(craftingTerminalContainer, CraftingTerminalGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);

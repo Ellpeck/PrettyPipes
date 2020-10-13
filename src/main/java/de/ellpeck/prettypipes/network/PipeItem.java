@@ -159,22 +159,22 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
         if (tryReturn) {
             // first time: we try to return to our input chest
-            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, speed -> this)) {
+            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, this.stack, speed -> this)) {
                 this.retryOnObstruction = true;
                 return;
             }
             // second time: we arrived at our input chest, it is full, so we try to find a different goal location
             ItemStack remain = network.routeItem(currPipe.getPos(), this.destInventory, this.stack, (stack, speed) -> this, false);
-            if (remain.isEmpty())
-                return;
-            this.stack = remain;
+            if (!remain.isEmpty())
+                this.drop(currPipe.getWorld(), remain.copy());
+        } else {
+            // if all re-routing attempts fail, we drop
+            this.drop(currPipe.getWorld(), this.stack);
         }
-        // if all re-routing attempts fail, we drop
-        this.drop(currPipe.getWorld());
     }
 
-    public void drop(World world) {
-        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, this.stack.copy());
+    public void drop(World world, ItemStack stack) {
+        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
         item.world.addEntity(item);
     }
 

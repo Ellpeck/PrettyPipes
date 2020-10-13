@@ -35,13 +35,16 @@
     "info.prettypipes.redstone_module": "Allows disabling the pipe with a redstone signal\nWorks for both extraction and retrieval",
     "info.prettypipes.item_terminal": "Allows viewing and requesting all items in a pipe network\nAlso has slots for putting items into the network",
     "info.prettypipes.crafting_terminal": "Allows requesting ingredients for crafting recipes\nSupports auto-filling from JEI if installed",
+    "info.prettypipes.pressurizer": "Drastically increases item speed in the entire pipe network\nRequires FE (or RF) for each item transferred",
     "block.prettypipes.pipe": "Pipe",
     "block.prettypipes.item_terminal": "Item Terminal",
     "block.prettypipes.crafting_terminal": "Crafting Terminal",
+    "block.prettypipes.pressurizer": "Pipe Pressurizer",
     "itemGroup.prettypipes": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe",
     "container.prettypipes.item_terminal": "Item Terminal",
     "container.prettypipes.crafting_terminal": "Crafting Terminal",
+    "container.prettypipes.pressurizer": "Pipe Pressurizer",
     "info.prettypipes.whitelist": "Allowed",
     "info.prettypipes.blacklist": "Disallowed",
     "info.prettypipes.shift": "Hold Shift for info",
@@ -61,5 +64,6 @@
     "info.prettypipes.ascending": "Ascending",
     "info.prettypipes.descending": "Descending",
     "info.prettypipes.sync_jei.on": "Sync JEI Search",
-    "info.prettypipes.sync_jei.off": "Don't Sync JEI Search"
+    "info.prettypipes.sync_jei.off": "Don't Sync JEI Search",
+    "info.prettypipes.energy": "%s / %s FE"
 }

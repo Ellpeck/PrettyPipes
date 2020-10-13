@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -152,7 +153,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             if (dest == null || dest.getLeft().equals(startInventory))
                 continue;
             Function<Float, PipeItem> sup = speed -> itemSupplier.apply(dest.getRight(), speed);
-            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), sup)) {
+            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), dest.getRight(), sup)) {
                 ItemStack remain = stack.copy();
                 remain.shrink(dest.getRight().getCount());
                 this.endProfile();
@@ -163,7 +164,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return stack;
     }
 
-    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, ItemStack stack, Function<Float, PipeItem> itemSupplier) {
         if (!this.isNode(startPipePos) || !this.isNode(destPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipePos))
@@ -176,10 +177,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.endProfile();
         if (path == null)
             return false;
-        PipeItem item = itemSupplier.apply(startPipe.getItemSpeed());
+        PipeItem item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
-        if (!startPipe.getItems().contains(item))
-            startPipe.getItems().add(item);
+        startPipe.addNewItem(item);
         PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
         return true;
     }
@@ -205,7 +205,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // try to extract from that location's inventory and send the item
             IItemHandler handler = location.getItemHandler(this.world);
             ItemStack extracted = handler.extractItem(slot, remain.getCount(), true);
-            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, speed -> new PipeItem(extracted, speed))) {
+            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> new PipeItem(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
                 remain.shrink(extracted.getCount());
                 if (remain.isEmpty())
@@ -295,6 +295,15 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 return edge.getEndPipe();
         }
         return null;
+    }
+
+    public List<PipeTileEntity> getNetworkNodes(BlockPos pos, Predicate<PipeTileEntity> predicate) {
+        if (!this.isNode(pos))
+            return Collections.emptyList();
+        return this.getOrderedNetworkNodes(pos).stream()
+                .map(this::getPipe)
+                .filter(predicate)
+                .collect(Collectors.toList());
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {

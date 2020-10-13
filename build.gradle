@@ -87,6 +87,9 @@ repositories {
     maven {
         url = "https://dvs1.progwml6.com/files/maven"
     }
+    maven {
+        url = "https://www.cursemaven.com"
+    }
 }
 
 configurations {
@@ -100,6 +103,10 @@ dependencies {
 
     compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25")
+
+    // to test the rf requiring stuff
+    runtimeOnly fg.deobf("curse.maven:powah:3057732")
+    runtimeOnly fg.deobf("curse.maven:lollipop:3057731")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..

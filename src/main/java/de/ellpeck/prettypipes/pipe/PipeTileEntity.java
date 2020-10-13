@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe;
 
+import com.google.common.base.Predicates;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
@@ -7,6 +8,8 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
+import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;
@@ -57,6 +60,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     protected List<PipeItem> items;
+    private PressurizerTileEntity pressurizer;
     private int lastItemAmount;
     private int priority;
 
@@ -117,6 +121,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 PipeNetwork.get(this.world).clearDestinationCache(this.pos);
             }
             profiler.endSection();
+
+            if (this.world.getGameTime() % 40 == 0) {
+                profiler.startSection("caching_data");
+                // figure out if we're pressurized
+                this.pressurizer = this.findPressurizer();
+                profiler.endSection();
+            }
         }
 
         profiler.startSection("ticking_items");
@@ -134,6 +145,14 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         if (this.items == null)
             this.items = PipeNetwork.get(this.world).getItemsInPipe(this.pos);
         return this.items;
+    }
+
+    public void addNewItem(PipeItem item) {
+        // an item might be re-routed from a previous location, but it should still count as a new item then
+        if (!this.getItems().contains(item))
+            this.getItems().add(item);
+        if (this.pressurizer != null && !this.pressurizer.isRemoved())
+            this.pressurizer.pressurizeItem(item.stack, false);
     }
 
     public boolean isConnected(Direction dir) {
@@ -198,9 +217,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.priority;
     }
 
-    public float getItemSpeed() {
-        float speed = (float) this.streamModules().mapToDouble(m -> m.getRight().getItemSpeedIncrease(m.getLeft(), this)).sum();
-        return 0.05F + speed;
+    public float getItemSpeed(ItemStack stack) {
+        float moduleSpeed = (float) this.streamModules().mapToDouble(m -> m.getRight().getItemSpeedIncrease(m.getLeft(), this)).sum();
+        float pressureSpeed = this.pressurizer != null && !this.pressurizer.isRemoved() && this.pressurizer.pressurizeItem(stack, true) ? 0.4F : 0;
+        return 0.05F + moduleSpeed + pressureSpeed;
     }
 
     public boolean canWork() {
@@ -281,5 +301,16 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
         return new MainPipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this.pos);
+    }
+
+    private PressurizerTileEntity findPressurizer() {
+        for (PipeTileEntity node : PipeNetwork.get(this.world).getNetworkNodes(this.pos, p -> true)) {
+            for (Direction dir : Direction.values()) {
+                IPipeConnectable connectable = node.getPipeConnectable(dir);
+                if (connectable instanceof PressurizerBlock)
+                    return Utility.getTileEntity(PressurizerTileEntity.class, this.world, node.pos.offset(dir));
+            }
+        }
+        return null;
     }
 }
