@@ -71,7 +71,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             return;
 
         boolean update = false;
-        if (this.world.getGameTime() % 10 == 0) {
+        int interval = pipe.pressurizer != null ? 2 : 10;
+        if (this.world.getGameTime() % interval == 0) {
             for (int i = 6; i < 12; i++) {
                 ItemStack extracted = this.items.extractItem(i, Integer.MAX_VALUE, true);
                 if (extracted.isEmpty())
