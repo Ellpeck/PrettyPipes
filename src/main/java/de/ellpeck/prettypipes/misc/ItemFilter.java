@@ -92,14 +92,14 @@ public class ItemFilter extends ItemStackHandler {
                     ItemStack copy = stack.copy();
                     copy.setCount(1);
                     // try inserting into ourselves and any filter increase modifiers
-                    for (ItemStackHandler filter : filters) {
-                        if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty())
+                    for (ItemFilter filter : filters) {
+                        if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty()) {
+                            filter.save();
                             break;
+                        }
                     }
                 }
             }
-            for (ItemFilter filter : filters)
-                filter.save();
         }
     }
 
