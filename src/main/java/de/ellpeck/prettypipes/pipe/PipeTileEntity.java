@@ -37,6 +37,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
@@ -229,6 +230,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     public boolean canWork() {
         return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
+    }
+
+    public List<ItemStack> getCraftables() {
+        return this.streamModules()
+                .flatMap(m -> m.getRight().getCraftables(m.getLeft(), this).stream())
+                .collect(Collectors.toList());
     }
 
     public IItemHandler getItemHandler(Direction dir, PipeItem item) {

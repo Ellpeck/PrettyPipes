@@ -7,6 +7,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
+import java.util.List;
+
 public interface IModule {
 
     void tick(ItemStack module, PipeTileEntity tile);
@@ -28,4 +30,6 @@ public interface IModule {
     float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile);
 
     boolean canPipeWork(ItemStack module, PipeTileEntity tile);
+
+    List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile);
 }

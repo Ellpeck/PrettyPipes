@@ -16,6 +16,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class ModuleItem extends Item implements IModule {
@@ -72,5 +73,10 @@ public abstract class ModuleItem extends Item implements IModule {
     @Override
     public boolean canPipeWork(ItemStack module, PipeTileEntity tile) {
         return true;
+    }
+
+    @Override
+    public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile) {
+        return Collections.emptyList();
     }
 }

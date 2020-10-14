@@ -22,15 +22,20 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
+
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
+
+    // craftables have the second parameter set to true
+    private final List<Pair<ItemStack, Boolean>> sortedItems = new ArrayList<>();
     private List<ItemStack> items;
-    private List<ItemStack> sortedItems;
+    private List<ItemStack> craftables;
     private Button minusButton;
     private Button plusButton;
     private Button requestButton;
@@ -136,8 +141,9 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         return super.keyPressed(x, y, z);
     }
 
-    public void updateItemList(List<ItemStack> items) {
+    public void updateItemList(List<ItemStack> items, List<ItemStack> craftables) {
         this.items = items;
+        this.craftables = craftables;
         this.updateWidgets();
     }
 
@@ -150,8 +156,16 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         if (!prefs.terminalAscending)
             comparator = comparator.reversed();
 
-        this.sortedItems = new ArrayList<>(this.items);
-        this.sortedItems.sort(comparator);
+        // add all items to the sorted items list
+        this.sortedItems.clear();
+        for (ItemStack stack : this.items)
+            this.sortedItems.add(Pair.of(stack, false));
+        for (ItemStack stack : this.craftables)
+            this.sortedItems.add(Pair.of(stack, true));
+
+        // compare by craftability first, and then by the player's chosen order
+        Comparator<Pair<ItemStack, Boolean>> fullComparator = Comparator.comparing(Pair::getRight);
+        this.sortedItems.sort(fullComparator.thenComparing(Pair::getLeft, comparator));
 
         String searchText = this.search.getText();
         if (!Strings.isNullOrEmpty(searchText)) {
@@ -159,11 +173,11 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 String search = searchText;
                 String toCompare;
                 if (search.startsWith("@")) {
-                    toCompare = s.getItem().getRegistryName().getNamespace();
+                    toCompare = s.getLeft().getItem().getRegistryName().getNamespace();
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name
-                    toCompare = s.getDisplayName().getString();
+                    toCompare = s.getLeft().getDisplayName().getString();
                 }
                 return !toCompare.toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT));
             });
@@ -178,9 +192,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             int index = i + this.scrollOffset * 9;
             if (index >= this.sortedItems.size()) {
                 widget.stack = ItemStack.EMPTY;
+                widget.craftable = false;
                 widget.visible = false;
             } else {
-                widget.stack = this.sortedItems.get(index);
+                Pair<ItemStack, Boolean> stack = this.sortedItems.get(index);
+                widget.stack = stack.getLeft();
+                widget.craftable = stack.getRight();
                 widget.visible = true;
             }
         }

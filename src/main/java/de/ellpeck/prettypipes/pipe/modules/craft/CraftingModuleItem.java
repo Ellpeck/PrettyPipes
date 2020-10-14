@@ -12,6 +12,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraftforge.items.ItemStackHandler;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CraftingModuleItem extends ModuleItem {
 
     public final int inputSlots;
@@ -36,6 +39,18 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new CraftingModuleContainer(Registry.craftingModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    }
+
+    @Override
+    public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile) {
+        ItemStackHandler output = this.getOutput(module);
+        List<ItemStack> items = new ArrayList<>();
+        for (int i = 0; i < output.getSlots(); i++) {
+            ItemStack stack = output.getStackInSlot(i);
+            if (!stack.isEmpty())
+                items.add(stack);
+        }
+        return items;
     }
 
     public ItemStackHandler getInput(ItemStack module) {

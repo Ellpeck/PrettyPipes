@@ -224,6 +224,24 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return tile;
     }
 
+    public List<Pair<BlockPos, ItemStack>> getOrderedCraftables(BlockPos node) {
+        if (!this.isNode(node))
+            return Collections.emptyList();
+        this.startProfile("get_craftables");
+        List<Pair<BlockPos, ItemStack>> craftables = new ArrayList<>();
+        for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
+            if (!this.world.isBlockLoaded(dest))
+                continue;
+            PipeTileEntity pipe = this.getPipe(dest);
+            if (!pipe.canNetworkSee())
+                continue;
+            for (ItemStack stack : pipe.getCraftables())
+                craftables.add(Pair.of(pipe.getPos(), stack));
+        }
+        this.endProfile();
+        return craftables;
+    }
+
     public List<NetworkLocation> getOrderedNetworkItems(BlockPos node) {
         if (!this.isNode(node))
             return Collections.emptyList();

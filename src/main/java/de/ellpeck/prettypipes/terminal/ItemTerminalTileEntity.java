@@ -51,6 +51,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     };
     public Map<EquatableItemStack, NetworkItem> networkItems;
+    public List<Pair<BlockPos, ItemStack>> craftables;
     private final Queue<NetworkLock> pendingRequests = new ArrayDeque<>();
 
     protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
@@ -118,18 +119,21 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     public void updateItems(PlayerEntity... playersToSync) {
-        if (this.getConnectedPipe() == null)
+        PipeTileEntity pipe = this.getConnectedPipe();
+        if (pipe == null)
             return;
         this.networkItems = this.collectItems();
+        this.craftables = PipeNetwork.get(this.world).getOrderedCraftables(pipe.getPos());
         if (playersToSync.length > 0) {
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
+            List<ItemStack> clientCraftables = this.craftables.stream().map(Pair::getRight).collect(Collectors.toList());
             for (PlayerEntity player : playersToSync) {
                 if (!(player.openContainer instanceof ItemTerminalContainer))
                     continue;
                 ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
                 if (tile != this)
                     continue;
-                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems));
+                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems, clientCraftables));
             }
         }
     }
