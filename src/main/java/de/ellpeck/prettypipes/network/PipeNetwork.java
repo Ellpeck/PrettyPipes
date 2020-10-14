@@ -190,14 +190,14 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             return stack;
         ItemStack remain = stack.copy();
         for (NetworkLocation location : locations) {
-            remain = this.requestItem(location, destPipe, destInventory, remain, equalityTypes);
+            remain = this.requestExistingItem(location, destPipe, destInventory, remain, equalityTypes);
             if (remain.isEmpty())
                 break;
         }
         return remain;
     }
 
-    public ItemStack requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (location.getPos().equals(destInventory))
             return stack;
         ItemStack remain = stack.copy();

@@ -108,7 +108,7 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
-        ItemEqualityType[] types = this.getEqualityTypes();
+        ItemEqualityType[] types = getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
         for (ItemStackHandler handler : this.getAllFilters()) {
             for (int i = 0; i < handler.getSlots(); i++) {
@@ -130,14 +130,6 @@ public class ItemFilter extends ItemStackHandler {
         // add ourselves to the front
         filters.add(0, this);
         return filters;
-    }
-
-    public ItemEqualityType[] getEqualityTypes() {
-        return this.pipe.streamModules()
-                .map(Pair::getRight)
-                .filter(m -> m instanceof FilterModifierModuleItem)
-                .map(m -> ((FilterModifierModuleItem) m).type)
-                .toArray(ItemEqualityType[]::new);
     }
 
     public void save() {
@@ -165,6 +157,14 @@ public class ItemFilter extends ItemStackHandler {
     @Override
     protected void onContentsChanged(int slot) {
         this.modified = true;
+    }
+
+    public static ItemEqualityType[] getEqualityTypes(PipeTileEntity pipe) {
+        return pipe.streamModules()
+                .map(Pair::getRight)
+                .filter(m -> m instanceof FilterModifierModuleItem)
+                .map(m -> ((FilterModifierModuleItem) m).type)
+                .toArray(ItemEqualityType[]::new);
     }
 
     public interface IFilteredContainer {

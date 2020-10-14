@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.client.util.ITooltipFlag;
@@ -9,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.*;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -78,5 +80,10 @@ public abstract class ModuleItem extends Item implements IModule {
     @Override
     public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile) {
         return Collections.emptyList();
+    }
+
+    @Override
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
+        return stack;
     }
 }

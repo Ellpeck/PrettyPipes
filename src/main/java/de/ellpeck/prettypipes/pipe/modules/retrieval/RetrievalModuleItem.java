@@ -54,7 +54,7 @@ public class RetrievalModuleItem extends ModuleItem {
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            if (network.requestItem(tile.getPos(), dest.getLeft(), dest.getRight(), filter.getEqualityTypes()).isEmpty())
+            if (network.requestItem(tile.getPos(), dest.getLeft(), dest.getRight(), ItemFilter.getEqualityTypes(tile)).isEmpty())
                 break;
         }
     }

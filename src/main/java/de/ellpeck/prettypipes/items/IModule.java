@@ -1,10 +1,12 @@
 package de.ellpeck.prettypipes.items;
 
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
@@ -32,4 +34,6 @@ public interface IModule {
     boolean canPipeWork(ItemStack module, PipeTileEntity tile);
 
     List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile);
+
+    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes);
 }
