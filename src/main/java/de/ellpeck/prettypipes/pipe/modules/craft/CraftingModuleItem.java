@@ -100,23 +100,13 @@ public class CraftingModuleItem extends ModuleItem {
             List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
             ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             for (Triple<BlockPos, BlockPos, ItemStack> request : tile.craftResultRequests) {
-                ItemStack reqItem = request.getRight();
+                ItemStack remain = request.getRight().copy();
                 for (NetworkLocation item : items) {
-                    int amount = item.getItemAmount(tile.getWorld(), reqItem, equalityTypes);
-                    amount -= network.getLockedAmount(item.getPos(), reqItem, equalityTypes);
-                    if (amount <= 0)
-                        continue;
-                    ItemStack remain = reqItem.copy();
-                    if (remain.getCount() < amount)
-                        amount = remain.getCount();
-                    remain.shrink(amount);
-                    while (amount > 0) {
-                        ItemStack copy = reqItem.copy();
-                        copy.setCount(Math.min(reqItem.getMaxStackSize(), amount));
-                        // we don't need to do any checks here because we just calculated the max amount we can definitely extract
-                        network.requestExistingItem(item, request.getLeft(), request.getMiddle(), copy, equalityTypes);
-                        amount -= copy.getCount();
-                    }
+                    remain = network.requestExistingItem(item, request.getLeft(), request.getMiddle(), remain, equalityTypes);
+                    if (remain.isEmpty())
+                        break;
+                }
+                if (remain.getCount() != request.getRight().getCount()) {
                     tile.craftResultRequests.remove(request);
                     // if we couldn't pull everything, log a new request
                     if (!remain.isEmpty())

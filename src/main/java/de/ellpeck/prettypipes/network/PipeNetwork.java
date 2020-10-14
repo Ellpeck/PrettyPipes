@@ -213,15 +213,27 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (location.getPos().equals(destInventory))
             return stack;
+        // make sure we don't pull any locked items
+        int amount = location.getItemAmount(this.world, stack, equalityTypes);
+        if (amount <= 0)
+            return stack;
+        // we ignore locks on the destination inventory, since we're probably the ones trying to solve those locks
+        amount -= this.getLockedAmount(location.getPos(), stack, destInventory, equalityTypes);
+        if (amount <= 0)
+            return stack;
         ItemStack remain = stack.copy();
+        // make sure we only extract less than or equal to the requested amount
+        if (remain.getCount() < amount)
+            amount = remain.getCount();
+        remain.shrink(amount);
         for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             IItemHandler handler = location.getItemHandler(this.world);
-            ItemStack extracted = handler.extractItem(slot, remain.getCount(), true);
+            ItemStack extracted = handler.extractItem(slot, amount, true);
             if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> new PipeItem(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
-                remain.shrink(extracted.getCount());
-                if (remain.isEmpty())
+                amount -= extracted.getCount();
+                if (amount <= 0)
                     break;
             }
         }
@@ -295,9 +307,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return this.networkLocks.get(pos);
     }
 
-    public int getLockedAmount(BlockPos pos, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getLockedAmount(BlockPos pos, ItemStack stack, BlockPos ignoredLock, ItemEqualityType... equalityTypes) {
         return this.getNetworkLocks(pos).stream()
-                .filter(l -> ItemEqualityType.compareItems(l.stack, stack, equalityTypes))
+                .filter(l -> ItemEqualityType.compareItems(l.stack, stack, equalityTypes) && (ignoredLock == null || !ignoredLock.equals(l.location.getPos())))
                 .mapToInt(l -> l.stack.getCount()).sum();
     }
 

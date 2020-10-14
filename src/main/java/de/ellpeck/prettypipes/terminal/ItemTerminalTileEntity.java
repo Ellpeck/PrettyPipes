@@ -221,7 +221,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             int amount = location.getItemAmount(world, stack, ItemEqualityType.NBT);
             if (amount <= 0)
                 continue;
-            amount -= network.getLockedAmount(location.getPos(), stack, ItemEqualityType.NBT);
+            amount -= network.getLockedAmount(location.getPos(), stack, destInventory, ItemEqualityType.NBT);
             if (amount > 0) {
                 if (remain.getCount() < amount)
                     amount = remain.getCount();

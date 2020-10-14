@@ -173,7 +173,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 int amount = location.getItemAmount(world, stack.stack, equalityTypes);
                 if (amount <= 0)
                     continue;
-                amount -= network.getLockedAmount(location.getPos(), stack.stack, equalityTypes);
+                amount -= network.getLockedAmount(location.getPos(), stack.stack, null, equalityTypes);
                 available += amount;
             }
             // divide the total by the amount required to get the amount that
