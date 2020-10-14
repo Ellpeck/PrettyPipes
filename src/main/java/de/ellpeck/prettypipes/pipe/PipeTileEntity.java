@@ -1,6 +1,5 @@
 package de.ellpeck.prettypipes.pipe;
 
-import com.google.common.base.Predicates;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
@@ -8,7 +7,6 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
-import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
 import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
@@ -28,7 +26,6 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -60,6 +57,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     public PressurizerTileEntity pressurizer;
+    public int moduleDropCheck;
     protected List<PipeItem> items;
     private int lastItemAmount;
     private int priority;
@@ -75,12 +73,14 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         compound.put("modules", this.modules.serializeNBT());
+        compound.putInt("module_drop_check", this.moduleDropCheck);
         return super.write(compound);
     }
 
     @Override
     public void read(BlockState state, CompoundNBT compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
+        this.moduleDropCheck = compound.getInt("module_drop_check");
         super.read(state, compound);
     }
 
@@ -103,7 +103,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public void tick() {
         // invalidate our pressurizer reference if it was removed
-        if(this.pressurizer != null && this.pressurizer.isRemoved())
+        if (this.pressurizer != null && this.pressurizer.isRemoved())
             this.pressurizer = null;
 
         if (!this.world.isAreaLoaded(this.pos, 1))
@@ -111,6 +111,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         IProfiler profiler = this.world.getProfiler();
 
         if (!this.world.isRemote) {
+            // drop modules here to give a bit of time for blocks to update (iron -> gold chest etc.)
+            if (this.moduleDropCheck > 0) {
+                this.moduleDropCheck--;
+                if (this.moduleDropCheck <= 0 && !this.canHaveModules())
+                    Utility.dropInventory(this, this.modules);
+            }
+
             profiler.startSection("ticking_modules");
             int prio = 0;
             Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();

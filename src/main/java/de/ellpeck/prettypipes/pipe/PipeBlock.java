@@ -191,9 +191,10 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     }
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
+        // wait a few ticks before checking if we have to drop our modules, so that things like iron -> gold chest work
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
-        if (tile != null && !tile.canHaveModules())
-            Utility.dropInventory(tile, tile.modules);
+        if (tile != null)
+            tile.moduleDropCheck = 5;
 
         PipeNetwork network = PipeNetwork.get(world);
         int connections = 0;
