@@ -8,6 +8,9 @@ import de.ellpeck.prettypipes.pipe.modules.FilterModifierModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.LowPriorityModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.RedstoneModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleItem;
@@ -114,6 +117,7 @@ public final class Registry {
     public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
     public static ContainerType<StackSizeModuleContainer> stackSizeModuleContainer;
     public static ContainerType<FilterIncreaseModuleContainer> filterIncreaseModuleContainer;
+    public static ContainerType<CraftingModuleContainer> craftingModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -142,6 +146,7 @@ public final class Registry {
         registry.registerAll(Arrays.stream(ItemEqualityType.values()).map(t -> new FilterModifierModuleItem(t.name().toLowerCase(Locale.ROOT) + "_filter_modifier", t)).toArray(Item[]::new));
         registry.register(new RedstoneModuleItem("redstone_module"));
         registry.register(new FilterIncreaseModuleItem("filter_increase_modifier"));
+        registry.registerAll(createTieredModule("crafting_module", CraftingModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
@@ -176,7 +181,8 @@ public final class Registry {
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
                 stackSizeModuleContainer = createPipeContainer("stack_size_module"),
-                filterIncreaseModuleContainer = createPipeContainer("filter_increase_module")
+                filterIncreaseModuleContainer = createPipeContainer("filter_increase_module"),
+                craftingModuleContainer = createPipeContainer("crafting_module")
         );
     }
 
@@ -227,6 +233,7 @@ public final class Registry {
             ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
             ScreenManager.registerFactory(stackSizeModuleContainer, StackSizeModuleGui::new);
             ScreenManager.registerFactory(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
+            ScreenManager.registerFactory(craftingModuleContainer, CraftingModuleGui::new);
         }
     }
 }

@@ -21,7 +21,7 @@ import java.util.List;
 
 public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extends ContainerScreen<T> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pipe.png");
+    protected static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pipe.png");
     private final List<Tab> tabs = new ArrayList<>();
     private final ItemStack[] lastItems = new ItemStack[this.container.tile.modules.getSlots()];
 
