@@ -15,11 +15,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-public class FilterModifierModule extends ModuleItem {
+public class FilterModifierModuleItem extends ModuleItem {
 
     public final ItemEqualityType type;
 
-    public FilterModifierModule(String name, ItemEqualityType type) {
+    public FilterModifierModuleItem(String name, ItemEqualityType type) {
         super(name);
         this.type = type;
         this.setRegistryName(name);

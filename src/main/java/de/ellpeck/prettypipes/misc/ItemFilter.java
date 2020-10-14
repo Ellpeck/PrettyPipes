@@ -4,11 +4,11 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import de.ellpeck.prettypipes.pipe.modules.FilterModifierModule;
+import de.ellpeck.prettypipes.pipe.modules.FilterModifierModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleItem;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -77,8 +77,10 @@ public class ItemFilter extends ItemStackHandler {
         if (id == 0 && this.canModifyWhitelist) {
             this.isWhitelist = !this.isWhitelist;
             this.modified = true;
+            this.save();
         } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
+            List<ItemFilter> filters = this.getAllFilters();
             for (Direction direction : Direction.values()) {
                 IItemHandler handler = this.pipe.getItemHandler(direction, null);
                 if (handler == null)
@@ -89,12 +91,16 @@ public class ItemFilter extends ItemStackHandler {
                         continue;
                     ItemStack copy = stack.copy();
                     copy.setCount(1);
-                    ItemHandlerHelper.insertItem(this, copy, false);
+                    // try inserting into ourselves and any filter increase modifiers
+                    for (ItemStackHandler filter : filters) {
+                        if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty())
+                            break;
+                    }
                 }
             }
-            this.modified = true;
+            for (ItemFilter filter : filters)
+                filter.save();
         }
-        this.save();
     }
 
     public boolean isAllowed(ItemStack stack) {
@@ -103,21 +109,34 @@ public class ItemFilter extends ItemStackHandler {
 
     private boolean isFiltered(ItemStack stack) {
         ItemEqualityType[] types = this.getEqualityTypes();
-        for (int i = 0; i < this.getSlots(); i++) {
-            ItemStack filter = this.getStackInSlot(i);
-            if (filter.isEmpty())
-                continue;
-            if (ItemEqualityType.compareItems(stack, filter, types))
-                return true;
+        // also check if any filter increase modules have the item we need
+        for (ItemStackHandler handler : this.getAllFilters()) {
+            for (int i = 0; i < handler.getSlots(); i++) {
+                ItemStack filter = handler.getStackInSlot(i);
+                if (filter.isEmpty())
+                    continue;
+                if (ItemEqualityType.compareItems(stack, filter, types))
+                    return true;
+            }
         }
         return false;
+    }
+
+    private List<ItemFilter> getAllFilters() {
+        List<ItemFilter> filters = this.pipe.streamModules()
+                .filter(p -> p.getRight() instanceof FilterIncreaseModuleItem)
+                .map(p -> new ItemFilter(18, p.getLeft(), this.pipe))
+                .collect(Collectors.toList());
+        // add ourselves to the front
+        filters.add(0, this);
+        return filters;
     }
 
     public ItemEqualityType[] getEqualityTypes() {
         return this.pipe.streamModules()
                 .map(Pair::getRight)
-                .filter(m -> m instanceof FilterModifierModule)
-                .map(m -> ((FilterModifierModule) m).type)
+                .filter(m -> m instanceof FilterModifierModuleItem)
+                .map(m -> ((FilterModifierModuleItem) m).type)
                 .toArray(ItemEqualityType[]::new);
     }
 
@@ -131,14 +150,16 @@ public class ItemFilter extends ItemStackHandler {
     @Override
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = super.serializeNBT();
-        nbt.putBoolean("whitelist", this.isWhitelist);
+        if (this.canModifyWhitelist)
+            nbt.putBoolean("whitelist", this.isWhitelist);
         return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
         super.deserializeNBT(nbt);
-        this.isWhitelist = nbt.getBoolean("whitelist");
+        if (this.canModifyWhitelist)
+            this.isWhitelist = nbt.getBoolean("whitelist");
     }
 
     @Override
