@@ -57,6 +57,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             } else {
                 this.requestAmount += modifier;
             }
+            // 384 items is 6 stacks, which is what fits into the terminal slots
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
@@ -247,7 +248,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 .map(w -> (ItemTerminalWidget) w);
     }
 
-    private static int requestModifier() {
+    public static int requestModifier() {
         if (hasControlDown()) {
             return 10;
         } else if (hasShiftDown()) {

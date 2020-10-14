@@ -31,8 +31,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     protected void init() {
         super.init();
         this.requestButton = this.addButton(new Button(this.guiLeft + 8, this.guiTop + 100, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
-            int all = hasShiftDown() ? 1 : 0;
-            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, all));
+            int amount = requestModifier();
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount));
         }));
         this.tick();
     }

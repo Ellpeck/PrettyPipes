@@ -93,7 +93,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         }
     }
 
-    public void requestCraftingItems(PlayerEntity player, boolean all) {
+    public void requestCraftingItems(PlayerEntity player, int maxAmount) {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_crafting");
         this.updateItems();
@@ -137,9 +137,9 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
         }
         if (lowestAvailable > 0) {
-            // if we're only crafting one item, pretend we only have enough for one
-            if (!all)
-                lowestAvailable = 1;
+            // if we're limiting the amount, pretend we only have that amount available
+            if (maxAmount < lowestAvailable)
+                lowestAvailable = maxAmount;
             for (int i = 0; i < this.craftItems.getSlots(); i++) {
                 ItemStack requested = this.getRequestedCraftItem(i);
                 if (requested.isEmpty())
