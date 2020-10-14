@@ -33,7 +33,7 @@ public interface IModule {
 
     boolean canPipeWork(ItemStack module, PipeTileEntity tile);
 
-    List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile);
+    List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile, boolean onlyReturnPossible);
 
     ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes);
 }

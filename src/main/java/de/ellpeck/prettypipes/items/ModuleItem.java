@@ -78,7 +78,7 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile) {
+    public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile, boolean onlyReturnPossible) {
         return Collections.emptyList();
     }
 

@@ -189,7 +189,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
             return connectable.insertItem(currPipe.getWorld(), currPipe.getPos(), dir, this);
-        IItemHandler handler = currPipe.getItemHandler(dir, this);
+        IItemHandler handler = currPipe.getItemHandler(dir);
         if (handler != null)
             return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
         return this.stack;

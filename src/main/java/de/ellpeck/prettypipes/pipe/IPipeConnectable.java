@@ -12,10 +12,6 @@ public interface IPipeConnectable {
 
     ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction);
 
-    default IItemHandler getItemHandler(World world, BlockPos pipePos, Direction direction, PipeItem item) {
-        return null;
-    }
-
     default ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
         return item.stack;
     }

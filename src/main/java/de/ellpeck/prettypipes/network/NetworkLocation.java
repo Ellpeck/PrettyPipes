@@ -71,7 +71,7 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
         if (this.handlerCache == null) {
             PipeNetwork network = PipeNetwork.get(world);
             PipeTileEntity pipe = network.getPipe(this.pipePos);
-            this.handlerCache = pipe.getItemHandler(this.direction, null);
+            this.handlerCache = pipe.getItemHandler(this.direction);
         }
         return this.handlerCache;
     }

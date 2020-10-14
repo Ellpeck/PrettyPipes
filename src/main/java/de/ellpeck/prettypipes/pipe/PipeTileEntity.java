@@ -20,6 +20,7 @@ import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ChestTileEntity;
 import net.minecraft.tileentity.ITickableTileEntity;
@@ -36,6 +37,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -61,6 +63,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     public final Queue<NetworkLock> craftIngredientRequests = new ArrayDeque<>();
+    public final List<Triple<BlockPos, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerTileEntity pressurizer;
     public int moduleDropCheck;
     protected List<PipeItem> items;
@@ -80,6 +83,15 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         compound.put("modules", this.modules.serializeNBT());
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
+        ListNBT results = new ListNBT();
+        for (Triple<BlockPos, BlockPos, ItemStack> triple : this.craftResultRequests) {
+            CompoundNBT nbt = new CompoundNBT();
+            nbt.putLong("dest_pipe", triple.getLeft().toLong());
+            nbt.putLong("dest_inv", triple.getMiddle().toLong());
+            nbt.put("item", triple.getRight().serializeNBT());
+            results.add(nbt);
+        }
+        compound.put("craft_results", results);
         return super.write(compound);
     }
 
@@ -89,6 +101,15 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.craftIngredientRequests.clear();
         this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", NBT.TAG_COMPOUND), NetworkLock::new));
+        this.craftResultRequests.clear();
+        ListNBT results = compound.getList("craft_results", NBT.TAG_COMPOUND);
+        for (int i = 0; i < results.size(); i++) {
+            CompoundNBT nbt = results.getCompound(i);
+            this.craftResultRequests.add(Triple.of(
+                    BlockPos.fromLong(nbt.getLong("dest_pipe")),
+                    BlockPos.fromLong(nbt.getLong("dest_inv")),
+                    ItemStack.read(nbt.getCompound("item"))));
+        }
         super.read(state, compound);
     }
 
@@ -140,26 +161,6 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 PipeNetwork.get(this.world).clearDestinationCache(this.pos);
             }
             profiler.endSection();
-
-            // request crafting ingredients
-            if (this.world.getGameTime() % 4 == 0 && !this.craftIngredientRequests.isEmpty()) {
-                PipeNetwork network = PipeNetwork.get(this.world);
-                NetworkLock request = this.craftIngredientRequests.remove();
-                Pair<BlockPos, ItemStack> dest = this.getAvailableDestination(request.stack, true, true);
-                if (dest != null) {
-                    network.requestExistingItem(request.location, this.getPos(), dest.getLeft(), dest.getRight(), ItemEqualityType.NBT);
-                    network.resolveNetworkLock(request);
-
-                    // if we couldn't fit all items into the destination, create another request for the rest
-                    ItemStack remain = request.stack.copy();
-                    remain.shrink(dest.getRight().getCount());
-                    if (!remain.isEmpty()) {
-                        NetworkLock remainRequest = new NetworkLock(request.location, remain);
-                        this.craftIngredientRequests.add(remainRequest);
-                        network.createNetworkLock(remainRequest);
-                    }
-                }
-            }
         }
 
         profiler.startSection("ticking_items");
@@ -197,7 +198,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
             return null;
         for (Direction dir : Direction.values()) {
-            IItemHandler handler = this.getItemHandler(dir, null);
+            IItemHandler handler = this.getItemHandler(dir);
             if (handler == null)
                 continue;
             ItemStack remain = ItemHandlerHelper.insertItem(handler, stack, true);
@@ -259,9 +260,9 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
     }
 
-    public List<ItemStack> getCraftables() {
+    public List<ItemStack> getCraftables(boolean onlyReturnPossible) {
         return this.streamModules()
-                .flatMap(m -> m.getRight().getCraftables(m.getLeft(), this).stream())
+                .flatMap(m -> m.getRight().getCraftables(m.getLeft(), this, onlyReturnPossible).stream())
                 .collect(Collectors.toList());
     }
 
@@ -276,7 +277,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return stack;
     }
 
-    public IItemHandler getItemHandler(Direction dir, PipeItem item) {
+    public IItemHandler getItemHandler(Direction dir) {
         if (!this.isConnected(dir))
             return null;
         BlockPos pos = this.pos.offset(dir);
@@ -288,13 +289,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 if (state.getBlock() instanceof ChestBlock)
                     return new InvWrapper(ChestBlock.getChestInventory((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
             }
-            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
-            if (handler != null)
-                return handler;
+            return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
         }
-        IPipeConnectable connectable = this.getPipeConnectable(dir);
-        if (connectable != null)
-            return connectable.getItemHandler(this.world, this.pos, dir, item);
         return null;
     }
 
@@ -306,7 +302,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public boolean isConnectedInventory(Direction dir) {
-        return this.getItemHandler(dir, null) != null;
+        return this.getItemHandler(dir) != null;
     }
 
     public boolean canHaveModules() {

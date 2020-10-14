@@ -124,11 +124,13 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeTileEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
+        PipeNetwork network = PipeNetwork.get(this.world);
         this.networkItems = this.collectItems();
-        this.craftables = PipeNetwork.get(this.world).getOrderedCraftables(pipe.getPos());
+        this.craftables = network.getOrderedCraftables(pipe.getPos(), true);
         if (playersToSync.length > 0) {
+            // the craftables we display should be displayed even if they can't be crafted!
+            List<ItemStack> clientCraftables = network.getOrderedCraftables(pipe.getPos(), false).stream().map(Pair::getRight).collect(Collectors.toList());
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
-            List<ItemStack> clientCraftables = this.craftables.stream().map(Pair::getRight).collect(Collectors.toList());
             for (PlayerEntity player : playersToSync) {
                 if (!(player.openContainer instanceof ItemTerminalContainer))
                     continue;
@@ -153,12 +155,12 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         network.endProfile();
     }
 
-    public int requestItemImpl(ItemStack stack){
-        ItemStack remain = stack.copy();
-        NetworkItem item = this.networkItems.get(new EquatableItemStack(remain));
+    public int requestItemImpl(ItemStack stack) {
+        NetworkItem item = this.networkItems.get(new EquatableItemStack(stack));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        this.existingRequests.addAll(requestItemLater(this.world, this.getConnectedPipe().getPos(), this.pos, remain, locations, this.craftables, ItemEqualityType.NBT));
-        return stack.getCount() - remain.getCount();
+        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), this.pos, stack, locations, this.craftables, ItemEqualityType.NBT);
+        this.existingRequests.addAll(ret.getLeft());
+        return stack.getCount() - ret.getRight().getCount();
     }
 
     protected PlayerEntity[] getLookingPlayers() {
@@ -210,8 +212,9 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return new ItemTerminalContainer(Registry.itemTerminalContainer, window, player, this.pos);
     }
 
-    public static List<NetworkLock> requestItemLater(World world, BlockPos destPipe, BlockPos destInventory, ItemStack stack, Collection<NetworkLocation> locations, List<Pair<BlockPos, ItemStack>> craftables, ItemEqualityType... equalityTypes) {
+    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, BlockPos destInventory, ItemStack stack, Collection<NetworkLocation> locations, List<Pair<BlockPos, ItemStack>> craftables, ItemEqualityType... equalityTypes) {
         List<NetworkLock> requests = new ArrayList<>();
+        ItemStack remain = stack.copy();
         PipeNetwork network = PipeNetwork.get(world);
         // check for existing items
         for (NetworkLocation location : locations) {
@@ -220,9 +223,9 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 continue;
             amount -= network.getLockedAmount(location.getPos(), stack, ItemEqualityType.NBT);
             if (amount > 0) {
-                if (stack.getCount() < amount)
-                    amount = stack.getCount();
-                stack.shrink(amount);
+                if (remain.getCount() < amount)
+                    amount = remain.getCount();
+                remain.shrink(amount);
                 while (amount > 0) {
                     ItemStack copy = stack.copy();
                     copy.setCount(Math.min(stack.getMaxStackSize(), amount));
@@ -231,21 +234,13 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                     requests.add(lock);
                     amount -= copy.getCount();
                 }
-                if (stack.isEmpty())
+                if (remain.isEmpty())
                     break;
             }
         }
         // check for craftable items
-        for (Pair<BlockPos, ItemStack> craftable : craftables) {
-            if (!ItemEqualityType.compareItems(stack, craftable.getRight(), equalityTypes))
-                continue;
-            PipeTileEntity pipe = network.getPipe(craftable.getLeft());
-            if (pipe == null)
-                continue;
-            stack = pipe.craft(destPipe, destInventory, stack, equalityTypes);
-            if (stack.isEmpty())
-                break;
-        }
-        return requests;
+        if (!remain.isEmpty())
+            network.requestCraftedItem(destPipe, destInventory, remain, equalityTypes);
+        return Pair.of(requests, remain);
     }
 }

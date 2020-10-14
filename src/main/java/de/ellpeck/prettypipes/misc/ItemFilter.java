@@ -82,7 +82,7 @@ public class ItemFilter extends ItemStackHandler {
             // populate filter from inventories
             List<ItemFilter> filters = this.getAllFilters();
             for (Direction direction : Direction.values()) {
-                IItemHandler handler = this.pipe.getItemHandler(direction, null);
+                IItemHandler handler = this.pipe.getItemHandler(direction);
                 if (handler == null)
                     continue;
                 for (int i = 0; i < handler.getSlots(); i++) {
