@@ -99,27 +99,25 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     private void initTabs() {
         this.tabs.clear();
-        this.tabs.add(new Tab(new ItemStack(Registry.pipeBlock), null, 0, -1));
+        this.tabs.add(new Tab(new ItemStack(Registry.pipeBlock), 0, -1));
         for (int i = 0; i < this.container.tile.modules.getSlots(); i++) {
             ItemStack stack = this.container.tile.modules.getStackInSlot(i);
             if (stack.isEmpty())
                 continue;
             IModule module = (IModule) stack.getItem();
             if (module.hasContainer(stack, this.container.tile))
-                this.tabs.add(new Tab(stack, module, this.tabs.size(), i));
+                this.tabs.add(new Tab(stack, this.tabs.size(), i));
         }
     }
 
     private class Tab {
         private final ItemStack moduleStack;
-        private final IModule module;
         private final int index;
         private final int x;
         private final int y;
 
-        public Tab(ItemStack moduleStack, IModule module, int tabIndex, int index) {
+        public Tab(ItemStack moduleStack, int tabIndex, int index) {
             this.moduleStack = moduleStack;
-            this.module = module;
             this.index = index;
             this.x = AbstractPipeGui.this.guiLeft + 5 + tabIndex * 28;
             this.y = AbstractPipeGui.this.guiTop;
@@ -130,7 +128,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             int v = 0;
             int height = 30;
             int itemOffset = 9;
-            if (this.module == AbstractPipeGui.this.container.module) {
+            if (this.index == AbstractPipeGui.this.container.moduleIndex) {
                 y = 0;
                 v = 30;
                 height = 32;
@@ -149,7 +147,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {
-            if (this.module == AbstractPipeGui.this.container.module)
+            if (this.index == AbstractPipeGui.this.container.moduleIndex)
                 return false;
             if (button != 0)
                 return false;

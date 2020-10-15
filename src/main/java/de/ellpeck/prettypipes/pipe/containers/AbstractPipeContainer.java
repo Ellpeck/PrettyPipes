@@ -19,6 +19,7 @@ public abstract class AbstractPipeContainer<T extends IModule> extends Container
 
     public final PipeTileEntity tile;
     public final T module;
+    public final int moduleIndex;
     public final ItemStack moduleStack;
 
     public AbstractPipeContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
@@ -26,6 +27,7 @@ public abstract class AbstractPipeContainer<T extends IModule> extends Container
         this.tile = Utility.getTileEntity(PipeTileEntity.class, player.world, pos);
         this.moduleStack = moduleIndex < 0 ? null : this.tile.modules.getStackInSlot(moduleIndex);
         this.module = moduleIndex < 0 ? null : (T) this.moduleStack.getItem();
+        this.moduleIndex = moduleIndex;
 
         // needs to be done here so transferStackInSlot works correctly, bleh
         this.addSlots();
