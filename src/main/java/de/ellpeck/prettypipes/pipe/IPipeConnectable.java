@@ -12,8 +12,8 @@ public interface IPipeConnectable {
 
     ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction);
 
-    default ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
-        return item.stack;
+    default ItemStack insertItem(World world, BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
+        return stack;
     }
 
     default boolean allowsModules(World world, BlockPos pipePos, Direction direction) {

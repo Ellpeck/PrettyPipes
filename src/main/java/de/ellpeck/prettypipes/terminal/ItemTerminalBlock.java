@@ -69,12 +69,12 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
     }
 
     @Override
-    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
+    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
         ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
         if (tile != null)
-            return ItemHandlerHelper.insertItemStacked(tile.items, item.stack, false);
-        return item.stack;
+            return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
+        return stack;
     }
 
     @Override

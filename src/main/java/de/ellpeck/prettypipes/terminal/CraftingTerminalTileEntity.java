@@ -12,6 +12,7 @@ import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
 import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
@@ -100,14 +101,17 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     }
 
     public void requestCraftingItems(PlayerEntity player, int maxAmount) {
+        PipeTileEntity pipe = this.getConnectedPipe();
+        if (pipe == null)
+            return;
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        int lowestAvailable = getAvailableCrafts(this.world, this.craftItems.getSlots(), this::getRequestedCraftItem, this::isGhostItem, s -> {
+        int lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), this::getRequestedCraftItem, this::isGhostItem, s -> {
             NetworkItem item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, this.craftables, s -> player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID()), ItemEqualityType.NBT);
+        }, s -> player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID()), ItemEqualityType.NBT);
         if (lowestAvailable > 0) {
             // if we're limiting the amount, pretend we only have that amount available
             if (maxAmount < lowestAvailable)
@@ -148,8 +152,8 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         return new CraftingTerminalContainer(Registry.craftingTerminalContainer, window, player, this.pos);
     }
 
-    public static int getAvailableCrafts(World world, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, List<Pair<BlockPos, ItemStack>> craftables, Consumer<ItemStack> unavailableConsumer, ItemEqualityType... equalityTypes) {
-        PipeNetwork network = PipeNetwork.get(world);
+    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, ItemEqualityType... equalityTypes) {
+        PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // the highest amount we can craft with the items we have
         int lowestAvailable = Integer.MAX_VALUE;
         // this is the amount of items required for each ingredient when crafting ONE
@@ -170,7 +174,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             // total amount of available items of this type
             int available = 0;
             for (NetworkLocation location : locationsFunction.apply(stack)) {
-                int amount = location.getItemAmount(world, stack.stack, equalityTypes);
+                int amount = location.getItemAmount(tile.getWorld(), stack.stack, equalityTypes);
                 if (amount <= 0)
                     continue;
                 amount -= network.getLockedAmount(location.getPos(), stack.stack, null, equalityTypes);
@@ -180,12 +184,11 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             // we have available for each crafting slot that contains this item
             available /= entry.getValue().intValue();
 
-            // check how many craftable items we have and add those on
-            if (!craftables.isEmpty()) {
-                int craftable = craftables.stream().map(Pair::getRight)
-                        .filter(c -> ItemEqualityType.compareItems(c, stack.stack))
-                        .mapToInt(ItemStack::getCount).sum();
-                available += craftable / entry.getValue().intValue();
+            // check how many craftable items we have and add those on if we need to
+            if (available < lowestAvailable) {
+                int craftable = network.getCraftableAmount(tile.getPos(), stack.stack, equalityTypes);
+                if (craftable > 0)
+                    available += craftable / entry.getValue().intValue();
             }
 
             // clamp to lowest available

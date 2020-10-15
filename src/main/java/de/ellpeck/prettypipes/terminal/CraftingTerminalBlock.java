@@ -23,11 +23,10 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
     }
 
     @Override
-    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, PipeItem item) {
+    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, ItemStack remain, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
         CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, world, pos);
         if (tile != null) {
-            ItemStack remain = item.stack;
             int lowestSlot = -1;
             do {
                 for (int i = 0; i < tile.craftItems.getSlots(); i++) {
@@ -41,15 +40,15 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
                 if (lowestSlot >= 0) {
                     ItemStack copy = remain.copy();
                     copy.setCount(1);
-                    remain.shrink(1 - tile.craftItems.insertItem(lowestSlot, copy, false).getCount());
+                    remain.shrink(1 - tile.craftItems.insertItem(lowestSlot, copy, simulate).getCount());
                     if (remain.isEmpty())
                         return ItemStack.EMPTY;
                 }
             }
             while (lowestSlot >= 0);
-            return ItemHandlerHelper.insertItemStacked(tile.items, remain, false);
+            return ItemHandlerHelper.insertItemStacked(tile.items, remain, simulate);
         }
-        return item.stack;
+        return remain;
     }
 
 }

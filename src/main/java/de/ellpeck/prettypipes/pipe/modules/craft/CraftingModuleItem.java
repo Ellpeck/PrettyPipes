@@ -10,6 +10,7 @@ import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
@@ -37,14 +38,12 @@ public class CraftingModuleItem extends ModuleItem {
     public final int inputSlots;
     public final int outputSlots;
     private final int speed;
-    private final int maxExtraction;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
         super(name);
         this.inputSlots = tier.forTier(1, 4, 9);
         this.outputSlots = tier.forTier(1, 2, 4);
         this.speed = tier.forTier(20, 10, 5);
-        this.maxExtraction = tier.forTier(1, 16, 32);
     }
 
     @Override
@@ -79,19 +78,19 @@ public class CraftingModuleItem extends ModuleItem {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // process crafting ingredient requests
         if (!tile.craftIngredientRequests.isEmpty()) {
-            NetworkLock request = tile.craftIngredientRequests.remove();
+            NetworkLock request = tile.craftIngredientRequests.peek();
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
-                network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), dest.getRight(), ItemEqualityType.NBT);
-                network.resolveNetworkLock(request);
-
-                // if we couldn't fit all items into the destination, create another request for the rest
-                ItemStack remain = request.stack.copy();
-                remain.shrink(dest.getRight().getCount());
-                if (!remain.isEmpty()) {
-                    NetworkLock remainRequest = new NetworkLock(request.location, remain);
-                    tile.craftIngredientRequests.add(remainRequest);
-                    network.createNetworkLock(remainRequest);
+                ItemStack remain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), ItemEqualityType.NBT);
+                if (remain.getCount() != request.stack.getCount()) {
+                    network.resolveNetworkLock(request);
+                    tile.craftIngredientRequests.remove();
+                    // if we couldn't fit all items into the destination, create another request for the rest
+                    if (!remain.isEmpty()) {
+                        NetworkLock remainRequest = new NetworkLock(request.location, remain);
+                        tile.craftIngredientRequests.add(remainRequest);
+                        network.createNetworkLock(remainRequest);
+                    }
                 }
             }
         }
@@ -99,93 +98,108 @@ public class CraftingModuleItem extends ModuleItem {
         if (!tile.craftResultRequests.isEmpty()) {
             List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
             ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-            for (Triple<BlockPos, BlockPos, ItemStack> request : tile.craftResultRequests) {
+            for (Pair<BlockPos, ItemStack> request : tile.craftResultRequests) {
                 ItemStack remain = request.getRight().copy();
-                for (NetworkLocation item : items) {
-                    remain = network.requestExistingItem(item, request.getLeft(), request.getMiddle(), remain, equalityTypes);
-                    if (remain.isEmpty())
-                        break;
-                }
-                if (remain.getCount() != request.getRight().getCount()) {
-                    tile.craftResultRequests.remove(request);
-                    // if we couldn't pull everything, log a new request
-                    if (!remain.isEmpty())
-                        tile.craftResultRequests.add(Triple.of(request.getLeft(), request.getMiddle(), remain));
-                    return;
+                PipeTileEntity destPipe = network.getPipe(request.getLeft());
+                if (destPipe != null) {
+                    Pair<BlockPos, ItemStack> dest = destPipe.getAvailableDestination(remain, true, true);
+                    if (dest == null) {
+                        // if there's no available destination, try inserting into terminals etc.
+                        for (Direction dir : Direction.values()) {
+                            IPipeConnectable connectable = destPipe.getPipeConnectable(dir);
+                            if (connectable == null)
+                                continue;
+                            ItemStack connectableRemain = connectable.insertItem(tile.getWorld(), destPipe.getPos(), dir, remain, true);
+                            if (connectableRemain.getCount() != remain.getCount()) {
+                                ItemStack inserted = remain.copy();
+                                inserted.shrink(connectableRemain.getCount());
+                                dest = Pair.of(destPipe.getPos().offset(dir), inserted);
+                                break;
+                            }
+                        }
+                    }
+                    for (NetworkLocation item : items) {
+                        ItemStack requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
+                        remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                        if (remain.isEmpty())
+                            break;
+                    }
+                    if (remain.getCount() != request.getRight().getCount()) {
+                        tile.craftResultRequests.remove(request);
+                        // if we couldn't pull everything, log a new request
+                        if (!remain.isEmpty())
+                            tile.craftResultRequests.add(Pair.of(request.getLeft(), remain));
+                        return;
+                    }
                 }
             }
         }
     }
 
     @Override
-    public List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile, boolean onlyReturnPossible) {
-        ItemStackHandler output = this.getOutput(module);
-        if (!onlyReturnPossible) {
-            // if we only need to return the ones we *could* craft, it's easy
-            List<ItemStack> ret = new ArrayList<>();
-            for (int i = 0; i < output.getSlots(); i++) {
-                ItemStack stack = output.getStackInSlot(i);
-                if (!stack.isEmpty())
-                    ret.add(stack);
-            }
-            return ret;
-        }
-
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
-        List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-        List<Pair<BlockPos, ItemStack>> craftables = network.getOrderedCraftables(tile.getPos(), true);
-        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-        ItemStackHandler input = this.getInput(module);
-
+    public List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile) {
         List<ItemStack> ret = new ArrayList<>();
+        ItemStackHandler output = this.getOutput(module);
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack stack = output.getStackInSlot(i);
-            if (!stack.isEmpty()) {
-                // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile.getWorld(), input.getSlots(), input::getStackInSlot, k -> false, s -> items, craftables, null, equalityTypes);
-                if (availableCrafts > 0) {
-                    ItemStack copy = stack.copy();
-                    copy.setCount(stack.getCount() * availableCrafts);
-                    ret.add(copy);
-                }
-            }
+            if (!stack.isEmpty())
+                ret.add(stack);
         }
         return ret;
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
-        // check if we can craft the required amount of items
-        List<ItemStack> craftables = this.getCraftables(module, tile, true);
-        int craftableAmount = craftables.stream()
-                .filter(c -> ItemEqualityType.compareItems(c, stack, equalityTypes))
-                .mapToInt(ItemStack::getCount).sum();
-        if (craftableAmount > 0) {
-            PipeNetwork network = PipeNetwork.get(tile.getWorld());
-            List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-            List<Pair<BlockPos, ItemStack>> allCraftables = network.getOrderedCraftables(tile.getPos(), true);
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, ItemEqualityType... equalityTypes) {
+        PipeNetwork network = PipeNetwork.get(tile.getWorld());
+        List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
+        ItemStackHandler input = this.getInput(module);
 
-            int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
-            int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
-
-            ItemStackHandler input = this.getInput(module);
-            for (int i = 0; i < input.getSlots(); i++) {
-                ItemStack in = input.getStackInSlot(i);
-                if (in.isEmpty())
-                    continue;
-                ItemStack copy = in.copy();
-                copy.setCount(in.getCount() * requiredCrafts);
-                Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), destPipe, destInventory, copy, items, allCraftables, equalityTypes);
-                tile.craftIngredientRequests.addAll(ret.getLeft());
-                tile.craftResultRequests.add(Triple.of(destPipe, destInventory, stack));
+        int craftable = 0;
+        ItemStackHandler output = this.getOutput(module);
+        for (int i = 0; i < output.getSlots(); i++) {
+            ItemStack out = output.getStackInSlot(i);
+            if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
+                // figure out how many crafting operations we can actually do with the input items we have in the network
+                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, null, equalityTypes);
+                if (availableCrafts > 0)
+                    craftable += out.getCount() * availableCrafts;
             }
-
-            ItemStack remain = stack.copy();
-            remain.shrink(craftableAmount);
-            return remain;
-        } else {
-            return stack;
         }
+        return craftable;
+    }
+
+    @Override
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes) {
+        // check if we can craft the required amount of items
+        int craftableAmount = this.getCraftableAmount(module, tile, stack, equalityTypes);
+        if (craftableAmount <= 0)
+            return stack;
+
+        PipeNetwork network = PipeNetwork.get(tile.getWorld());
+        List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
+
+        int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
+        int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
+        int toCraft = Math.min(craftableAmount, requiredCrafts);
+
+        ItemStackHandler input = this.getInput(module);
+        for (int i = 0; i < input.getSlots(); i++) {
+            ItemStack in = input.getStackInSlot(i);
+            if (in.isEmpty())
+                continue;
+            ItemStack copy = in.copy();
+            copy.setCount(in.getCount() * toCraft);
+            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), copy, items, equalityTypes);
+            tile.craftIngredientRequests.addAll(ret.getLeft());
+        }
+
+        ItemStack result = stack.copy();
+        result.setCount(resultAmount * toCraft);
+        tile.craftResultRequests.add(Pair.of(destPipe, result));
+
+        ItemStack remain = stack.copy();
+        remain.shrink(toCraft);
+        return remain;
     }
 
     public ItemStackHandler getInput(ItemStack module) {

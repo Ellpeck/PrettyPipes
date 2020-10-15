@@ -63,7 +63,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
     };
     public final Queue<NetworkLock> craftIngredientRequests = new ArrayDeque<>();
-    public final List<Triple<BlockPos, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
+    public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerTileEntity pressurizer;
     public int moduleDropCheck;
     protected List<PipeItem> items;
@@ -84,10 +84,9 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
         ListNBT results = new ListNBT();
-        for (Triple<BlockPos, BlockPos, ItemStack> triple : this.craftResultRequests) {
+        for (Pair<BlockPos, ItemStack> triple : this.craftResultRequests) {
             CompoundNBT nbt = new CompoundNBT();
             nbt.putLong("dest_pipe", triple.getLeft().toLong());
-            nbt.putLong("dest_inv", triple.getMiddle().toLong());
             nbt.put("item", triple.getRight().serializeNBT());
             results.add(nbt);
         }
@@ -105,9 +104,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         ListNBT results = compound.getList("craft_results", NBT.TAG_COMPOUND);
         for (int i = 0; i < results.size(); i++) {
             CompoundNBT nbt = results.getCompound(i);
-            this.craftResultRequests.add(Triple.of(
+            this.craftResultRequests.add(Pair.of(
                     BlockPos.fromLong(nbt.getLong("dest_pipe")),
-                    BlockPos.fromLong(nbt.getLong("dest_inv")),
                     ItemStack.read(nbt.getCompound("item"))));
         }
         super.read(state, compound);
@@ -260,17 +258,23 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules().allMatch(m -> m.getRight().canPipeWork(m.getLeft(), this));
     }
 
-    public List<ItemStack> getCraftables(boolean onlyReturnPossible) {
+    public List<ItemStack> getAllCraftables() {
         return this.streamModules()
-                .flatMap(m -> m.getRight().getCraftables(m.getLeft(), this, onlyReturnPossible).stream())
+                .flatMap(m -> m.getRight().getAllCraftables(m.getLeft(), this).stream())
                 .collect(Collectors.toList());
     }
 
-    public ItemStack craft(BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(ItemStack stack, ItemEqualityType... equalityTypes) {
+        return this.streamModules()
+                .mapToInt(m -> m.getRight().getCraftableAmount(m.getLeft(), this, stack, equalityTypes))
+                .sum();
+    }
+
+    public ItemStack craft(BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes) {
         Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, destInventory, stack, equalityTypes);
+            stack = module.getRight().craft(module.getLeft(), this, destPipe, stack, equalityTypes);
             if (stack.isEmpty())
                 break;
         }

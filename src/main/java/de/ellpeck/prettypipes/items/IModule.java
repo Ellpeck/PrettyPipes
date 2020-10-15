@@ -10,6 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public interface IModule {
 
@@ -33,7 +34,9 @@ public interface IModule {
 
     boolean canPipeWork(ItemStack module, PipeTileEntity tile);
 
-    List<ItemStack> getCraftables(ItemStack module, PipeTileEntity tile, boolean onlyReturnPossible);
+    List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile);
 
-    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes);
+    int getCraftableAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, ItemEqualityType... equalityTypes);
+
+    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes);
 }
