@@ -82,16 +82,17 @@ public class CraftingModuleItem extends ModuleItem {
             NetworkLock request = tile.craftIngredientRequests.peek();
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
-                ItemStack remain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), ItemEqualityType.NBT);
-                if (remain.getCount() != request.stack.getCount()) {
-                    network.resolveNetworkLock(request);
-                    tile.craftIngredientRequests.remove();
-                    // if we couldn't fit all items into the destination, create another request for the rest
-                    if (!remain.isEmpty()) {
-                        NetworkLock remainRequest = new NetworkLock(request.location, remain);
-                        tile.craftIngredientRequests.add(remainRequest);
-                        network.createNetworkLock(remainRequest);
-                    }
+                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), ItemEqualityType.NBT);
+                network.resolveNetworkLock(request);
+                tile.craftIngredientRequests.remove();
+
+                // if we couldn't fit all items into the destination, create another request for the rest
+                ItemStack remain = request.stack.copy();
+                remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                if (!remain.isEmpty()) {
+                    NetworkLock remainRequest = new NetworkLock(request.location, remain);
+                    tile.craftIngredientRequests.add(remainRequest);
+                    network.createNetworkLock(remainRequest);
                 }
             }
         }
