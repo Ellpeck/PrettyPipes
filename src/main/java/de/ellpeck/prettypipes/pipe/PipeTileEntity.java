@@ -63,7 +63,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             return 1;
         }
     };
-    public final Queue<NetworkLock> craftIngredientRequests = new ArrayDeque<>();
+    public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
     public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerTileEntity pressurizer;
     public int moduleDropCheck;

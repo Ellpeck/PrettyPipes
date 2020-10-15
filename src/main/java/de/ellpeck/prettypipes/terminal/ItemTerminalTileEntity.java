@@ -54,7 +54,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     };
     protected Map<EquatableItemStack, NetworkItem> networkItems;
-    private final Queue<NetworkLock> existingRequests = new ArrayDeque<>();
+    private final Queue<NetworkLock> existingRequests = new LinkedList<>();
 
     protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
         super(tileEntityTypeIn);
