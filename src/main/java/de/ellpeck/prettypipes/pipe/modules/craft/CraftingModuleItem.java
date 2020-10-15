@@ -79,6 +79,7 @@ public class CraftingModuleItem extends ModuleItem {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // process crafting ingredient requests
         if (!tile.craftIngredientRequests.isEmpty()) {
+            network.startProfile("crafting_ingredients");
             NetworkLock request = tile.craftIngredientRequests.peek();
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
@@ -95,9 +96,11 @@ public class CraftingModuleItem extends ModuleItem {
                     network.createNetworkLock(remainRequest);
                 }
             }
+            network.endProfile();
         }
         // pull requested crafting results from the network once they are stored
         if (!tile.craftResultRequests.isEmpty()) {
+            network.startProfile("crafting_results");
             List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
             ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             for (Pair<BlockPos, ItemStack> request : tile.craftResultRequests) {
@@ -133,10 +136,12 @@ public class CraftingModuleItem extends ModuleItem {
                         // if we couldn't pull everything, log a new request
                         if (!remain.isEmpty())
                             tile.craftResultRequests.add(Pair.of(request.getLeft(), remain));
+                        network.endProfile();
                         return;
                     }
                 }
             }
+            network.endProfile();
         }
     }
 
