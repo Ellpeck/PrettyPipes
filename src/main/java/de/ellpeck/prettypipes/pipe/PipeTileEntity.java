@@ -42,6 +42,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -264,17 +265,17 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 .collect(Collectors.toList());
     }
 
-    public int getCraftableAmount(ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         return this.streamModules()
-                .mapToInt(m -> m.getRight().getCraftableAmount(m.getLeft(), this, stack, equalityTypes))
+                .mapToInt(m -> m.getRight().getCraftableAmount(m.getLeft(), this, unavailableConsumer, stack, equalityTypes))
                 .sum();
     }
 
-    public ItemStack craft(BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, stack, equalityTypes);
+            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, equalityTypes);
             if (stack.isEmpty())
                 break;
         }

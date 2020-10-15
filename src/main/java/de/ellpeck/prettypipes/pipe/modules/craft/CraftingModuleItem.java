@@ -32,6 +32,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class CraftingModuleItem extends ModuleItem {
 
@@ -118,6 +119,8 @@ public class CraftingModuleItem extends ModuleItem {
                             }
                         }
                     }
+                    if (dest == null)
+                        continue;
                     for (NetworkLocation item : items) {
                         ItemStack requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
                         remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
@@ -149,7 +152,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
         ItemStackHandler input = this.getInput(module);
@@ -160,7 +163,7 @@ public class CraftingModuleItem extends ModuleItem {
             ItemStack out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, null, equalityTypes);
+                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -169,9 +172,9 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         // check if we can craft the required amount of items
-        int craftableAmount = this.getCraftableAmount(module, tile, stack, equalityTypes);
+        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, equalityTypes);
         if (craftableAmount <= 0)
             return stack;
 
@@ -189,7 +192,7 @@ public class CraftingModuleItem extends ModuleItem {
                 continue;
             ItemStack copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
-            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), copy, items, equalityTypes);
+            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, equalityTypes);
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 

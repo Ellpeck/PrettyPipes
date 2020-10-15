@@ -41,6 +41,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -142,19 +143,19 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_item");
         this.updateItems();
-        int requested = this.requestItemImpl(stack);
+        int requested = this.requestItemImpl(stack, onItemUnavailable(player));
         if (requested > 0) {
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
         } else {
-            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
+            onItemUnavailable(player).accept(stack);
         }
         network.endProfile();
     }
 
-    public int requestItemImpl(ItemStack stack) {
+    public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         NetworkItem item = this.networkItems.get(new EquatableItemStack(stack));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), stack, locations, ItemEqualityType.NBT);
+        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, ItemEqualityType.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getRight().getCount();
     }
@@ -208,7 +209,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return new ItemTerminalContainer(Registry.itemTerminalContainer, window, player, this.pos);
     }
 
-    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, ItemStack stack, Collection<NetworkLocation> locations, ItemEqualityType... equalityTypes) {
+    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         List<NetworkLock> requests = new ArrayList<>();
         ItemStack remain = stack.copy();
         PipeNetwork network = PipeNetwork.get(world);
@@ -236,7 +237,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
         // check for craftable items
         if (!remain.isEmpty())
-            remain = network.requestCraftedItem(destPipe, remain, equalityTypes);
+            remain = network.requestCraftedItem(destPipe, unavailableConsumer, remain, equalityTypes);
         return Pair.of(requests, remain);
+    }
+
+    public static Consumer<ItemStack> onItemUnavailable(PlayerEntity player) {
+        return s -> player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
     }
 }

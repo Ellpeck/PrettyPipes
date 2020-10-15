@@ -27,6 +27,7 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
         BlockPos pos = pipePos.offset(direction);
         CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, world, pos);
         if (tile != null) {
+            remain = remain.copy();
             int lowestSlot = -1;
             do {
                 for (int i = 0; i < tile.craftItems.getSlots(); i++) {

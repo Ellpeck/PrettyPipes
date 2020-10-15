@@ -20,6 +20,7 @@ import net.minecraftforge.items.IItemHandler;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class ModuleItem extends Item implements IModule {
 
@@ -83,12 +84,12 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         return 0;
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
         return stack;
     }
 }
