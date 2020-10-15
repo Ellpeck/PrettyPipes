@@ -28,6 +28,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
@@ -108,7 +109,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        int lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), this::getRequestedCraftItem, this::isGhostItem, s -> {
+        int lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             NetworkItem item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
         }, onItemUnavailable(player), ItemEqualityType.NBT);
@@ -163,7 +164,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             if (requested.isEmpty())
                 continue;
             MutableInt amount = requiredItems.computeIfAbsent(new EquatableItemStack(requested), s -> new MutableInt());
-            amount.add(1);
+            amount.add(requested.getCount());
             int fit = requested.getMaxStackSize() - (isGhost.test(i) ? 0 : requested.getCount());
             if (lowestAvailable > fit)
                 lowestAvailable = fit;
@@ -186,7 +187,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
 
             // check how many craftable items we have and add those on if we need to
             if (available < lowestAvailable) {
-                int craftable = network.getCraftableAmount(tile.getPos(),unavailableConsumer, stack.stack, equalityTypes);
+                int craftable = network.getCraftableAmount(tile.getPos(), unavailableConsumer, stack.stack, equalityTypes);
                 if (craftable > 0)
                     available += craftable / entry.getValue().intValue();
             }
