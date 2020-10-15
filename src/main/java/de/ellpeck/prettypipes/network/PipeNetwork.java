@@ -204,7 +204,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             PipeTileEntity pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
                 continue;
-            stack = pipe.craft(destPipe, unavailableConsumer, stack, equalityTypes);
+            stack = pipe.craft(destPipe, unavailableConsumer, stack);
             if (stack.isEmpty())
                 break;
         }
@@ -274,7 +274,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 continue;
             PipeTileEntity pipe = this.getPipe(pair.getLeft());
             if (pipe != null)
-                total += pipe.getCraftableAmount(unavailableConsumer, stack, equalityTypes);
+                total += pipe.getCraftableAmount(unavailableConsumer, stack);
         }
         return total;
     }

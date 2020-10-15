@@ -81,9 +81,10 @@ public class CraftingModuleItem extends ModuleItem {
         if (!tile.craftIngredientRequests.isEmpty()) {
             network.startProfile("crafting_ingredients");
             NetworkLock request = tile.craftIngredientRequests.peek();
+            ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
-                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), ItemEqualityType.NBT);
+                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(),equalityTypes);
                 network.resolveNetworkLock(request);
                 tile.craftIngredientRequests.remove();
 
@@ -158,9 +159,10 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
+        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         ItemStackHandler input = this.getInput(module);
 
         int craftable = 0;
@@ -178,15 +180,16 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
         // check if we can craft the required amount of items
-        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, equalityTypes);
+        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack);
         if (craftableAmount <= 0)
             return stack;
 
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
 
+        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
         int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
         int toCraft = Math.min(craftableAmount, requiredCrafts);

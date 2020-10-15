@@ -53,6 +53,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
         registration.addRecipeTransferHandler(new CraftingTerminalTransferHandler(), VanillaRecipeCategoryUid.CRAFTING);
+        registration.addUniversalRecipeTransferHandler(new CraftingModuleTransferHandler());
     }
 
     @SubscribeEvent

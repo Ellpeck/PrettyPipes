@@ -23,6 +23,7 @@ public final class PacketHandler {
         network.registerMessage(2, PacketNetworkItems.class, PacketNetworkItems::toBytes, PacketNetworkItems::fromBytes, PacketNetworkItems::onMessage);
         network.registerMessage(3, PacketRequest.class, PacketRequest::toBytes, PacketRequest::fromBytes, PacketRequest::onMessage);
         network.registerMessage(4, PacketGhostSlot.class, PacketGhostSlot::toBytes, PacketGhostSlot::fromBytes, PacketGhostSlot::onMessage);
+        network.registerMessage(5, PacketCraftingModuleTransfer.class, PacketCraftingModuleTransfer::toBytes, PacketCraftingModuleTransfer::fromBytes, PacketCraftingModuleTransfer::onMessage);
     }
 
     public static void sendToAllLoaded(World world, BlockPos pos, Object message) {

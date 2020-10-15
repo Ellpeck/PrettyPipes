@@ -265,17 +265,17 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 .collect(Collectors.toList());
     }
 
-    public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
         return this.streamModules()
-                .mapToInt(m -> m.getRight().getCraftableAmount(m.getLeft(), this, unavailableConsumer, stack, equalityTypes))
+                .mapToInt(m -> m.getRight().getCraftableAmount(m.getLeft(), this, unavailableConsumer, stack))
                 .sum();
     }
 
-    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
         Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, equalityTypes);
+            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack);
             if (stack.isEmpty())
                 break;
         }

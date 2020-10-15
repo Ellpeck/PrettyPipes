@@ -11,7 +11,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
 
     public ItemStackHandler input;
     public ItemStackHandler output;
-    private boolean modified;
+    public boolean modified;
 
     public CraftingModuleContainer(ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
         super(type, id, player, pos, moduleIndex);
