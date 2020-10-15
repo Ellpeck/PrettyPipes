@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "GIG",
+        "IMI",
+        "GIG"
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:iron_ingot"
+        },
+        "G": {
+            "item": "minecraft:gold_ingot"
+        },
+        "M": {
+            "item": "prettypipes:low_crafting_module"
+        }
+    },
+    "result": {
+        "item": "prettypipes:medium_crafting_module"
+    }
+}
