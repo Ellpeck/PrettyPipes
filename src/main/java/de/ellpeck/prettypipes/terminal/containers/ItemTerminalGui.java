@@ -173,7 +173,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 String search = searchText;
                 String toCompare;
                 if (search.startsWith("@")) {
-                    toCompare = s.getLeft().getItem().getRegistryName().getNamespace();
+                    toCompare = s.getLeft().getItem().getCreatorModId(s.getLeft());
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name

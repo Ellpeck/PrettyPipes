@@ -17,7 +17,8 @@ public enum ItemEqualityType {
         if (filterTags.isEmpty())
             return false;
         return stackTags.containsAll(filterTags);
-    }, true);
+    }, true),
+    MOD((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true);
 
     public final BiFunction<ItemStack, ItemStack, Boolean> filter;
     public final boolean ignoreItemEquality;
