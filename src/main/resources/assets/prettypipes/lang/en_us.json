@@ -1,5 +1,6 @@
 {
     "item.prettypipes.wrench": "Pipe Wrench",
+    "info.prettypipes.wrench": "Allows modifying pipe connections\nPlaces blocks in offhand as covers\nSneak to remove cover or pipe",
     "item.prettypipes.blank_module": "Blank Module",
     "item.prettypipes.pipe_frame": "Pipe Frame",
     "info.prettypipes.pipe_frame": "Attach to a pipe or pipe-adjacent block\nShows amount of an item in the pipe's network",

@@ -12,6 +12,7 @@ import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -21,15 +22,21 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.NBTUtil;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ChestTileEntity;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -66,6 +73,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
     public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerTileEntity pressurizer;
+    public BlockState cover;
     public int moduleDropCheck;
     protected List<PipeItem> items;
     private int lastItemAmount;
@@ -84,6 +92,8 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         compound.put("modules", this.modules.serializeNBT());
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
+        if (this.cover != null)
+            compound.put("cover", NBTUtil.writeBlockState(this.cover));
         ListNBT results = new ListNBT();
         for (Pair<BlockPos, ItemStack> triple : this.craftResultRequests) {
             CompoundNBT nbt = new CompoundNBT();
@@ -99,6 +109,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public void read(BlockState state, CompoundNBT compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
+        this.cover = compound.contains("cover") ? NBTUtil.readBlockState(compound.getCompound("cover")) : null;
         this.craftIngredientRequests.clear();
         this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", NBT.TAG_COMPOUND), NetworkLock::new));
         this.craftResultRequests.clear();
@@ -126,6 +137,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         List<PipeItem> items = this.getItems();
         items.clear();
         items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::load));
+    }
+
+    @Override
+    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+        this.read(this.getBlockState(), pkt.getNbtCompound());
     }
 
     @Override
@@ -354,5 +370,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
         return new MainPipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this.pos);
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public AxisAlignedBB getRenderBoundingBox() {
+        // our render bounding box should always be the full block in case we're covered
+        return new AxisAlignedBB(this.pos);
     }
 }

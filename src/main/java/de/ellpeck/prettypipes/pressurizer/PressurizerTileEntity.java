@@ -79,11 +79,6 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
     }
 
     @Override
-    public SUpdateTileEntityPacket getUpdatePacket() {
-        return new SUpdateTileEntityPacket(this.pos, -1, this.write(new CompoundNBT()));
-    }
-
-    @Override
     public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
         this.read(this.getBlockState(), pkt.getNbtCompound());
     }

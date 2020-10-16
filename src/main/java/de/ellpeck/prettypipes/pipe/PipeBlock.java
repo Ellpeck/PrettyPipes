@@ -24,6 +24,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
@@ -34,6 +35,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -42,7 +44,7 @@ import java.util.Map;
 public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
-    private static final Map<BlockState, VoxelShape> SHAPE_CACHE = new HashMap<>();
+    private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = makeCuboidShape(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
             .put(Direction.UP, makeCuboidShape(5, 10, 5, 11, 16, 11))
@@ -131,16 +133,29 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     @Override
     public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
-        VoxelShape shape = SHAPE_CACHE.get(state);
-        if (shape != null)
-            return shape;
-
-        shape = CENTER_SHAPE;
-        for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-            if (state.get(entry.getValue()).isConnected())
-                shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+        VoxelShape coverShape = null;
+        BlockState cover = null;
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile != null && tile.cover != null) {
+            cover = tile.cover;
+            // try catch since the block might expect to find itself at the position
+            try {
+                coverShape = cover.getShape(worldIn, pos, context);
+            } catch (Exception ignored) {
+            }
         }
-        SHAPE_CACHE.put(state, shape);
+        Pair<BlockState, BlockState> key = Pair.of(state, cover);
+        VoxelShape shape = SHAPE_CACHE.get(key);
+        if (shape == null) {
+            shape = CENTER_SHAPE;
+            for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
+                if (state.get(entry.getValue()).isConnected())
+                    shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+            }
+            if (coverShape != null)
+                shape = VoxelShapes.or(shape, coverShape);
+            SHAPE_CACHE.put(key, shape);
+        }
         return shape;
     }
 

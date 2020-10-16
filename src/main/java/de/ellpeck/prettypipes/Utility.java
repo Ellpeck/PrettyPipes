@@ -18,6 +18,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.*;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
 
 public final class Utility {
 
-    public static <T extends TileEntity> T getTileEntity(Class<T> type, World world, BlockPos pos) {
+    public static <T extends TileEntity> T getTileEntity(Class<T> type, IBlockReader world, BlockPos pos) {
         TileEntity tile = world.getTileEntity(pos);
         return type.isInstance(tile) ? (T) tile : null;
     }
@@ -115,7 +116,7 @@ public final class Utility {
     public static void sendTileEntityToClients(TileEntity tile) {
         ServerWorld world = (ServerWorld) tile.getWorld();
         Stream<ServerPlayerEntity> entities = world.getChunkProvider().chunkManager.getTrackingPlayers(new ChunkPos(tile.getPos()), false);
-        SUpdateTileEntityPacket packet = tile.getUpdatePacket();
+        SUpdateTileEntityPacket packet = new SUpdateTileEntityPacket(tile.getPos(), -1, tile.write(new CompoundNBT()));
         entities.forEach(e -> e.connection.sendPacket(packet));
     }
 
