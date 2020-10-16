@@ -121,8 +121,11 @@ public final class Utility {
 
     public static <T extends INBTSerializable<CompoundNBT>> List<T> deserializeAll(ListNBT list, Function<CompoundNBT, T> supplier) {
         List<T> items = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++)
-            items.add(supplier.apply(list.getCompound(i)));
+        for (int i = 0; i < list.size(); i++) {
+            T item = supplier.apply(list.getCompound(i));
+            if (item != null)
+                items.add(item);
+        }
         return items;
     }
 

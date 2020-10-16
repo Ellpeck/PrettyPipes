@@ -1,25 +1,36 @@
 package de.ellpeck.prettypipes.network;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import joptsimple.internal.Strings;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ILiquidContainer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -28,12 +39,18 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer {
+public class PipeItem implements INBTSerializable<CompoundNBT> {
+
+    public static final Map<ResourceLocation, BiFunction<ResourceLocation, CompoundNBT, PipeItem>> TYPES = new HashMap<>();
+    public static final ResourceLocation TYPE = new ResourceLocation(PrettyPipes.ID, "pipe_item");
+
+    static {
+        TYPES.put(TYPE, PipeItem::new);
+    }
 
     public ItemStack stack;
     public float speed;
@@ -51,13 +68,20 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     protected int currentTile;
     protected boolean retryOnObstruction;
     protected long lastWorldTick;
+    protected ResourceLocation type;
 
-    public PipeItem(ItemStack stack, float speed) {
+    public PipeItem(ResourceLocation type, ItemStack stack, float speed) {
+        this.type = type;
         this.stack = stack;
         this.speed = speed;
     }
 
-    public PipeItem(CompoundNBT nbt) {
+    public PipeItem(ItemStack stack, float speed) {
+        this(TYPE, stack, speed);
+    }
+
+    private PipeItem(ResourceLocation type, CompoundNBT nbt) {
+        this.type = type;
         this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
     }
@@ -224,6 +248,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     @Override
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();
+        nbt.putString("type", this.type.toString());
         nbt.put("stack", this.stack.serializeNBT());
         nbt.putFloat("speed", this.speed);
         nbt.put("start_inv", NBTUtil.writeBlockPos(this.startInventory));
@@ -259,6 +284,53 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }
 
+    @OnlyIn(Dist.CLIENT)
+    public void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
+        matrixStack.translate(
+                MathHelper.lerp(partialTicks, this.lastX, this.x),
+                MathHelper.lerp(partialTicks, this.lastY, this.y),
+                MathHelper.lerp(partialTicks, this.lastZ, this.z));
+
+        if (this.stack.getItem() instanceof BlockItem) {
+            float scale = 0.7F;
+            matrixStack.scale(scale, scale, scale);
+            matrixStack.translate(0, -0.2F, 0);
+        } else {
+            float scale = 0.45F;
+            matrixStack.scale(scale, scale, scale);
+            matrixStack.translate(0, -0.1F, 0);
+        }
+
+        random.setSeed(Item.getIdFromItem(this.stack.getItem()) + this.stack.getDamage());
+        int amount = this.getModelCount();
+
+        for (int i = 0; i < amount; i++) {
+            matrixStack.push();
+            if (amount > 1) {
+                matrixStack.translate(
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
+            }
+            Minecraft.getInstance().getItemRenderer().renderItem(this.stack, ItemCameraTransforms.TransformType.GROUND, light, overlay, matrixStack, buffer);
+            matrixStack.pop();
+        }
+    }
+
+    private int getModelCount() {
+        int i = 1;
+        if (this.stack.getCount() > 48) {
+            i = 5;
+        } else if (this.stack.getCount() > 32) {
+            i = 4;
+        } else if (this.stack.getCount() > 16) {
+            i = 3;
+        } else if (this.stack.getCount() > 1) {
+            i = 2;
+        }
+        return i;
+    }
+
     protected static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
         Graph<BlockPos, NetworkEdge> graph = path.getGraph();
         List<BlockPos> ret = new ArrayList<>();
@@ -292,13 +364,13 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return ret;
     }
 
-    @Override
-    public boolean canContainFluid(IBlockReader worldIn, BlockPos pos, BlockState state, Fluid fluidIn) {
-        return true;
-    }
+    public static PipeItem load(CompoundNBT nbt) {
+        // TODO legacy compat, remove eventually
+        if (!nbt.contains("type"))
+            nbt.putString("type", TYPE.toString());
 
-    @Override
-    public boolean receiveFluid(IWorld worldIn, BlockPos pos, BlockState state, FluidState fluidStateIn) {
-        return false;
+        ResourceLocation type = new ResourceLocation(nbt.getString("type"));
+        BiFunction<ResourceLocation, CompoundNBT, PipeItem> func = TYPES.get(type);
+        return func != null ? func.apply(type, nbt) : null;
     }
 }

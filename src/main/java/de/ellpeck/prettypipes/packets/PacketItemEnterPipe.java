@@ -45,7 +45,7 @@ public class PacketItemEnterPipe {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.world == null)
                     return;
-                PipeItem item = new PipeItem(message.item);
+                PipeItem item = PipeItem.load(message.item);
                 PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, mc.world, message.tilePos);
                 if (pipe != null)
                     pipe.getItems().add(item);

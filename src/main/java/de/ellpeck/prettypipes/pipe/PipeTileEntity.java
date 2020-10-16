@@ -125,7 +125,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         this.read(state, nbt);
         List<PipeItem> items = this.getItems();
         items.clear();
-        items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new));
+        items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::load));
     }
 
     @Override

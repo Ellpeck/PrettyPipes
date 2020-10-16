@@ -24,7 +24,7 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
     }
 
     @Override
-    public void render(PipeTileEntity tile, float v, MatrixStack matrixStack, IRenderTypeBuffer iRenderTypeBuffer, int k, int i1) {
+    public void render(PipeTileEntity tile, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer iRenderTypeBuffer, int k, int i1) {
         if (tile.getItems().isEmpty())
             return;
         matrixStack.push();
@@ -32,51 +32,9 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
         matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
         for (PipeItem item : tile.getItems()) {
             matrixStack.push();
-            matrixStack.translate(
-                    MathHelper.lerp(v, item.lastX, item.x),
-                    MathHelper.lerp(v, item.lastY, item.y),
-                    MathHelper.lerp(v, item.lastZ, item.z));
-
-            if (item.stack.getItem() instanceof BlockItem) {
-                float scale = 0.7F;
-                matrixStack.scale(scale, scale, scale);
-                matrixStack.translate(0, -0.2F, 0);
-            } else {
-                float scale = 0.45F;
-                matrixStack.scale(scale, scale, scale);
-                matrixStack.translate(0, -0.1F, 0);
-            }
-
-            this.random.setSeed(Item.getIdFromItem(item.stack.getItem()) + item.stack.getDamage());
-            int amount = this.getModelCount(item.stack);
-
-            for (int i = 0; i < amount; i++) {
-                matrixStack.push();
-                if (amount > 1) {
-                    matrixStack.translate(
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
-                }
-                Minecraft.getInstance().getItemRenderer().renderItem(item.stack, ItemCameraTransforms.TransformType.GROUND, k, i1, matrixStack, iRenderTypeBuffer);
-                matrixStack.pop();
-            }
+            item.render(tile, matrixStack, this.random, partialTicks, k, i1, iRenderTypeBuffer);
             matrixStack.pop();
         }
         matrixStack.pop();
-    }
-
-    protected int getModelCount(ItemStack stack) {
-        int i = 1;
-        if (stack.getCount() > 48) {
-            i = 5;
-        } else if (stack.getCount() > 32) {
-            i = 4;
-        } else if (stack.getCount() > 16) {
-            i = 3;
-        } else if (stack.getCount() > 1) {
-            i = 2;
-        }
-        return i;
     }
 }

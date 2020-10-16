@@ -100,7 +100,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         ListNBT edges = nbt.getList("edges", NBT.TAG_COMPOUND);
         for (int i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (PipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new))
+        for (PipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::load))
             this.pipeItems.put(item.getCurrentPipe(), item);
         for (NetworkLock lock : Utility.deserializeAll(nbt.getList("locks", NBT.TAG_COMPOUND), NetworkLock::new))
             this.createNetworkLock(lock);
@@ -133,7 +133,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         }
     }
 
-    public ItemStack tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
+    public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
         return this.routeItem(startPipePos, startInventory, stack, PipeItem::new, preventOversending);
     }
 
@@ -212,6 +212,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, ItemStack stack, ItemEqualityType... equalityTypes) {
+        return this.requestExistingItem(location, destPipe, destInventory, ignoredLock, PipeItem::new, stack, equalityTypes);
+    }
+
+    public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, BiFunction<ItemStack, Float, PipeItem> itemSupplier, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (location.getPos().equals(destInventory))
             return stack;
         // make sure we don't pull any locked items
@@ -230,7 +234,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // try to extract from that location's inventory and send the item
             IItemHandler handler = location.getItemHandler(this.world);
             ItemStack extracted = handler.extractItem(slot, amount, true);
-            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> new PipeItem(extracted, speed))) {
+            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> itemSupplier.apply(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
                 amount -= extracted.getCount();
                 if (amount <= 0)
