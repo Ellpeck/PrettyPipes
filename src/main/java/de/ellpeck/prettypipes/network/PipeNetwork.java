@@ -444,7 +444,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return this.pipeItems.get(pos);
     }
 
-    private Stream<PipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
+    public Stream<PipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
         this.startProfile("get_pipe_items_on_the_way");
         Stream<PipeItem> ret = this.pipeItems.values().stream().filter(i -> i.getDestInventory().equals(goalInv));
         this.endProfile();
@@ -454,7 +454,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public int getItemsOnTheWay(BlockPos goalInv, ItemStack type, ItemEqualityType... equalityTypes) {
         return this.getPipeItemsOnTheWay(goalInv)
                 .filter(i -> type == null || ItemEqualityType.compareItems(i.stack, type, equalityTypes))
-                .mapToInt(i -> i.stack.getCount()).sum();
+                .mapToInt(i -> i.getItemsOnTheWay(goalInv)).sum();
     }
 
     @Override

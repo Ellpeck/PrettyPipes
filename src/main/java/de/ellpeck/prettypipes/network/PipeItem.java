@@ -284,6 +284,10 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }
 
+    public int getItemsOnTheWay(BlockPos goalInv){
+        return this.stack.getCount();
+    }
+
     @OnlyIn(Dist.CLIENT)
     public void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
         matrixStack.translate(
