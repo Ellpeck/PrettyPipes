@@ -302,19 +302,16 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public IItemHandler getItemHandler(Direction dir) {
+        return this.getNeighborCap(dir, CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
+    }
+
+    public <T> T getNeighborCap(Direction dir, Capability<T> cap) {
         if (!this.isConnected(dir))
             return null;
         BlockPos pos = this.pos.offset(dir);
         TileEntity tile = this.world.getTileEntity(pos);
-        if (tile != null) {
-            // if we don't do this, then chests get really weird
-            if (tile instanceof ChestTileEntity) {
-                BlockState state = this.world.getBlockState(tile.getPos());
-                if (state.getBlock() instanceof ChestBlock)
-                    return new InvWrapper(ChestBlock.getChestInventory((ChestBlock) state.getBlock(), state, this.world, tile.getPos(), true));
-            }
-            return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, dir.getOpposite()).orElse(null);
-        }
+        if (tile != null)
+            return tile.getCapability(cap, dir.getOpposite()).orElse(null);
         return null;
     }
 

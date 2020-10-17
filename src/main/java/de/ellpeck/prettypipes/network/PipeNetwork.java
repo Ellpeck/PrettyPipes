@@ -299,7 +299,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
-                if (info.stream().anyMatch(l -> l.getItemHandler(this.world) == handler))
+                if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.world))))
                     continue;
                 NetworkLocation location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.world))
