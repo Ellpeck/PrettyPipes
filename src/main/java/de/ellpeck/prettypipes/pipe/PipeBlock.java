@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.datafixers.types.Func;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
@@ -36,16 +37,19 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 public class PipeBlock extends ContainerBlock {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
+    private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = makeCuboidShape(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
             .put(Direction.UP, makeCuboidShape(5, 10, 5, 11, 16, 11))
@@ -134,6 +138,20 @@ public class PipeBlock extends ContainerBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getShape(worldIn, pos, context), SHAPE_CACHE, null);
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), COLL_SHAPE_CACHE, s -> {
+            // make the shape a bit higher so we can jump up onto a higher block
+            MutableObject<VoxelShape> newShape = new MutableObject<>(VoxelShapes.empty());
+            s.forEachBox((x1, y1, z1, x2, y2, z2) -> newShape.setValue(VoxelShapes.combine(VoxelShapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), IBooleanFunction.OR)));
+            return newShape.getValue().simplify();
+        });
+    }
+
+    private VoxelShape cacheAndGetShape(BlockState state, IBlockReader worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
         VoxelShape coverShape = null;
         BlockState cover = null;
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
@@ -141,21 +159,23 @@ public class PipeBlock extends ContainerBlock {
             cover = tile.cover;
             // try catch since the block might expect to find itself at the position
             try {
-                coverShape = cover.getShape(worldIn, pos, context);
+                coverShape = coverShapeSelector.apply(cover);
             } catch (Exception ignored) {
             }
         }
         Pair<BlockState, BlockState> key = Pair.of(state, cover);
-        VoxelShape shape = SHAPE_CACHE.get(key);
+        VoxelShape shape = cache.get(key);
         if (shape == null) {
             shape = CENTER_SHAPE;
             for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
                 if (state.get(entry.getValue()).isConnected())
                     shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
             }
+            if (shapeModifier != null)
+                shape = shapeModifier.apply(shape);
             if (coverShape != null)
                 shape = VoxelShapes.or(shape, coverShape);
-            SHAPE_CACHE.put(key, shape);
+            cache.put(key, shape);
         }
         return shape;
     }
