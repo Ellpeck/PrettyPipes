@@ -166,7 +166,10 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 for (int i = 0; i < tile.craftItems.getSlots(); i++) {
                     ItemStack stack = tile.getRequestedCraftItem(i);
                     int count = tile.isGhostItem(i) ? 0 : stack.getCount();
-                    if (!ItemHandlerHelper.canItemStacksStackRelaxed(stack, remain))
+                    if (!ItemHandlerHelper.canItemStacksStack(stack, remain))
+                        continue;
+                    // ensure that a single non-stackable item can still enter a ghost slot
+                    if (!stack.isStackable() && count >= 1)
                         continue;
                     if (lowestSlot < 0 || !tile.isGhostItem(lowestSlot) && count < tile.getRequestedCraftItem(lowestSlot).getCount())
                         lowestSlot = i;
@@ -197,7 +200,8 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 continue;
             MutableInt amount = requiredItems.computeIfAbsent(new EquatableItemStack(requested), s -> new MutableInt());
             amount.add(requested.getCount());
-            int fit = requested.getMaxStackSize() - (isGhost.test(i) ? 0 : requested.getCount());
+            // if no items fit into the crafting input, we still want to pretend they do for requesting
+            int fit = Math.max(requested.getMaxStackSize() - (isGhost.test(i) ? 0 : requested.getCount()), 1);
             if (lowestAvailable > fit)
                 lowestAvailable = fit;
         }
