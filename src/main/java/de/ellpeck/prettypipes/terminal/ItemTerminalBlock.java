@@ -30,7 +30,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectable {
+public class ItemTerminalBlock extends ContainerBlock {
     public ItemTerminalBlock() {
         super(Properties.create(Material.ROCK).hardnessAndResistance(3).sound(SoundType.STONE));
     }
@@ -61,25 +61,6 @@ public class ItemTerminalBlock extends ContainerBlock implements IPipeConnectabl
     @Override
     public TileEntity createNewTileEntity(IBlockReader worldIn) {
         return new ItemTerminalTileEntity();
-    }
-
-    @Override
-    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
-        return ConnectionType.CONNECTED;
-    }
-
-    @Override
-    public ItemStack insertItem(World world, BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
-        BlockPos pos = pipePos.offset(direction);
-        ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
-        if (tile != null)
-            return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
-        return stack;
-    }
-
-    @Override
-    public boolean allowsModules(World world, BlockPos pipePos, Direction direction) {
-        return true;
     }
 
     @Override

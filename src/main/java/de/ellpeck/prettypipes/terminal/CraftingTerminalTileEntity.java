@@ -4,6 +4,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.network.NetworkItem;
@@ -21,6 +22,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
@@ -151,6 +153,36 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
         return new CraftingTerminalContainer(Registry.craftingTerminalContainer, window, player, this.pos);
+    }
+
+    @Override
+    public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack remain, boolean simulate) {
+        BlockPos pos = pipePos.offset(direction);
+        CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, this.world, pos);
+        if (tile != null) {
+            remain = remain.copy();
+            int lowestSlot = -1;
+            do {
+                for (int i = 0; i < tile.craftItems.getSlots(); i++) {
+                    ItemStack stack = tile.getRequestedCraftItem(i);
+                    int count = tile.isGhostItem(i) ? 0 : stack.getCount();
+                    if (!ItemHandlerHelper.canItemStacksStackRelaxed(stack, remain))
+                        continue;
+                    if (lowestSlot < 0 || !tile.isGhostItem(lowestSlot) && count < tile.getRequestedCraftItem(lowestSlot).getCount())
+                        lowestSlot = i;
+                }
+                if (lowestSlot >= 0) {
+                    ItemStack copy = remain.copy();
+                    copy.setCount(1);
+                    remain.shrink(1 - tile.craftItems.insertItem(lowestSlot, copy, simulate).getCount());
+                    if (remain.isEmpty())
+                        return ItemStack.EMPTY;
+                }
+            }
+            while (lowestSlot >= 0);
+            return ItemHandlerHelper.insertItemStacked(tile.items, remain, simulate);
+        }
+        return remain;
     }
 
     public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, ItemEqualityType... equalityTypes) {

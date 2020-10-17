@@ -212,7 +212,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
         IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
-            return connectable.insertItem(currPipe.getWorld(), currPipe.getPos(), dir, this.stack, false);
+            return connectable.insertItem(currPipe.getPos(), dir, this.stack, false);
         IItemHandler handler = currPipe.getItemHandler(dir);
         if (handler != null)
             return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);

@@ -4,6 +4,8 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.pipe.ConnectionType;
+import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
@@ -22,6 +24,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -30,7 +33,7 @@ import net.minecraftforge.energy.IEnergyStorage;
 
 import javax.annotation.Nullable;
 
-public class PressurizerTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
+public class PressurizerTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     private final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
     private int lastEnergy;
@@ -98,6 +101,8 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
         if (cap == CapabilityEnergy.ENERGY) {
             return LazyOptional.of(() -> (T) this.storage);
+        } else if (cap == Registry.pipeConnectableCapability) {
+            return LazyOptional.of(() -> (T) this);
         } else {
             return LazyOptional.empty();
         }
@@ -125,6 +130,11 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
             this.lastEnergy = this.storage.getEnergyStored();
             Utility.sendTileEntityToClients(this);
         }
+    }
+
+    @Override
+    public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
+        return ConnectionType.CONNECTED;
     }
 
     private static class ModifiableEnergyStorage extends EnergyStorage {

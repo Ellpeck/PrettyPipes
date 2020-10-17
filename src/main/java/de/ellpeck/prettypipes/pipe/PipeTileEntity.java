@@ -35,9 +35,12 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -53,7 +56,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
+public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
@@ -316,9 +319,9 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public IPipeConnectable getPipeConnectable(Direction dir) {
-        BlockState state = this.world.getBlockState(this.pos.offset(dir));
-        if (state.getBlock() instanceof IPipeConnectable)
-            return (IPipeConnectable) state.getBlock();
+        TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
+        if (tile != null)
+            return tile.getCapability(Registry.pipeConnectableCapability, dir.getOpposite()).orElse(null);
         return null;
     }
 
@@ -331,7 +334,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             if (this.isConnectedInventory(dir))
                 return true;
             IPipeConnectable connectable = this.getPipeConnectable(dir);
-            if (connectable != null && connectable.allowsModules(this.world, this.pos, dir))
+            if (connectable != null && connectable.allowsModules(this.pos, dir))
                 return true;
         }
         return false;
@@ -377,5 +380,20 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public AxisAlignedBB getRenderBoundingBox() {
         // our render bounding box should always be the full block in case we're covered
         return new AxisAlignedBB(this.pos);
+    }
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+        if (cap == Registry.pipeConnectableCapability)
+            return LazyOptional.of(() -> (T) this);
+        return LazyOptional.empty();
+    }
+
+    @Override
+    public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
+        BlockState state = this.world.getBlockState(pipePos.offset(direction));
+        if (state.get(PipeBlock.DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
+            return ConnectionType.BLOCKED;
+        return ConnectionType.CONNECTED;
     }
 }

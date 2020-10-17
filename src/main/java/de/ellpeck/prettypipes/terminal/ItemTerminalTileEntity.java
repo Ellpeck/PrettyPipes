@@ -9,6 +9,8 @@ import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.network.*;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
+import de.ellpeck.prettypipes.pipe.ConnectionType;
+import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
@@ -30,9 +32,12 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,7 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ItemTerminalTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity {
+public class ItemTerminalTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     public final ItemStackHandler items = new ItemStackHandler(12) {
         @Override
@@ -207,6 +212,32 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
         return new ItemTerminalContainer(Registry.itemTerminalContainer, window, player, this.pos);
+    }
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+        if (cap == Registry.pipeConnectableCapability)
+            return LazyOptional.of(() -> (T) this);
+        return LazyOptional.empty();
+    }
+
+    @Override
+    public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
+        return ConnectionType.CONNECTED;
+    }
+
+    @Override
+    public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
+        BlockPos pos = pipePos.offset(direction);
+        ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
+        if (tile != null)
+            return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
+        return stack;
+    }
+
+    @Override
+    public boolean allowsModules(BlockPos pipePos, Direction direction) {
+        return true;
     }
 
     public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {

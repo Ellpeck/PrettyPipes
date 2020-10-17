@@ -90,6 +90,8 @@ public final class Registry {
 
     @CapabilityInject(PipeNetwork.class)
     public static Capability<PipeNetwork> pipeNetworkCapability;
+    @CapabilityInject(IPipeConnectable.class)
+    public static Capability<IPipeConnectable> pipeConnectableCapability;
 
     public static Item wrenchItem;
     public static Item pipeFrameItem;
@@ -203,18 +205,8 @@ public final class Registry {
     }
 
     public static void setup(FMLCommonSetupEvent event) {
-        CapabilityManager.INSTANCE.register(PipeNetwork.class, new Capability.IStorage<PipeNetwork>() {
-            @Nullable
-            @Override
-            public INBT writeNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side) {
-                return null;
-            }
-
-            @Override
-            public void readNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side, INBT nbt) {
-
-            }
-        }, () -> null);
+        registerCap(PipeNetwork.class);
+        registerCap(IPipeConnectable.class);
         PacketHandler.setup();
     }
 
@@ -235,5 +227,20 @@ public final class Registry {
             ScreenManager.registerFactory(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
             ScreenManager.registerFactory(craftingModuleContainer, CraftingModuleGui::new);
         }
+    }
+
+    private static <T> void registerCap(Class<T> capClass) {
+        CapabilityManager.INSTANCE.register(capClass, new Capability.IStorage<T>() {
+            @Nullable
+            @Override
+            public INBT writeNBT(Capability<T> capability, T instance, Direction side) {
+                return null;
+            }
+
+            @Override
+            public void readNBT(Capability<T> capability, T instance, Direction side, INBT nbt) {
+
+            }
+        }, () -> null);
     }
 }

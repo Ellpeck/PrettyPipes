@@ -27,7 +27,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class PressurizerBlock extends ContainerBlock implements IPipeConnectable {
+public class PressurizerBlock extends ContainerBlock {
     public PressurizerBlock() {
         super(Properties.create(Material.ROCK).hardnessAndResistance(3).sound(SoundType.STONE));
     }
@@ -40,11 +40,6 @@ public class PressurizerBlock extends ContainerBlock implements IPipeConnectable
         if (!worldIn.isRemote)
             NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
         return ActionResultType.SUCCESS;
-    }
-
-    @Override
-    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
-        return ConnectionType.CONNECTED;
     }
 
     @Override

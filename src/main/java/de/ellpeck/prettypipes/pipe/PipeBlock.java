@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
+import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
@@ -41,7 +42,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PipeBlock extends ContainerBlock implements IPipeConnectable {
+public class PipeBlock extends ContainerBlock {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
@@ -180,16 +181,16 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
-        BlockState offState = world.getBlockState(offset);
-        Block block = offState.getBlock();
-        if (block instanceof IPipeConnectable)
-            return ((IPipeConnectable) block).getConnectionType(world, pos, direction);
         TileEntity tile = world.getTileEntity(offset);
         if (tile != null) {
+            IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, direction.getOpposite()).orElse(null);
+            if (connectable != null)
+                return connectable.getConnectionType(pos, direction);
             IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
+        BlockState offState = world.getBlockState(offset);
         if (hasLegsTo(world, offState, offset, direction)) {
             if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
@@ -272,13 +273,5 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
-    }
-
-    @Override
-    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
-        BlockState state = world.getBlockState(pipePos.offset(direction));
-        if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
-            return ConnectionType.BLOCKED;
-        return ConnectionType.CONNECTED;
     }
 }

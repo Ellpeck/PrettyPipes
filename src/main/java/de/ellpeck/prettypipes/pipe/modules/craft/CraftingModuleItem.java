@@ -84,7 +84,7 @@ public class CraftingModuleItem extends ModuleItem {
             ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
-                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(),equalityTypes);
+                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
                 network.resolveNetworkLock(request);
                 tile.craftIngredientRequests.remove();
 
@@ -115,7 +115,7 @@ public class CraftingModuleItem extends ModuleItem {
                             IPipeConnectable connectable = destPipe.getPipeConnectable(dir);
                             if (connectable == null)
                                 continue;
-                            ItemStack connectableRemain = connectable.insertItem(tile.getWorld(), destPipe.getPos(), dir, remain, true);
+                            ItemStack connectableRemain = connectable.insertItem(destPipe.getPos(), dir, remain, true);
                             if (connectableRemain.getCount() != remain.getCount()) {
                                 ItemStack inserted = remain.copy();
                                 inserted.shrink(connectableRemain.getCount());
