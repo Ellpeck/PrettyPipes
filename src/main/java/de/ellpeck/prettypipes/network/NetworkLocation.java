@@ -55,12 +55,13 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
             IItemHandler handler = this.getItemHandler(world);
             if (handler != null) {
                 for (int i = 0; i < handler.getSlots(); i++) {
-                    ItemStack found = handler.extractItem(i, Integer.MAX_VALUE, true);
-                    if (found.isEmpty())
+                    // check if the slot is accessible to us
+                    if (handler.extractItem(i, 1, true).isEmpty())
                         continue;
                     if (this.itemCache == null)
                         this.itemCache = new HashMap<>();
-                    this.itemCache.put(i, found);
+                    // use getStackInSlot since there might be more than 64 items in there
+                    this.itemCache.put(i, handler.getStackInSlot(i));
                 }
             }
         }
