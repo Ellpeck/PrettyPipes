@@ -2,16 +2,20 @@ package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
+import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaRecipeCategoryUid;
+import mezz.jei.api.gui.handlers.IGuiContainerHandler;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.runtime.IIngredientFilter;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.renderer.Rectangle2d;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.StringTextComponent;
@@ -26,6 +30,8 @@ import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.world.PistonEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 @JeiPlugin
@@ -54,6 +60,16 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
         registration.addRecipeTransferHandler(new CraftingTerminalTransferHandler(), VanillaRecipeCategoryUid.CRAFTING);
         registration.addUniversalRecipeTransferHandler(new CraftingModuleTransferHandler());
+    }
+
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<ItemTerminalGui>() {
+            @Override
+            public List<Rectangle2d> getGuiExtraAreas(ItemTerminalGui containerScreen) {
+                return Collections.singletonList(new Rectangle2d(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
+            }
+        });
     }
 
     @SubscribeEvent
