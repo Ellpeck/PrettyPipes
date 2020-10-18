@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
+import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import joptsimple.internal.Strings;
 import net.minecraft.block.BlockState;
@@ -43,14 +44,9 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class PipeItem implements INBTSerializable<CompoundNBT> {
+public class PipeItem implements IPipeItem {
 
-    public static final Map<ResourceLocation, BiFunction<ResourceLocation, CompoundNBT, PipeItem>> TYPES = new HashMap<>();
     public static final ResourceLocation TYPE = new ResourceLocation(PrettyPipes.ID, "pipe_item");
-
-    static {
-        TYPES.put(TYPE, PipeItem::new);
-    }
 
     public ItemStack stack;
     public float speed;
@@ -80,12 +76,18 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         this(TYPE, stack, speed);
     }
 
-    private PipeItem(ResourceLocation type, CompoundNBT nbt) {
+    public PipeItem(ResourceLocation type, CompoundNBT nbt) {
         this.type = type;
         this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
     }
 
+    @Override
+    public ItemStack getContent() {
+        return this.stack;
+    }
+
+    @Override
     public void setDestination(BlockPos startInventory, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
         this.startInventory = startInventory;
         this.destInventory = destInventory;
@@ -101,6 +103,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         }
     }
 
+    @Override
     public void updateInPipe(PipeTileEntity currPipe) {
         // this prevents pipes being updated after one another
         // causing an item that just switched to tick twice
@@ -203,6 +206,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         }
     }
 
+    @Override
     public void drop(World world, ItemStack stack) {
         ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
         item.world.addEntity(item);
@@ -233,14 +237,17 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
         return this.path.get(0);
     }
 
+    @Override
     public BlockPos getDestPipe() {
         return this.path.get(this.path.size() - 1);
     }
 
+    @Override
     public BlockPos getCurrentPipe() {
         return this.path.get(this.currentTile);
     }
 
+    @Override
     public BlockPos getDestInventory() {
         return this.destInventory;
     }
@@ -284,10 +291,12 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }
 
-    public int getItemsOnTheWay(BlockPos goalInv){
+    @Override
+    public int getItemsOnTheWay(BlockPos goalInv) {
         return this.stack.getCount();
     }
 
+    @Override
     @OnlyIn(Dist.CLIENT)
     public void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
         matrixStack.translate(
@@ -366,15 +375,5 @@ public class PipeItem implements INBTSerializable<CompoundNBT> {
             }
         }
         return ret;
-    }
-
-    public static PipeItem load(CompoundNBT nbt) {
-        // TODO legacy compat, remove eventually
-        if (!nbt.contains("type"))
-            nbt.putString("type", TYPE.toString());
-
-        ResourceLocation type = new ResourceLocation(nbt.getString("type"));
-        BiFunction<ResourceLocation, CompoundNBT, PipeItem> func = TYPES.get(type);
-        return func != null ? func.apply(type, nbt) : null;
     }
 }

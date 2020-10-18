@@ -4,16 +4,12 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
-import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -26,7 +22,6 @@ import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.profiler.IProfiler;
-import net.minecraft.tileentity.ChestTileEntity;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
@@ -35,7 +30,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
@@ -45,9 +39,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.items.wrapper.InvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -78,7 +70,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     public PressurizerTileEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
-    protected List<PipeItem> items;
+    protected List<IPipeItem> items;
     private int lastItemAmount;
     private int priority;
 
@@ -137,9 +129,9 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public void handleUpdateTag(BlockState state, CompoundNBT nbt) {
         this.read(state, nbt);
-        List<PipeItem> items = this.getItems();
+        List<IPipeItem> items = this.getItems();
         items.clear();
-        items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::load));
+        items.addAll(Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), IPipeItem::load));
     }
 
     @Override
@@ -182,7 +174,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         }
 
         profiler.startSection("ticking_items");
-        List<PipeItem> items = this.getItems();
+        List<IPipeItem> items = this.getItems();
         for (int i = items.size() - 1; i >= 0; i--)
             items.get(i).updateInPipe(this);
         if (items.size() != this.lastItemAmount) {
@@ -192,18 +184,18 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         profiler.endSection();
     }
 
-    public List<PipeItem> getItems() {
+    public List<IPipeItem> getItems() {
         if (this.items == null)
             this.items = PipeNetwork.get(this.world).getItemsInPipe(this.pos);
         return this.items;
     }
 
-    public void addNewItem(PipeItem item) {
+    public void addNewItem(IPipeItem item) {
         // an item might be re-routed from a previous location, but it should still count as a new item then
         if (!this.getItems().contains(item))
             this.getItems().add(item);
         if (this.pressurizer != null)
-            this.pressurizer.pressurizeItem(item.stack, false);
+            this.pressurizer.pressurizeItem(item.getContent(), false);
     }
 
     public boolean isConnected(Direction dir) {

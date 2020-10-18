@@ -261,8 +261,8 @@ public class PipeBlock extends ContainerBlock {
             PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
             if (tile != null) {
                 Utility.dropInventory(tile, tile.modules);
-                for (PipeItem item : tile.getItems())
-                    item.drop(worldIn, item.stack);
+                for (IPipeItem item : tile.getItems())
+                    item.drop(worldIn, item.getContent());
             }
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);

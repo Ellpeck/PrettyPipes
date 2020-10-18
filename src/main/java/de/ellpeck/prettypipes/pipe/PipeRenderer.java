@@ -34,7 +34,7 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
             matrixStack.push();
             BlockPos tilePos = tile.getPos();
             matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
-            for (PipeItem item : tile.getItems()) {
+            for (IPipeItem item : tile.getItems()) {
                 matrixStack.push();
                 item.render(tile, matrixStack, this.random, partialTicks, light, overlay, buffer);
                 matrixStack.pop();

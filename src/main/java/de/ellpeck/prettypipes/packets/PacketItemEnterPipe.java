@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.Minecraft;
@@ -16,7 +17,7 @@ public class PacketItemEnterPipe {
     private BlockPos tilePos;
     private CompoundNBT item;
 
-    public PacketItemEnterPipe(BlockPos tilePos, PipeItem item) {
+    public PacketItemEnterPipe(BlockPos tilePos, IPipeItem item) {
         this.tilePos = tilePos;
         this.item = item.serializeNBT();
     }
@@ -45,7 +46,7 @@ public class PacketItemEnterPipe {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.world == null)
                     return;
-                PipeItem item = PipeItem.load(message.item);
+                IPipeItem item = IPipeItem.load(message.item);
                 PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, mc.world, message.tilePos);
                 if (pipe != null)
                     pipe.getItems().add(item);
