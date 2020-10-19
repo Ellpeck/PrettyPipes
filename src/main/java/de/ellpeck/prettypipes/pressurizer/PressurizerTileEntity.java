@@ -127,6 +127,8 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
             for (Direction dir : Direction.values()) {
                 BlockPos offset = this.pos.offset(dir);
                 for (BlockPos node : network.getOrderedNetworkNodes(offset)) {
+                    if (!this.world.isBlockLoaded(node))
+                        continue;
                     PipeTileEntity pipe = network.getPipe(node);
                     if (pipe != null)
                         pipe.pressurizer = this;
