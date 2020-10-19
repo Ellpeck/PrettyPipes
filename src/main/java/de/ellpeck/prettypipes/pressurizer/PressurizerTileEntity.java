@@ -36,6 +36,8 @@ import javax.annotation.Nullable;
 public class PressurizerTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     private final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
+    private final LazyOptional<IEnergyStorage> lazyStorage = LazyOptional.of(() -> this.storage);
+    private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
     private int lastEnergy;
 
     public PressurizerTileEntity() {
@@ -100,12 +102,19 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
         if (cap == CapabilityEnergy.ENERGY) {
-            return LazyOptional.of(() -> (T) this.storage);
+            return this.lazyStorage.cast();
         } else if (cap == Registry.pipeConnectableCapability) {
-            return LazyOptional.of(() -> (T) this);
+            return this.lazyThis.cast();
         } else {
             return LazyOptional.empty();
         }
+    }
+
+    @Override
+    public void remove() {
+        super.remove();
+        this.lazyStorage.invalidate();
+        this.lazyThis.invalidate();
     }
 
     @Override

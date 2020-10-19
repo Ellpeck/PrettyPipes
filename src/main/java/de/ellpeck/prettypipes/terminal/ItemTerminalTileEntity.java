@@ -60,6 +60,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     };
     protected Map<EquatableItemStack, NetworkItem> networkItems;
     private final Queue<NetworkLock> existingRequests = new LinkedList<>();
+    private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
 
     protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
         super(tileEntityTypeIn);
@@ -113,6 +114,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeNetwork network = PipeNetwork.get(this.world);
         for (NetworkLock lock : this.existingRequests)
             network.resolveNetworkLock(lock);
+        this.lazyThis.invalidate();
     }
 
     public PipeTileEntity getConnectedPipe() {
@@ -217,7 +219,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
         if (cap == Registry.pipeConnectableCapability)
-            return LazyOptional.of(() -> (T) this);
+            return this.lazyThis.cast();
         return LazyOptional.empty();
     }
 

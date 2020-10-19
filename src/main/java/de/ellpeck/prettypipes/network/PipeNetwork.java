@@ -55,6 +55,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final ListMultimap<BlockPos, IPipeItem> pipeItems = ArrayListMultimap.create();
     private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
     private final World world;
+    private final LazyOptional<PipeNetwork> lazyThis = LazyOptional.of(() -> this);
 
     public PipeNetwork(World world) {
         this.world = world;
@@ -66,7 +67,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     @Nonnull
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        return cap == Registry.pipeNetworkCapability ? LazyOptional.of(() -> (T) this) : LazyOptional.empty();
+        return cap == Registry.pipeNetworkCapability ? this.lazyThis.cast() : LazyOptional.empty();
     }
 
     @Override

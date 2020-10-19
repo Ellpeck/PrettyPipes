@@ -73,6 +73,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     protected List<IPipeItem> items;
     private int lastItemAmount;
     private int priority;
+    private final LazyOptional<PipeTileEntity> lazyThis = LazyOptional.of(() -> this);
 
     public PipeTileEntity() {
         this(Registry.pipeTileEntity);
@@ -351,6 +352,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         PipeNetwork network = PipeNetwork.get(this.world);
         for (NetworkLock lock : this.craftIngredientRequests)
             network.resolveNetworkLock(lock);
+        this.lazyThis.invalidate();
     }
 
     @Override
@@ -374,7 +376,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
         if (cap == Registry.pipeConnectableCapability)
-            return LazyOptional.of(() -> (T) this);
+            return this.lazyThis.cast();
         return LazyOptional.empty();
     }
 
