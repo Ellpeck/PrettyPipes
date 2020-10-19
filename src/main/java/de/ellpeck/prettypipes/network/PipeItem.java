@@ -330,7 +330,7 @@ public class PipeItem implements IPipeItem {
         }
     }
 
-    private int getModelCount() {
+    protected int getModelCount() {
         int i = 1;
         if (this.stack.getCount() > 48) {
             i = 5;
