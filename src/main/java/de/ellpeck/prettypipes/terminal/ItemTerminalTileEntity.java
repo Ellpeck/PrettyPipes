@@ -133,10 +133,9 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             return;
         this.networkItems = this.collectItems();
         if (playersToSync.length > 0) {
-            List<Pair<BlockPos, ItemStack>> craftables = PipeNetwork.get(this.world).getAllCraftables(pipe.getPos());
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
-            List<ItemStack> clientCraftables = craftables.stream().map(Pair::getRight).collect(Collectors.toList());
-            List<ItemStack> currentlyCrafting = this.getCurrentlyCrafting(craftables).stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
+            List<ItemStack> clientCraftables = PipeNetwork.get(this.world).getAllCraftables(pipe.getPos()).stream().map(Pair::getRight).collect(Collectors.toList());
+            List<ItemStack> currentlyCrafting = this.getCurrentlyCrafting().stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
             for (PlayerEntity player : playersToSync) {
                 if (!(player.openContainer instanceof ItemTerminalContainer))
                     continue;
@@ -192,28 +191,13 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return items;
     }
 
-    private List<ItemStack> getCurrentlyCrafting(List<Pair<BlockPos, ItemStack>> craftables) {
+    private List<ItemStack> getCurrentlyCrafting() {
         PipeNetwork network = PipeNetwork.get(this.world);
-        List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
-        for (Pair<BlockPos, ItemStack> craftable : craftables) {
-            PipeTileEntity pipe = network.getPipe(craftable.getLeft());
-            if (pipe == null)
-                continue;
-            for (Pair<BlockPos, ItemStack> request : pipe.craftResultRequests) {
-                BlockPos dest = request.getLeft();
-                ItemStack stack = request.getRight();
-                // add up all the items that should go to the same location
-                Optional<Pair<BlockPos, ItemStack>> existing = items.stream()
-                        .filter(s -> s.getLeft() == dest && ItemEqualityType.compareItems(s.getRight(), stack, ItemEqualityType.NBT))
-                        .findFirst();
-                if (existing.isPresent()) {
-                    existing.get().getRight().grow(stack.getCount());
-                } else {
-                    items.add(Pair.of(dest, stack.copy()));
-                }
-            }
-        }
-        return items.stream().map(Pair::getRight).collect(Collectors.toList());
+        PipeTileEntity pipe = this.getConnectedPipe();
+        if (pipe == null)
+            return Collections.emptyList();
+        List<Pair<BlockPos, ItemStack>> crafting = network.getCurrentlyCrafting(pipe.getPos());
+        return crafting.stream().map(Pair::getRight).collect(Collectors.toList());
     }
 
     public void cancelCrafting() {

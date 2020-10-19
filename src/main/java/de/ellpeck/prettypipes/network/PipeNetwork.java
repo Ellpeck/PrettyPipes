@@ -251,6 +251,37 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return tile;
     }
 
+    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node) {
+        this.startProfile("get_currently_crafting");
+        List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
+        for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(node)) {
+            PipeTileEntity pipe = this.getPipe(craftable.getLeft());
+            if (pipe == null)
+                continue;
+            for (Pair<BlockPos, ItemStack> request : pipe.craftResultRequests) {
+                BlockPos dest = request.getLeft();
+                ItemStack stack = request.getRight();
+                // add up all the items that should go to the same location
+                Optional<Pair<BlockPos, ItemStack>> existing = items.stream()
+                        .filter(s -> s.getLeft().equals(dest) && ItemEqualityType.compareItems(s.getRight(), stack, ItemEqualityType.NBT))
+                        .findFirst();
+                if (existing.isPresent()) {
+                    existing.get().getRight().grow(stack.getCount());
+                } else {
+                    items.add(Pair.of(dest, stack.copy()));
+                }
+            }
+        }
+        this.endProfile();
+        return items;
+    }
+
+    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, ItemEqualityType... equalityTypes) {
+        return this.getCurrentlyCrafting(destNode).stream()
+                .filter(p -> p.getLeft().equals(destNode) && ItemEqualityType.compareItems(p.getRight(), stack, equalityTypes))
+                .mapToInt(p -> p.getRight().getCount()).sum();
+    }
+
     public List<Pair<BlockPos, ItemStack>> getAllCraftables(BlockPos node) {
         if (!this.isNode(node))
             return Collections.emptyList();
