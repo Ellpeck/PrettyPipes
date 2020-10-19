@@ -30,6 +30,7 @@ import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.world.PistonEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -67,7 +68,13 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<ItemTerminalGui>() {
             @Override
             public List<Rectangle2d> getGuiExtraAreas(ItemTerminalGui containerScreen) {
-                return Collections.singletonList(new Rectangle2d(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
+                List<Rectangle2d> ret = new ArrayList<>();
+                // sorting buttons
+                ret.add(new Rectangle2d(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
+                // crafting hud
+                if (containerScreen.currentlyCrafting != null && !containerScreen.currentlyCrafting.isEmpty())
+                    ret.add(new Rectangle2d(containerScreen.getGuiLeft() + containerScreen.getXSize(), containerScreen.getGuiTop() + 4, 65, 89));
+                return ret;
             }
         });
     }

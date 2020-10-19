@@ -22,7 +22,6 @@ import java.util.List;
 
 public class ItemTerminalWidget extends Widget {
 
-    private static final ResourceLocation FONT = new ResourceLocation(PrettyPipes.ID, "unicode");
     private final ItemTerminalGui screen;
     public final int gridX;
     public final int gridY;

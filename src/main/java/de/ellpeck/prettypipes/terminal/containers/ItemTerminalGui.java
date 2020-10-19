@@ -8,6 +8,7 @@ import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import joptsimple.internal.Strings;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -32,6 +33,9 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
 
+    public List<ItemStack> currentlyCrafting;
+    public TextFieldWidget search;
+
     // craftables have the second parameter set to true
     private final List<Pair<ItemStack, Boolean>> sortedItems = new ArrayList<>();
     private List<ItemStack> items;
@@ -41,10 +45,11 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private Button requestButton;
     private Button orderButton;
     private Button ascendingButton;
+    private Button cancelCraftingButton;
     private String lastSearchText;
     private int requestAmount = 1;
     private int scrollOffset;
-    public TextFieldWidget search;
+    private ItemStack hoveredCrafting;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -98,6 +103,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
+        this.cancelCraftingButton = this.addButton(new Button(this.guiLeft + this.xSize + 4, this.guiTop + 4 + 64, 54, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".cancel_all"), button -> {
+            if (this.currentlyCrafting == null || this.currentlyCrafting.isEmpty())
+                return;
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+        }));
+        this.cancelCraftingButton.visible = false;
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
@@ -141,9 +152,10 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         return super.keyPressed(x, y, z);
     }
 
-    public void updateItemList(List<ItemStack> items, List<ItemStack> craftables) {
+    public void updateItemList(List<ItemStack> items, List<ItemStack> craftables, List<ItemStack> currentlyCrafting) {
         this.items = items;
         this.craftables = craftables;
+        this.currentlyCrafting = currentlyCrafting;
         this.updateWidgets();
     }
 
@@ -151,6 +163,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         PlayerPrefs prefs = PlayerPrefs.get();
         this.ascendingButton.setMessage(new StringTextComponent(prefs.terminalAscending ? "^" : "v"));
         this.orderButton.setMessage(new StringTextComponent(prefs.terminalItemOrder.name().substring(0, 1)));
+        this.cancelCraftingButton.visible = this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty();
 
         Comparator<ItemStack> comparator = prefs.terminalItemOrder.comparator;
         if (!prefs.terminalAscending)
@@ -218,6 +231,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (this.ascendingButton.isHovered())
                 this.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
+        if (this.cancelCraftingButton.isHovered()) {
+            String[] tooltip = I18n.format("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
+            this.func_243308_b(matrix, Arrays.stream(tooltip).map(StringTextComponent::new).collect(Collectors.toList()), mouseX, mouseY);
+        }
+        if (!this.hoveredCrafting.isEmpty())
+            this.renderTooltip(matrix, this.hoveredCrafting, mouseX, mouseY);
         this.func_230459_a_(matrix, mouseX, mouseY);
     }
 
@@ -228,6 +247,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
         String amount = String.valueOf(this.requestAmount);
         this.font.drawString(matrix, amount, (176 + 15 - this.font.getStringWidth(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
+
+        if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+            this.font.drawString(matrix, I18n.format("info." + PrettyPipes.ID + ".crafting"), this.xSize + 4, 4 + 6, 4210752);
+            if (this.currentlyCrafting.size() > 6)
+                this.font.drawString(matrix, ". . .", this.xSize + 24, 4 + 51, 4210752);
+        }
     }
 
     @Override
@@ -240,6 +265,31 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
             this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
+        }
+
+        // draw the items that are currently crafting
+        this.hoveredCrafting = ItemStack.EMPTY;
+        if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+            this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
+            this.blit(matrix, this.guiLeft + this.xSize, this.guiTop + 4, 191, 0, 65, 89);
+
+            int x = 0;
+            int y = 0;
+            for (ItemStack stack : this.currentlyCrafting) {
+                int itemX = this.guiLeft + this.xSize + 4 + x * 18;
+                int itemY = this.guiTop + 4 + 16 + y * 18;
+                this.itemRenderer.renderItemAndEffectIntoGUI(stack, itemX, itemY);
+                this.itemRenderer.renderItemOverlayIntoGUI(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
+                if (mouseX >= itemX && mouseY >= itemY && mouseX < itemX + 16 && mouseY < itemY + 18)
+                    this.hoveredCrafting = stack;
+                x++;
+                if (x >= 3) {
+                    x = 0;
+                    y++;
+                    if (y >= 2)
+                        break;
+                }
+            }
         }
     }
 

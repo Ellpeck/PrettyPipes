@@ -23,10 +23,12 @@ public class PacketNetworkItems {
 
     private List<ItemStack> items;
     private List<ItemStack> craftables;
+    private List<ItemStack> currentlyCrafting;
 
-    public PacketNetworkItems(List<ItemStack> items, List<ItemStack> craftables) {
+    public PacketNetworkItems(List<ItemStack> items, List<ItemStack> craftables, List<ItemStack> currentlyCrafting) {
         this.items = items;
         this.craftables = craftables;
+        this.currentlyCrafting = currentlyCrafting;
     }
 
     private PacketNetworkItems() {
@@ -44,6 +46,9 @@ public class PacketNetworkItems {
         client.craftables = new ArrayList<>();
         for (int i = buf.readVarInt(); i > 0; i--)
             client.craftables.add(buf.readItemStack());
+        client.currentlyCrafting = new ArrayList<>();
+        for (int i = buf.readVarInt(); i > 0; i--)
+            client.currentlyCrafting.add(buf.readItemStack());
         return client;
     }
 
@@ -58,6 +63,9 @@ public class PacketNetworkItems {
         buf.writeVarInt(packet.craftables.size());
         for (ItemStack stack : packet.craftables)
             buf.writeItemStack(stack);
+        buf.writeVarInt(packet.currentlyCrafting.size());
+        for (ItemStack stack : packet.currentlyCrafting)
+            buf.writeItemStack(stack);
     }
 
     @SuppressWarnings("Convert2Lambda")
@@ -67,7 +75,7 @@ public class PacketNetworkItems {
             public void run() {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.currentScreen instanceof ItemTerminalGui)
-                    ((ItemTerminalGui) mc.currentScreen).updateItemList(message.items, message.craftables);
+                    ((ItemTerminalGui) mc.currentScreen).updateItemList(message.items, message.craftables, message.currentlyCrafting);
             }
         });
         ctx.get().setPacketHandled(true);
