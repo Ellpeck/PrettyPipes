@@ -55,10 +55,10 @@ public class RetrievalModuleItem extends ModuleItem {
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            // are we already waiting for crafting results? If so, don't request more
-            if (network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes) >= this.maxExtraction)
-                break;
-            if (network.requestItem(tile.getPos(), dest.getLeft(), dest.getRight(), equalityTypes).isEmpty())
+            ItemStack remain = dest.getRight().copy();
+            // are we already waiting for crafting results? If so, don't request those again
+            remain.shrink(network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes));
+            if (network.requestItem(tile.getPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                 break;
         }
     }

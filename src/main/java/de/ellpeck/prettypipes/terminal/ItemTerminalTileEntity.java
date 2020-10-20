@@ -208,6 +208,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         for (Pair<BlockPos, ItemStack> craftable : network.getAllCraftables(pipe.getPos())) {
             PipeTileEntity otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null) {
+                for (NetworkLock lock : otherPipe.craftIngredientRequests)
+                    network.resolveNetworkLock(lock);
                 otherPipe.craftIngredientRequests.clear();
                 otherPipe.craftResultRequests.clear();
             }
