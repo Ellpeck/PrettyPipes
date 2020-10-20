@@ -177,7 +177,10 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 if (lowestSlot >= 0) {
                     ItemStack copy = remain.copy();
                     copy.setCount(1);
-                    remain.shrink(1 - tile.craftItems.insertItem(lowestSlot, copy, simulate).getCount());
+                    // if there were remaining items inserting into the slot with lowest contents, we're overflowing
+                    if (tile.craftItems.insertItem(lowestSlot, copy, simulate).getCount() > 0)
+                        break;
+                    remain.shrink(1);
                     if (remain.isEmpty())
                         return ItemStack.EMPTY;
                 }
