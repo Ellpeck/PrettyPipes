@@ -235,15 +235,21 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                         if (toInsert.getCount() + onTheWaySame > maxAmount)
                             toInsert.setCount(maxAmount - onTheWaySame);
                     }
-                    ItemStack copy = stack.copy();
-                    copy.setCount(copy.getMaxStackSize());
                     // totalSpace will be the amount of items that fit into the attached container
                     int totalSpace = 0;
                     for (int i = 0; i < handler.getSlots(); i++) {
+                        ItemStack copy = stack.copy();
+                        int maxStackSize = copy.getMaxStackSize();
+                        // if the container can store more than 64 items in this slot, then it's likely
+                        // a barrel or similar, meaning that the slot limit matters more than the max stack size
+                        int limit = handler.getSlotLimit(i);
+                        if (limit > 64)
+                            maxStackSize = limit;
+                        copy.setCount(maxStackSize);
                         // this is an inaccurate check since it ignores the fact that some slots might
                         // have space for items of other types, but it'll be good enough for us
                         ItemStack left = handler.insertItem(i, copy, true);
-                        totalSpace += copy.getMaxStackSize() - left.getCount();
+                        totalSpace += maxStackSize - left.getCount();
                     }
                     // if the items on the way plus the items we're trying to move are too much, reduce
                     if (onTheWay + toInsert.getCount() > totalSpace)
