@@ -52,11 +52,7 @@ public class WrenchItem extends Item {
             if (!world.isRemote) {
                 if (tile.cover != null) {
                     // remove the cover
-                    List<ItemStack> drops = Block.getDrops(tile.cover, (ServerWorld) world, pos, null, player, player.getHeldItem(context.getHand()));
-                    for (ItemStack drop : drops)
-                        Block.spawnAsEntity(world, pos, drop);
-
-                    tile.cover = null;
+                    tile.removeCover(player, context.getHand());
                     Utility.sendTileEntityToClients(tile);
                 } else {
                     // remove the pipe

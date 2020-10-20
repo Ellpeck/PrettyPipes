@@ -258,17 +258,24 @@ public class PipeBlock extends ContainerBlock {
     @Override
     public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
-            if (tile != null) {
-                Utility.dropInventory(tile, tile.modules);
-                for (IPipeItem item : tile.getItems())
-                    item.drop(worldIn, item.getContent());
-            }
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
             super.onReplaced(state, worldIn, pos, newState, isMoving);
         }
+    }
+
+    @Override
+    public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile != null) {
+            Utility.dropInventory(tile, tile.modules);
+            for (IPipeItem item : tile.getItems())
+                item.drop(worldIn, item.getContent());
+            if (tile.cover != null)
+                tile.removeCover(player, Hand.MAIN_HAND);
+        }
+        super.onBlockHarvested(worldIn, pos, state, player);
     }
 
     @Override

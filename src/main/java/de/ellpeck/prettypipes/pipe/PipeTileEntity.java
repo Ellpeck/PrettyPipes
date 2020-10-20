@@ -9,6 +9,7 @@ import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -26,10 +27,12 @@ import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
@@ -349,6 +352,15 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             builder.accept(Pair.of(stack, (IModule) stack.getItem()));
         }
         return builder.build();
+    }
+
+    public void removeCover(PlayerEntity player, Hand hand) {
+        if (this.world.isRemote)
+            return;
+        List<ItemStack> drops = Block.getDrops(this.cover, (ServerWorld) this.world, this.pos, null, player, player.getHeldItem(hand));
+        for (ItemStack drop : drops)
+            Block.spawnAsEntity(this.world, this.pos, drop);
+        this.cover = null;
     }
 
     @Override
