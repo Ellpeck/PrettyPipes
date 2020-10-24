@@ -201,15 +201,19 @@ public class PipeBlock extends ContainerBlock {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
+        Direction opposite = direction.getOpposite();
         TileEntity tile = world.getTileEntity(offset);
         if (tile != null) {
-            IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, direction.getOpposite()).orElse(null);
+            IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
             if (connectable != null)
                 return connectable.getConnectionType(pos, direction);
-            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
+            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, opposite).orElse(null);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
+        IItemHandler blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
+        if (blockHandler != null)
+            return ConnectionType.CONNECTED;
         BlockState offState = world.getBlockState(offset);
         if (hasLegsTo(world, offState, offset, direction)) {
             if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.LEGS))

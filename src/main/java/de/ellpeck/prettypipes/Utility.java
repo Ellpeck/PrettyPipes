@@ -2,10 +2,14 @@ package de.ellpeck.prettypipes;
 
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.ISidedInventory;
+import net.minecraft.inventory.ISidedInventoryProvider;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
@@ -23,6 +27,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -128,6 +133,17 @@ public final class Utility {
                 items.add(item);
         }
         return items;
+    }
+
+    public static IItemHandler getBlockItemHandler(World world, BlockPos pos, Direction direction) {
+        BlockState state = world.getBlockState(pos);
+        Block block = state.getBlock();
+        if (!(block instanceof ISidedInventoryProvider))
+            return null;
+        ISidedInventory inventory = ((ISidedInventoryProvider) block).createInventory(state, world, pos);
+        if (inventory == null)
+            return null;
+        return new SidedInvWrapper(inventory, direction);
     }
 
     public interface IMergeItemStack {

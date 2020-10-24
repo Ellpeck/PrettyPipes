@@ -13,6 +13,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.ISidedInventory;
+import net.minecraft.inventory.ISidedInventoryProvider;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
@@ -304,7 +306,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        return this.getNeighborCap(dir, CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
+        IItemHandler handler = this.getNeighborCap(dir, CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
+        if (handler != null)
+            return handler;
+        return Utility.getBlockItemHandler(this.world, this.pos.offset(dir), dir.getOpposite());
     }
 
     public <T> T getNeighborCap(Direction dir, Capability<T> cap) {
