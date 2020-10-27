@@ -75,13 +75,20 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             if (items.size() > 1) {
                 int highestAmount = 0;
                 for (ItemStack stack : items) {
-                    EquatableItemStack equatable = new EquatableItemStack(stack);
-                    NetworkItem network = this.networkItems.get(equatable);
-                    if (network == null)
-                        continue;
-                    int amount = network.getLocations().stream()
-                            .mapToInt(l -> l.getItemAmount(this.world, stack, ItemEqualityType.NBT))
-                            .sum();
+                    int amount = 0;
+                    // check existing items
+                    NetworkItem network = this.networkItems.get(new EquatableItemStack(stack));
+                    if (network != null) {
+                        amount = network.getLocations().stream()
+                                .mapToInt(l -> l.getItemAmount(this.world, stack, ItemEqualityType.NBT))
+                                .sum();
+                    }
+                    // check craftables
+                    if (amount <= 0 && highestAmount <= 0) {
+                        PipeTileEntity pipe = this.getConnectedPipe();
+                        if (pipe != null)
+                            amount = PipeNetwork.get(this.world).getCraftableAmount(pipe.getPos(), null, stack, ItemEqualityType.NBT);
+                    }
                     if (amount > highestAmount) {
                         highestAmount = amount;
                         toSet = stack;
