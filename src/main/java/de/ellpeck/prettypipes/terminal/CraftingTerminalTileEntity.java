@@ -9,13 +9,11 @@ import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
-import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
-import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -28,14 +26,10 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
@@ -70,29 +64,31 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
 
     public void setGhostItems(ListMultimap<Integer, ItemStack> stacks) {
         this.updateItems();
-        items:
         for (int i = 0; i < this.ghostItems.getSlots(); i++) {
             List<ItemStack> items = stacks.get(i);
             if (items.isEmpty()) {
                 this.ghostItems.setStackInSlot(i, ItemStack.EMPTY);
                 continue;
             }
+            ItemStack toSet = items.get(0);
+            // if we have more than one item to choose from, we want to pick the one that we have most of in the system
             if (items.size() > 1) {
-                // set the item into the ghost slot that already has a variant of itself available in the system
+                int highestAmount = 0;
                 for (ItemStack stack : items) {
                     EquatableItemStack equatable = new EquatableItemStack(stack);
                     NetworkItem network = this.networkItems.get(equatable);
                     if (network == null)
                         continue;
-                    if (network.getLocations().stream().anyMatch(l -> l.getItemAmount(this.world, stack, ItemEqualityType.NBT) > 0)) {
-                        this.ghostItems.setStackInSlot(i, stack);
-                        continue items;
+                    int amount = network.getLocations().stream()
+                            .mapToInt(l -> l.getItemAmount(this.world, stack, ItemEqualityType.NBT))
+                            .sum();
+                    if (amount > highestAmount) {
+                        highestAmount = amount;
+                        toSet = stack;
                     }
                 }
             }
-            // if the ghost slot wasn't set, then we don't have the item in the system
-            // so just pick a random one to put into the slot
-            this.ghostItems.setStackInSlot(i, items.get(0));
+            this.ghostItems.setStackInSlot(i, toSet.copy());
         }
 
         if (!this.world.isRemote) {
