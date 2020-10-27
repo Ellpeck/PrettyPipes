@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.terminal.containers;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.CraftResultInventory;
@@ -17,10 +16,8 @@ import net.minecraft.item.crafting.ICraftingRecipe;
 import net.minecraft.item.crafting.IRecipeType;
 import net.minecraft.network.play.server.SSetSlotPacket;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.items.SlotItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
 
@@ -71,9 +68,9 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     @Override
     public ItemStack slotClick(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
-        if (slotId > 0) {
+        if (slotId > 0 && clickTypeIn == ClickType.PICKUP) {
             Slot slot = this.inventorySlots.get(slotId);
-            if (slot.inventory == this.craftInventory)
+            if (slot.inventory == this.craftInventory && !slot.getHasStack())
                 this.getTile().ghostItems.setStackInSlot(slot.getSlotIndex(), ItemStack.EMPTY);
         }
         return super.slotClick(slotId, dragType, clickTypeIn, player);
