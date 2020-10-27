@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "CCC",
+        "CMC",
+        "CCC"
+    ],
+    "key": {
+        "C": {
+            "item": "minecraft:paper"
+        },
+        "M": {
+            "item": "prettypipes:medium_high_priority_module"
+        }
+    },
+    "result": {
+        "item": "prettypipes:high_high_priority_module"
+    }
+}

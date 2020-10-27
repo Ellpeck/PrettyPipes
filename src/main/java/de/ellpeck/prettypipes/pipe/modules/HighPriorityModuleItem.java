@@ -6,12 +6,12 @@ import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.item.ItemStack;
 
-public class LowPriorityModuleItem extends ModuleItem {
+public class HighPriorityModuleItem extends ModuleItem {
     private final int priority;
 
-    public LowPriorityModuleItem(String name, ModuleTier tier) {
+    public HighPriorityModuleItem(String name, ModuleTier tier) {
         super(name);
-        this.priority = tier.forTier(-50, -100, -200);
+        this.priority = tier.forTier(50, 100, 200);
     }
 
     @Override
@@ -21,7 +21,7 @@ public class LowPriorityModuleItem extends ModuleItem {
 
     @Override
     public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
-        return !(other instanceof LowPriorityModuleItem) && !(other instanceof HighPriorityModuleItem);
+        return !(other instanceof HighPriorityModuleItem) && !(other instanceof LowPriorityModuleItem);
     }
 
     @Override
