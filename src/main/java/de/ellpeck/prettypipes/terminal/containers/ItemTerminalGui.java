@@ -2,13 +2,11 @@ package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
-import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
-import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import joptsimple.internal.Strings;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -103,10 +101,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
-        this.cancelCraftingButton = this.addButton(new Button(this.guiLeft + this.xSize + 4, this.guiTop + 4 + 64, 54, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".cancel_all"), button -> {
-            if (this.currentlyCrafting == null || this.currentlyCrafting.isEmpty())
-                return;
-            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+        this.cancelCraftingButton = this.addButton(new Button(this.guiLeft + this.xSize + 4, this.guiTop + 4 + 64, 54, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".cancel_all"), b -> {
         }));
         this.cancelCraftingButton.visible = false;
         for (int y = 0; y < 4; y++) {
@@ -139,6 +134,20 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 this.updateWidgets();
             }
         }
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // we have to do the click logic here because JEI is activated when letting go of the mouse button
+        // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
+        if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
+            if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+                PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -231,7 +240,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (this.ascendingButton.isHovered())
                 this.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
-        if (this.cancelCraftingButton.isHovered()) {
+        if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             String[] tooltip = I18n.format("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
             this.func_243308_b(matrix, Arrays.stream(tooltip).map(StringTextComponent::new).collect(Collectors.toList()), mouseX, mouseY);
         }
