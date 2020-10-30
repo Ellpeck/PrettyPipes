@@ -5,7 +5,6 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.NetworkLock;
-import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
@@ -13,8 +12,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.ISidedInventory;
-import net.minecraft.inventory.ISidedInventoryProvider;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
@@ -206,6 +203,25 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
 
     public boolean isConnected(Direction dir) {
         return this.getBlockState().get(PipeBlock.DIRECTIONS.get(dir)).isConnected();
+    }
+
+    public Pair<BlockPos, ItemStack> getAvailableDestinationOrConnectable(ItemStack stack, boolean force, boolean preventOversending) {
+        Pair<BlockPos, ItemStack> dest = this.getAvailableDestination(stack, force, preventOversending);
+        if (dest != null)
+            return dest;
+        // if there's no available destination, try inserting into terminals etc.
+        for (Direction dir : Direction.values()) {
+            IPipeConnectable connectable = this.getPipeConnectable(dir);
+            if (connectable == null)
+                continue;
+            ItemStack connectableRemain = connectable.insertItem(this.getPos(), dir, stack, true);
+            if (connectableRemain.getCount() != stack.getCount()) {
+                ItemStack inserted = stack.copy();
+                inserted.shrink(connectableRemain.getCount());
+                return Pair.of(this.getPos().offset(dir), inserted);
+            }
+        }
+        return null;
     }
 
     public Pair<BlockPos, ItemStack> getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {

@@ -8,9 +8,7 @@ import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
-import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
@@ -19,16 +17,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -108,22 +100,7 @@ public class CraftingModuleItem extends ModuleItem {
                 ItemStack remain = request.getRight().copy();
                 PipeTileEntity destPipe = network.getPipe(request.getLeft());
                 if (destPipe != null) {
-                    Pair<BlockPos, ItemStack> dest = destPipe.getAvailableDestination(remain, true, true);
-                    if (dest == null) {
-                        // if there's no available destination, try inserting into terminals etc.
-                        for (Direction dir : Direction.values()) {
-                            IPipeConnectable connectable = destPipe.getPipeConnectable(dir);
-                            if (connectable == null)
-                                continue;
-                            ItemStack connectableRemain = connectable.insertItem(destPipe.getPos(), dir, remain, true);
-                            if (connectableRemain.getCount() != remain.getCount()) {
-                                ItemStack inserted = remain.copy();
-                                inserted.shrink(connectableRemain.getCount());
-                                dest = Pair.of(destPipe.getPos().offset(dir), inserted);
-                                break;
-                            }
-                        }
-                    }
+                    Pair<BlockPos, ItemStack> dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
                     if (dest == null)
                         continue;
                     for (NetworkLocation item : items) {
