@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "TST",
+        "SRS",
+        "TST"
+    ],
+    "key": {
+        "S": {
+            "item": "prettypipes:high_speed_module"
+        },
+        "R": {
+            "item": "minecraft:redstone_block"
+        },
+        "T": {
+            "item": "minecraft:iron_ingot"
+        }
+    },
+    "result": {
+        "item": "prettypipes:pressurizer"
+    }
+}

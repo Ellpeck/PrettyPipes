@@ -43,6 +43,7 @@ public class RetrievalModuleItem extends ModuleItem {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
 
         ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         filter.isWhitelist = true;
         // loop through filter to see which items to pull
         for (int f = 0; f < filter.getSlots(); f++) {
@@ -54,7 +55,10 @@ public class RetrievalModuleItem extends ModuleItem {
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
             if (dest == null)
                 continue;
-            if (network.requestItem(tile.getPos(), dest.getLeft(), dest.getRight(), filter.getEqualityTypes()).isEmpty())
+            ItemStack remain = dest.getRight().copy();
+            // are we already waiting for crafting results? If so, don't request those again
+            remain.shrink(network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes));
+            if (network.requestItem(tile.getPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                 break;
         }
     }

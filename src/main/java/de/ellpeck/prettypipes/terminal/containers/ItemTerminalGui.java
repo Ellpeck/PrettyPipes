@@ -1,7 +1,7 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
-import de.ellpeck.prettypipes.misc.ItemOrder;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.packets.PacketButton;
@@ -19,24 +19,35 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
+
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
+
+    public List<ItemStack> currentlyCrafting;
+    public TextFieldWidget search;
+
+    // craftables have the second parameter set to true
+    private final List<Pair<ItemStack, Boolean>> sortedItems = new ArrayList<>();
     private List<ItemStack> items;
-    private List<ItemStack> sortedItems;
+    private List<ItemStack> craftables;
     private Button minusButton;
     private Button plusButton;
     private Button requestButton;
     private Button orderButton;
     private Button ascendingButton;
+    private Button cancelCraftingButton;
     private String lastSearchText;
     private int requestAmount = 1;
     private int scrollOffset;
-    public TextFieldWidget search;
+    private ItemStack hoveredCrafting;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -54,6 +65,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             } else {
                 this.requestAmount += modifier;
             }
+            // 384 items is 6 stacks, which is what fits into the terminal slots
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
@@ -89,6 +101,9 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
+        this.cancelCraftingButton = this.addButton(new Button(this.guiLeft + this.xSize + 4, this.guiTop + 4 + 64, 54, 20, I18n.format("info." + PrettyPipes.ID + ".cancel_all"), b -> {
+        }));
+        this.cancelCraftingButton.visible = false;
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
@@ -122,6 +137,20 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // we have to do the click logic here because JEI is activated when letting go of the mouse button
+        // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
+        if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
+            if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+                PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean keyPressed(int x, int y, int z) {
         // for some reason we have to do this to make the text field allow the inventory key to be typed
         if (this.search.isFocused()) {
@@ -132,8 +161,10 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         return super.keyPressed(x, y, z);
     }
 
-    public void updateItemList(List<ItemStack> items) {
+    public void updateItemList(List<ItemStack> items, List<ItemStack> craftables, List<ItemStack> currentlyCrafting) {
         this.items = items;
+        this.craftables = craftables;
+        this.currentlyCrafting = currentlyCrafting;
         this.updateWidgets();
     }
 
@@ -141,13 +172,22 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         PlayerPrefs prefs = PlayerPrefs.get();
         this.ascendingButton.setMessage(prefs.terminalAscending ? "^" : "v");
         this.orderButton.setMessage(prefs.terminalItemOrder.name().substring(0, 1));
+        this.cancelCraftingButton.visible = this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty();
 
         Comparator<ItemStack> comparator = prefs.terminalItemOrder.comparator;
         if (!prefs.terminalAscending)
             comparator = comparator.reversed();
 
-        this.sortedItems = new ArrayList<>(this.items);
-        this.sortedItems.sort(comparator);
+        // add all items to the sorted items list
+        this.sortedItems.clear();
+        for (ItemStack stack : this.items)
+            this.sortedItems.add(Pair.of(stack, false));
+        for (ItemStack stack : this.craftables)
+            this.sortedItems.add(Pair.of(stack, true));
+
+        // compare by craftability first, and then by the player's chosen order
+        Comparator<Pair<ItemStack, Boolean>> fullComparator = Comparator.comparing(Pair::getRight);
+        this.sortedItems.sort(fullComparator.thenComparing(Pair::getLeft, comparator));
 
         String searchText = this.search.getText();
         if (!Strings.isNullOrEmpty(searchText)) {
@@ -155,11 +195,11 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 String search = searchText;
                 String toCompare;
                 if (search.startsWith("@")) {
-                    toCompare = s.getItem().getRegistryName().getNamespace();
+                    toCompare = s.getLeft().getItem().getCreatorModId(s.getLeft());
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name
-                    toCompare = s.getDisplayName().getString();
+                    toCompare = s.getLeft().getDisplayName().getString();
                 }
                 return !toCompare.toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT));
             });
@@ -174,9 +214,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             int index = i + this.scrollOffset * 9;
             if (index >= this.sortedItems.size()) {
                 widget.stack = ItemStack.EMPTY;
+                widget.craftable = false;
                 widget.visible = false;
             } else {
-                widget.stack = this.sortedItems.get(index);
+                Pair<ItemStack, Boolean> stack = this.sortedItems.get(index);
+                widget.stack = stack.getLeft();
+                widget.craftable = stack.getRight();
                 widget.visible = true;
             }
         }
@@ -198,15 +241,29 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 this.renderTooltip(I18n.format("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
         this.renderHoveredToolTip(mouseX, mouseY);
+
+//        if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
+//            String[] tooltip = I18n.format("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
+//            this.func_243308_b(Arrays.stream(tooltip).map(StringTextComponent::new).collect(Collectors.toList()), mouseX, mouseY);
+//        }
+        if (!this.hoveredCrafting.isEmpty())
+            this.renderTooltip(this.hoveredCrafting, mouseX, mouseY);
+//        this.func_230459_a_(mouseX, mouseY);
     }
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        this.font.drawString(this.playerInventory.getDisplayName().getFormattedText(), 8 + this.getXOffset(), this.ySize - 96 + 2, 4210752);
-        this.font.drawString(this.title.getFormattedText(), 8, 6, 4210752);
+        this.font.drawString(this.playerInventory.getDisplayName().getString(), 8 + this.getXOffset(), this.ySize - 96 + 2, 4210752);
+        this.font.drawString(this.title.getString(), 8, 6, 4210752);
 
         String amount = String.valueOf(this.requestAmount);
         this.font.drawString(amount, (176 + 15 - this.font.getStringWidth(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
+
+        if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+            this.font.drawString(I18n.format("info." + PrettyPipes.ID + ".crafting"), this.xSize + 4, 4 + 6, 4210752);
+            if (this.currentlyCrafting.size() > 6)
+                this.font.drawString(". . .", this.xSize + 24, 4 + 51, 4210752);
+        }
     }
 
     @Override
@@ -219,6 +276,31 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
             this.blit(this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
+        }
+
+        // draw the items that are currently crafting
+        this.hoveredCrafting = ItemStack.EMPTY;
+        if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
+            this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
+            this.blit(this.guiLeft + this.xSize, this.guiTop + 4, 191, 0, 65, 89);
+
+            int x = 0;
+            int y = 0;
+            for (ItemStack stack : this.currentlyCrafting) {
+                int itemX = this.guiLeft + this.xSize + 4 + x * 18;
+                int itemY = this.guiTop + 4 + 16 + y * 18;
+                this.itemRenderer.renderItemAndEffectIntoGUI(stack, itemX, itemY);
+                this.itemRenderer.renderItemOverlayIntoGUI(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
+                if (mouseX >= itemX && mouseY >= itemY && mouseX < itemX + 16 && mouseY < itemY + 18)
+                    this.hoveredCrafting = stack;
+                x++;
+                if (x >= 3) {
+                    x = 0;
+                    y++;
+                    if (y >= 2)
+                        break;
+                }
+            }
         }
     }
 
@@ -244,7 +326,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 .map(w -> (ItemTerminalWidget) w);
     }
 
-    private static int requestModifier() {
+    public static int requestModifier() {
         if (hasControlDown()) {
             return 10;
         } else if (hasShiftDown()) {

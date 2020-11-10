@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.client.util.ITooltipFlag;
@@ -9,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.*;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -16,7 +18,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class ModuleItem extends Item implements IModule {
 
@@ -72,5 +76,20 @@ public abstract class ModuleItem extends Item implements IModule {
     @Override
     public boolean canPipeWork(ItemStack module, PipeTileEntity tile) {
         return true;
+    }
+
+    @Override
+    public List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+        return 0;
+    }
+
+    @Override
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+        return stack;
     }
 }

@@ -4,17 +4,25 @@ import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
-import de.ellpeck.prettypipes.pipe.modules.FilterModifierModule;
-import de.ellpeck.prettypipes.pipe.modules.LowPriorityModuleItem;
-import de.ellpeck.prettypipes.pipe.modules.RedstoneModuleItem;
-import de.ellpeck.prettypipes.pipe.modules.SpeedModuleItem;
+import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.pipe.IPipeConnectable;
+import de.ellpeck.prettypipes.pipe.PipeBlock;
+import de.ellpeck.prettypipes.pipe.PipeRenderer;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
+import de.ellpeck.prettypipes.pipe.containers.MainPipeGui;
+import de.ellpeck.prettypipes.pipe.modules.*;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.extraction.ExtractionModuleItem;
-import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.pipe.*;
-import de.ellpeck.prettypipes.pipe.containers.*;
+import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleGui;
+import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.insertion.FilterModuleItem;
@@ -24,6 +32,10 @@ import de.ellpeck.prettypipes.pipe.modules.retrieval.RetrievalModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
+import de.ellpeck.prettypipes.pressurizer.PressurizerContainer;
+import de.ellpeck.prettypipes.pressurizer.PressurizerGui;
+import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
@@ -80,6 +92,8 @@ public final class Registry {
 
     @CapabilityInject(PipeNetwork.class)
     public static Capability<PipeNetwork> pipeNetworkCapability;
+    @CapabilityInject(IPipeConnectable.class)
+    public static Capability<IPipeConnectable> pipeConnectableCapability;
 
     public static Item wrenchItem;
     public static Item pipeFrameItem;
@@ -98,17 +112,24 @@ public final class Registry {
 
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
+    public static Block pressurizerBlock;
+    public static TileEntityType<PressurizerTileEntity> pressurizerTileEntity;
+    public static ContainerType<PressurizerContainer> pressurizerContainer;
+
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
     public static ContainerType<FilterModuleContainer> filterModuleContainer;
     public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
     public static ContainerType<StackSizeModuleContainer> stackSizeModuleContainer;
+    public static ContainerType<FilterIncreaseModuleContainer> filterIncreaseModuleContainer;
+    public static ContainerType<CraftingModuleContainer> craftingModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         event.getRegistry().registerAll(
                 pipeBlock = new PipeBlock().setRegistryName("pipe"),
                 itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal"),
-                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal")
+                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal"),
+                pressurizerBlock = new PressurizerBlock().setRegistryName("pressurizer")
         );
     }
 
@@ -124,10 +145,13 @@ public final class Registry {
         registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
         registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
         registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
+        registry.registerAll(createTieredModule("high_priority_module", HighPriorityModuleItem::new));
         registry.registerAll(createTieredModule("retrieval_module", RetrievalModuleItem::new));
         registry.register(new StackSizeModuleItem("stack_size_module"));
-        registry.registerAll(Arrays.stream(ItemEqualityType.values()).map(t -> new FilterModifierModule(t.name().toLowerCase(Locale.ROOT) + "_filter_modifier", t)).toArray(Item[]::new));
+        registry.registerAll(Arrays.stream(ItemEqualityType.values()).map(t -> new FilterModifierModuleItem(t.name().toLowerCase(Locale.ROOT) + "_filter_modifier", t)).toArray(Item[]::new));
         registry.register(new RedstoneModuleItem("redstone_module"));
+        registry.register(new FilterIncreaseModuleItem("filter_increase_modifier"));
+        registry.registerAll(createTieredModule("crafting_module", CraftingModuleItem::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
@@ -139,7 +163,8 @@ public final class Registry {
         event.getRegistry().registerAll(
                 pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
                 itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
-                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal")
+                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
+                pressurizerTileEntity = (TileEntityType<PressurizerTileEntity>) TileEntityType.Builder.create(PressurizerTileEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
         );
     }
 
@@ -156,10 +181,13 @@ public final class Registry {
                 pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
                 itemTerminalContainer = (ContainerType<ItemTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
                 craftingTerminalContainer = (ContainerType<CraftingTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
+                pressurizerContainer = (ContainerType<PressurizerContainer>) IForgeContainerType.create((windowId, inv, data) -> new PressurizerContainer(pressurizerContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pressurizer"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
-                stackSizeModuleContainer = createPipeContainer("stack_size_module")
+                stackSizeModuleContainer = createPipeContainer("stack_size_module"),
+                filterIncreaseModuleContainer = createPipeContainer("filter_increase_module"),
+                craftingModuleContainer = createPipeContainer("crafting_module")
         );
     }
 
@@ -180,34 +208,42 @@ public final class Registry {
     }
 
     public static void setup(FMLCommonSetupEvent event) {
-        CapabilityManager.INSTANCE.register(PipeNetwork.class, new Capability.IStorage<PipeNetwork>() {
-            @Nullable
-            @Override
-            public INBT writeNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side) {
-                return null;
-            }
-
-            @Override
-            public void readNBT(Capability<PipeNetwork> capability, PipeNetwork instance, Direction side, INBT nbt) {
-
-            }
-        }, () -> null);
+        registerCap(PipeNetwork.class);
+        registerCap(IPipeConnectable.class);
         PacketHandler.setup();
     }
 
     public static final class Client {
         public static void setup(FMLClientSetupEvent event) {
-            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.cutout());
+            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.getCutout());
             ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
             RenderingRegistry.registerEntityRenderingHandler(pipeFrameEntity, PipeFrameRenderer::new);
 
             ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
             ScreenManager.registerFactory(itemTerminalContainer, ItemTerminalGui::new);
+            ScreenManager.registerFactory(pressurizerContainer, PressurizerGui::new);
             ScreenManager.registerFactory(craftingTerminalContainer, CraftingTerminalGui::new);
             ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
             ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
             ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
             ScreenManager.registerFactory(stackSizeModuleContainer, StackSizeModuleGui::new);
+            ScreenManager.registerFactory(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
+            ScreenManager.registerFactory(craftingModuleContainer, CraftingModuleGui::new);
         }
+    }
+
+    private static <T> void registerCap(Class<T> capClass) {
+        CapabilityManager.INSTANCE.register(capClass, new Capability.IStorage<T>() {
+            @Nullable
+            @Override
+            public INBT writeNBT(Capability<T> capability, T instance, Direction side) {
+                return null;
+            }
+
+            @Override
+            public void readNBT(Capability<T> capability, T instance, Direction side, INBT nbt) {
+
+            }
+        }, () -> null);
     }
 }

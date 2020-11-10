@@ -39,7 +39,7 @@ public class ExtractionModuleItem extends ModuleItem {
 
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         for (Direction dir : Direction.values()) {
-            IItemHandler handler = tile.getItemHandler(dir, null);
+            IItemHandler handler = tile.getItemHandler(dir);
             if (handler == null)
                 continue;
             for (int j = 0; j < handler.getSlots(); j++) {
@@ -48,7 +48,7 @@ public class ExtractionModuleItem extends ModuleItem {
                     continue;
                 if (!filter.isAllowed(stack))
                     continue;
-                ItemStack remain = network.tryInsertItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending);
+                ItemStack remain = network.routeItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending);
                 if (remain.getCount() != stack.getCount()) {
                     handler.extractItem(j, stack.getCount() - remain.getCount(), false);
                     return;

@@ -8,8 +8,12 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
 public class FilterSlot extends SlotItemHandler {
-    public FilterSlot(IItemHandler itemHandler, int index, int xPosition, int yPosition) {
+
+    private final boolean onlyOneItem;
+
+    public FilterSlot(IItemHandler itemHandler, int index, int xPosition, int yPosition, boolean onlyOneItem) {
         super(itemHandler, index, xPosition, yPosition);
+        this.onlyOneItem = onlyOneItem;
     }
 
     public static boolean checkFilter(Container container, int slotId, PlayerEntity player) {
@@ -31,7 +35,8 @@ public class FilterSlot extends SlotItemHandler {
             this.putStack(ItemStack.EMPTY);
         } else if (!heldStack.isEmpty()) {
             ItemStack s = heldStack.copy();
-            s.setCount(1);
+            if (this.onlyOneItem)
+                s.setCount(1);
             this.putStack(s);
         }
     }

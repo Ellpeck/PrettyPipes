@@ -10,8 +10,12 @@ import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.client.gui.GuiUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -23,6 +27,7 @@ public class ItemTerminalWidget extends Widget {
     public final int gridY;
     public boolean selected;
     public ItemStack stack = ItemStack.EMPTY;
+    public boolean craftable;
 
     public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemTerminalGui screen) {
         super(xIn, yIn, 16, 16, "");
@@ -48,10 +53,12 @@ public class ItemTerminalWidget extends Widget {
             fill(this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
         renderer.renderItemAndEffectIntoGUI(mc.player, this.stack, this.x, this.y);
-        int amount = this.stack.getCount();
+        int amount = !this.craftable ? this.stack.getCount() : 0;
         String amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        FontRenderer font = mc.getFontResourceManager().getFontRenderer(FONT);
-        renderer.renderItemOverlayIntoGUI(font, this.stack, this.x, this.y, amountStrg);
+        RenderSystem.pushMatrix();
+        RenderSystem.scalef(0.8F, 0.8F, 1);
+        renderer.renderItemOverlayIntoGUI(mc.fontRenderer, this.stack, (int) (this.x / 0.8F) + 4, (int) (this.y / 0.8F) + 4, amountStrg);
+        RenderSystem.popMatrix();
         renderer.zLevel = 0;
         this.setBlitOffset(0);
 

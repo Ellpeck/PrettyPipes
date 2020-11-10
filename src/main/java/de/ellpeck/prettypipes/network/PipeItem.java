@@ -1,25 +1,37 @@
 package de.ellpeck.prettypipes.network;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
+import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import joptsimple.internal.Strings;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ILiquidContainer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.fluid.Fluid;
-import net.minecraft.fluid.IFluidState;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -28,12 +40,13 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer {
+public class PipeItem implements IPipeItem {
+
+    public static final ResourceLocation TYPE = new ResourceLocation(PrettyPipes.ID, "pipe_item");
 
     public ItemStack stack;
     public float speed;
@@ -51,17 +64,30 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     protected int currentTile;
     protected boolean retryOnObstruction;
     protected long lastWorldTick;
+    protected ResourceLocation type;
 
-    public PipeItem(ItemStack stack, float speed) {
+    public PipeItem(ResourceLocation type, ItemStack stack, float speed) {
+        this.type = type;
         this.stack = stack;
         this.speed = speed;
     }
 
-    public PipeItem(CompoundNBT nbt) {
+    public PipeItem(ItemStack stack, float speed) {
+        this(TYPE, stack, speed);
+    }
+
+    public PipeItem(ResourceLocation type, CompoundNBT nbt) {
+        this.type = type;
         this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
     }
 
+    @Override
+    public ItemStack getContent() {
+        return this.stack;
+    }
+
+    @Override
     public void setDestination(BlockPos startInventory, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
         this.startInventory = startInventory;
         this.destInventory = destInventory;
@@ -77,6 +103,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         }
     }
 
+    @Override
     public void updateInPipe(PipeTileEntity currPipe) {
         // this prevents pipes being updated after one another
         // causing an item that just switched to tick twice
@@ -85,72 +112,78 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             return;
         this.lastWorldTick = worldTick;
 
-        float currSpeed = this.speed;
-        BlockPos myPos = new BlockPos(this.x, this.y, this.z);
-        if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
-            // we're done with the current pipe, so switch to the next one
-            currPipe.getItems().remove(this);
-            PipeTileEntity next = this.getNextTile(currPipe, true);
-            if (next == null) {
-                if (!currPipe.getWorld().isRemote) {
-                    if (currPipe.getPos().equals(this.getDestPipe())) {
-                        // ..or store in our destination container if we reached our destination
-                        this.stack = this.store(currPipe);
-                        if (!this.stack.isEmpty())
-                            this.onPathObstructed(currPipe, true);
-                    } else {
-                        this.onPathObstructed(currPipe, false);
-                    }
-                }
-                return;
-            } else {
-                next.getItems().add(this);
-            }
-        } else {
-            double dist = new Vec3d(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
-            if (dist < this.speed * this.speed) {
-                // we're past the start of the pipe, so move to the center of the next pipe
-                BlockPos nextPos;
-                PipeTileEntity next = this.getNextTile(currPipe, false);
+        float motionLeft = this.speed;
+        while (motionLeft > 0) {
+            float currSpeed = Math.min(0.25F, motionLeft);
+            motionLeft -= currSpeed;
+
+            BlockPos myPos = new BlockPos(this.x, this.y, this.z);
+            if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
+                // we're done with the current pipe, so switch to the next one
+                currPipe.getItems().remove(this);
+                PipeTileEntity next = this.getNextTile(currPipe, true);
                 if (next == null) {
-                    if (currPipe.getPos().equals(this.getDestPipe())) {
-                        nextPos = this.destInventory;
-                    } else {
-                        currPipe.getItems().remove(this);
-                        if (!currPipe.getWorld().isRemote)
+                    if (!currPipe.getWorld().isRemote) {
+                        if (currPipe.getPos().equals(this.getDestPipe())) {
+                            // ..or store in our destination container if we reached our destination
+                            this.stack = this.store(currPipe);
+                            if (!this.stack.isEmpty())
+                                this.onPathObstructed(currPipe, true);
+                        } else {
                             this.onPathObstructed(currPipe, false);
-                        return;
+                        }
                     }
+                    return;
                 } else {
-                    nextPos = next.getPos();
+                    next.getItems().add(this);
+                    currPipe = next;
                 }
-                float tolerance = 0.001F;
-                if (dist >= tolerance * tolerance) {
-                    // when going around corners, we want to move right up to the corner
-                    Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
-                    Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
-                    if (motion.crossProduct(diff).length() >= tolerance) {
-                        currSpeed = (float) Math.sqrt(dist);
+            } else {
+                double dist = new Vec3d(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
+                if (dist < currSpeed * currSpeed) {
+                    // we're past the start of the pipe, so move to the center of the next pipe
+                    BlockPos nextPos;
+                    PipeTileEntity next = this.getNextTile(currPipe, false);
+                    if (next == null) {
+                        if (currPipe.getPos().equals(this.getDestPipe())) {
+                            nextPos = this.destInventory;
+                        } else {
+                            currPipe.getItems().remove(this);
+                            if (!currPipe.getWorld().isRemote)
+                                this.onPathObstructed(currPipe, false);
+                            return;
+                        }
                     } else {
-                        // we're not going around a corner, so continue
+                        nextPos = next.getPos();
+                    }
+                    float tolerance = 0.001F;
+                    if (dist >= tolerance * tolerance) {
+                        // when going around corners, we want to move right up to the corner
+                        Vec3d motion = new Vec3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                        Vec3d diff = new Vec3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                        if (motion.crossProduct(diff).length() >= tolerance) {
+                            currSpeed = (float) Math.sqrt(dist);
+                        } else {
+                            // we're not going around a corner, so continue
+                            this.currGoalPos = nextPos;
+                        }
+                    } else {
+                        // distance is very small, so continue
                         this.currGoalPos = nextPos;
                     }
-                } else {
-                    // distance is very small, so continue
-                    this.currGoalPos = nextPos;
                 }
             }
+
+            this.lastX = this.x;
+            this.lastY = this.y;
+            this.lastZ = this.z;
+
+            Vec3d dist = new Vec3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
+            dist = dist.normalize();
+            this.x += dist.x * currSpeed;
+            this.y += dist.y * currSpeed;
+            this.z += dist.z * currSpeed;
         }
-
-        this.lastX = this.x;
-        this.lastY = this.y;
-        this.lastZ = this.z;
-
-        Vec3d dist = new Vec3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
-        dist = dist.normalize();
-        this.x += dist.x * currSpeed;
-        this.y += dist.y * currSpeed;
-        this.z += dist.z * currSpeed;
     }
 
     protected void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
@@ -159,22 +192,23 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
         if (tryReturn) {
             // first time: we try to return to our input chest
-            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, speed -> this)) {
+            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, this.stack, speed -> this)) {
                 this.retryOnObstruction = true;
                 return;
             }
             // second time: we arrived at our input chest, it is full, so we try to find a different goal location
             ItemStack remain = network.routeItem(currPipe.getPos(), this.destInventory, this.stack, (stack, speed) -> this, false);
-            if (remain.isEmpty())
-                return;
-            this.stack = remain;
+            if (!remain.isEmpty())
+                this.drop(currPipe.getWorld(), remain.copy());
+        } else {
+            // if all re-routing attempts fail, we drop
+            this.drop(currPipe.getWorld(), this.stack);
         }
-        // if all re-routing attempts fail, we drop
-        this.drop(currPipe.getWorld());
     }
 
-    public void drop(World world) {
-        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, this.stack.copy());
+    @Override
+    public void drop(World world, ItemStack stack) {
+        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
         item.world.addEntity(item);
     }
 
@@ -182,8 +216,8 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
         IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
-            return connectable.insertItem(currPipe.getWorld(), currPipe.getPos(), dir, this);
-        IItemHandler handler = currPipe.getItemHandler(dir, this);
+            return connectable.insertItem(currPipe.getPos(), dir, this.stack, false);
+        IItemHandler handler = currPipe.getItemHandler(dir);
         if (handler != null)
             return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
         return this.stack;
@@ -203,14 +237,17 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
         return this.path.get(0);
     }
 
+    @Override
     public BlockPos getDestPipe() {
         return this.path.get(this.path.size() - 1);
     }
 
+    @Override
     public BlockPos getCurrentPipe() {
         return this.path.get(this.currentTile);
     }
 
+    @Override
     public BlockPos getDestInventory() {
         return this.destInventory;
     }
@@ -218,6 +255,7 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
     @Override
     public CompoundNBT serializeNBT() {
         CompoundNBT nbt = new CompoundNBT();
+        nbt.putString("type", this.type.toString());
         nbt.put("stack", this.stack.serializeNBT());
         nbt.putFloat("speed", this.speed);
         nbt.put("start_inv", NBTUtil.writeBlockPos(this.startInventory));
@@ -253,6 +291,59 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }
 
+    @Override
+    public int getItemsOnTheWay(BlockPos goalInv) {
+        return this.stack.getCount();
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
+        matrixStack.translate(
+                MathHelper.lerp(partialTicks, this.lastX, this.x),
+                MathHelper.lerp(partialTicks, this.lastY, this.y),
+                MathHelper.lerp(partialTicks, this.lastZ, this.z));
+
+        if (this.stack.getItem() instanceof BlockItem) {
+            float scale = 0.7F;
+            matrixStack.scale(scale, scale, scale);
+            matrixStack.translate(0, -0.2F, 0);
+        } else {
+            float scale = 0.45F;
+            matrixStack.scale(scale, scale, scale);
+            matrixStack.translate(0, -0.1F, 0);
+        }
+
+        random.setSeed(Item.getIdFromItem(this.stack.getItem()) + this.stack.getDamage());
+        int amount = this.getModelCount();
+
+        for (int i = 0; i < amount; i++) {
+            matrixStack.push();
+            if (amount > 1) {
+                matrixStack.translate(
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
+            }
+            Minecraft.getInstance().getItemRenderer().renderItem(this.stack, ItemCameraTransforms.TransformType.GROUND, light, overlay, matrixStack, buffer);
+            matrixStack.pop();
+        }
+    }
+
+    protected int getModelCount() {
+        int i = 1;
+        if (this.stack.getCount() > 48) {
+            i = 5;
+        } else if (this.stack.getCount() > 32) {
+            i = 4;
+        } else if (this.stack.getCount() > 16) {
+            i = 3;
+        } else if (this.stack.getCount() > 1) {
+            i = 2;
+        }
+        return i;
+    }
+
     protected static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
         Graph<BlockPos, NetworkEdge> graph = path.getGraph();
         List<BlockPos> ret = new ArrayList<>();
@@ -284,15 +375,5 @@ public class PipeItem implements INBTSerializable<CompoundNBT>, ILiquidContainer
             }
         }
         return ret;
-    }
-
-    @Override
-    public boolean canContainFluid(IBlockReader worldIn, BlockPos pos, BlockState state, Fluid fluidIn) {
-        return true;
-    }
-
-    @Override
-    public boolean receiveFluid(IWorld worldIn, BlockPos pos, BlockState state, IFluidState fluidStateIn) {
-        return false;
     }
 }

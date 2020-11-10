@@ -7,6 +7,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.packets.PacketHandler;
@@ -17,16 +18,13 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.ListenableGraph;
@@ -43,6 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,9 +52,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
     private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
-    private final ListMultimap<BlockPos, PipeItem> pipeItems = ArrayListMultimap.create();
+    private final ListMultimap<BlockPos, IPipeItem> pipeItems = ArrayListMultimap.create();
     private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
     private final World world;
+    private final LazyOptional<PipeNetwork> lazyThis = LazyOptional.of(() -> this);
 
     public PipeNetwork(World world) {
         this.world = world;
@@ -67,7 +67,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     @Nonnull
     @Override
     public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        return cap == Registry.pipeNetworkCapability ? LazyOptional.of(() -> (T) this) : LazyOptional.empty();
+        return cap == Registry.pipeNetworkCapability ? this.lazyThis.cast() : LazyOptional.empty();
     }
 
     @Override
@@ -98,7 +98,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         ListNBT edges = nbt.getList("edges", NBT.TAG_COMPOUND);
         for (int i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (PipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), PipeItem::new))
+        for (IPipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), IPipeItem::load))
             this.pipeItems.put(item.getCurrentPipe(), item);
         for (NetworkLock lock : Utility.deserializeAll(nbt.getList("locks", NBT.TAG_COMPOUND), NetworkLock::new))
             this.createNetworkLock(lock);
@@ -131,11 +131,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         }
     }
 
-    public ItemStack tryInsertItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
+    public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, boolean preventOversending) {
         return this.routeItem(startPipePos, startInventory, stack, PipeItem::new, preventOversending);
     }
 
-    public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, BiFunction<ItemStack, Float, PipeItem> itemSupplier, boolean preventOversending) {
+    public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, BiFunction<ItemStack, Float, IPipeItem> itemSupplier, boolean preventOversending) {
         if (!this.isNode(startPipePos))
             return stack;
         if (!this.world.isBlockLoaded(startPipePos))
@@ -151,8 +151,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             Pair<BlockPos, ItemStack> dest = pipe.getAvailableDestination(stack, false, preventOversending);
             if (dest == null || dest.getLeft().equals(startInventory))
                 continue;
-            Function<Float, PipeItem> sup = speed -> itemSupplier.apply(dest.getRight(), speed);
-            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), sup)) {
+            Function<Float, IPipeItem> sup = speed -> itemSupplier.apply(dest.getRight(), speed);
+            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), dest.getRight(), sup)) {
                 ItemStack remain = stack.copy();
                 remain.shrink(dest.getRight().getCount());
                 this.endProfile();
@@ -163,7 +163,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return stack;
     }
 
-    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, Function<Float, PipeItem> itemSupplier) {
+    public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, ItemStack stack, Function<Float, IPipeItem> itemSupplier) {
         if (!this.isNode(startPipePos) || !this.isNode(destPipePos))
             return false;
         if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipePos))
@@ -176,39 +176,66 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.endProfile();
         if (path == null)
             return false;
-        PipeItem item = itemSupplier.apply(startPipe.getItemSpeed());
+        IPipeItem item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
-        if (!startPipe.getItems().contains(item))
-            startPipe.getItems().add(item);
+        startPipe.addNewItem(item);
         PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
         return true;
     }
 
     public ItemStack requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
-        List<NetworkLocation> locations = this.getOrderedNetworkItems(destPipe);
-        if (locations.isEmpty())
-            return stack;
         ItemStack remain = stack.copy();
-        for (NetworkLocation location : locations) {
-            remain = this.requestItem(location, destPipe, destInventory, remain, equalityTypes);
+        // check existing items
+        for (NetworkLocation location : this.getOrderedNetworkItems(destPipe)) {
+            remain = this.requestExistingItem(location, destPipe, destInventory, null, remain, equalityTypes);
             if (remain.isEmpty())
-                break;
+                return remain;
         }
-        return remain;
+        // check craftable items
+        return this.requestCraftedItem(destPipe, null, remain, equalityTypes);
     }
 
-    public ItemStack requestItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+        for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(destPipe)) {
+            if (!ItemEqualityType.compareItems(stack, craftable.getRight(), equalityTypes))
+                continue;
+            PipeTileEntity pipe = this.getPipe(craftable.getLeft());
+            if (pipe == null)
+                continue;
+            stack = pipe.craft(destPipe, unavailableConsumer, stack);
+            if (stack.isEmpty())
+                break;
+        }
+        return stack;
+    }
+
+    public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, ItemStack stack, ItemEqualityType... equalityTypes) {
+        return this.requestExistingItem(location, destPipe, destInventory, ignoredLock, PipeItem::new, stack, equalityTypes);
+    }
+
+    public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, BiFunction<ItemStack, Float, IPipeItem> itemSupplier, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (location.getPos().equals(destInventory))
             return stack;
+        // make sure we don't pull any locked items
+        int amount = location.getItemAmount(this.world, stack, equalityTypes);
+        if (amount <= 0)
+            return stack;
+        amount -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
+        if (amount <= 0)
+            return stack;
         ItemStack remain = stack.copy();
+        // make sure we only extract less than or equal to the requested amount
+        if (remain.getCount() < amount)
+            amount = remain.getCount();
+        remain.shrink(amount);
         for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             IItemHandler handler = location.getItemHandler(this.world);
-            ItemStack extracted = handler.extractItem(slot, remain.getCount(), true);
-            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, speed -> new PipeItem(extracted, speed))) {
+            ItemStack extracted = handler.extractItem(slot, amount, true);
+            if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> itemSupplier.apply(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
-                remain.shrink(extracted.getCount());
-                if (remain.isEmpty())
+                amount -= extracted.getCount();
+                if (amount <= 0)
                     break;
             }
         }
@@ -224,6 +251,67 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return tile;
     }
 
+    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node) {
+        this.startProfile("get_currently_crafting");
+        List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
+        for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(node)) {
+            PipeTileEntity pipe = this.getPipe(craftable.getLeft());
+            if (pipe == null)
+                continue;
+            for (Pair<BlockPos, ItemStack> request : pipe.craftResultRequests) {
+                BlockPos dest = request.getLeft();
+                ItemStack stack = request.getRight();
+                // add up all the items that should go to the same location
+                Optional<Pair<BlockPos, ItemStack>> existing = items.stream()
+                        .filter(s -> s.getLeft().equals(dest) && ItemEqualityType.compareItems(s.getRight(), stack, ItemEqualityType.NBT))
+                        .findFirst();
+                if (existing.isPresent()) {
+                    existing.get().getRight().grow(stack.getCount());
+                } else {
+                    items.add(Pair.of(dest, stack.copy()));
+                }
+            }
+        }
+        this.endProfile();
+        return items;
+    }
+
+    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, ItemEqualityType... equalityTypes) {
+        return this.getCurrentlyCrafting(destNode).stream()
+                .filter(p -> p.getLeft().equals(destNode) && ItemEqualityType.compareItems(p.getRight(), stack, equalityTypes))
+                .mapToInt(p -> p.getRight().getCount()).sum();
+    }
+
+    public List<Pair<BlockPos, ItemStack>> getAllCraftables(BlockPos node) {
+        if (!this.isNode(node))
+            return Collections.emptyList();
+        this.startProfile("get_all_craftables");
+        List<Pair<BlockPos, ItemStack>> craftables = new ArrayList<>();
+        for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
+            if (!this.world.isBlockLoaded(dest))
+                continue;
+            PipeTileEntity pipe = this.getPipe(dest);
+            for (ItemStack stack : pipe.getAllCraftables())
+                craftables.add(Pair.of(pipe.getPos(), stack));
+        }
+        this.endProfile();
+        return craftables;
+    }
+
+    public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+        int total = 0;
+        for (Pair<BlockPos, ItemStack> pair : this.getAllCraftables(node)) {
+            if (!ItemEqualityType.compareItems(pair.getRight(), stack, equalityTypes))
+                continue;
+            if (!this.world.isBlockLoaded(pair.getLeft()))
+                continue;
+            PipeTileEntity pipe = this.getPipe(pair.getLeft());
+            if (pipe != null)
+                total += pipe.getCraftableAmount(unavailableConsumer, stack);
+        }
+        return total;
+    }
+
     public List<NetworkLocation> getOrderedNetworkItems(BlockPos node) {
         if (!this.isNode(node))
             return Collections.emptyList();
@@ -236,11 +324,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             if (!pipe.canNetworkSee())
                 continue;
             for (Direction dir : Direction.values()) {
-                IItemHandler handler = pipe.getItemHandler(dir, null);
+                IItemHandler handler = pipe.getItemHandler(dir);
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
-                if (info.stream().anyMatch(l -> l.getItemHandler(this.world) == handler))
+                if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.world))))
                     continue;
                 NetworkLocation location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.world))
@@ -263,9 +351,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return this.networkLocks.get(pos);
     }
 
-    public int getLockedAmount(BlockPos pos, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getLockedAmount(BlockPos pos, ItemStack stack, NetworkLock ignoredLock, ItemEqualityType... equalityTypes) {
         return this.getNetworkLocks(pos).stream()
-                .filter(l -> ItemEqualityType.compareItems(l.stack, stack, equalityTypes))
+                .filter(l -> !l.equals(ignoredLock) && ItemEqualityType.compareItems(l.stack, stack, equalityTypes))
                 .mapToInt(l -> l.stack.getCount()).sum();
     }
 
@@ -352,7 +440,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return null;
     }
 
-    private List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
+    public List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
+        if (!this.isNode(node))
+            return Collections.emptyList();
         List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
             this.startProfile("compile_connected_nodes");
@@ -360,6 +450,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
+                    .filter(p -> this.getPipe(p) != null)
                     .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
                     .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);
@@ -378,22 +469,21 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.endProfile();
     }
 
-    public List<PipeItem> getItemsInPipe(BlockPos pos) {
+    public List<IPipeItem> getItemsInPipe(BlockPos pos) {
         return this.pipeItems.get(pos);
     }
 
-    private Stream<PipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
+    public Stream<IPipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
         this.startProfile("get_pipe_items_on_the_way");
-        Stream<PipeItem> ret = this.pipeItems.values().stream().filter(i -> i.getDestInventory().equals(goalInv));
+        Stream<IPipeItem> ret = this.pipeItems.values().stream().filter(i -> i.getDestInventory().equals(goalInv));
         this.endProfile();
         return ret;
     }
 
     public int getItemsOnTheWay(BlockPos goalInv, ItemStack type, ItemEqualityType... equalityTypes) {
-        // TODO pending auto-crafting requests should be marked as "on the way" here to allow over-sending prevention
         return this.getPipeItemsOnTheWay(goalInv)
-                .filter(i -> type == null || ItemEqualityType.compareItems(i.stack, type, equalityTypes))
-                .mapToInt(i -> i.stack.getCount()).sum();
+                .filter(i -> type == null || ItemEqualityType.compareItems(i.getContent(), type, equalityTypes))
+                .mapToInt(i -> i.getItemsOnTheWay(goalInv)).sum();
     }
 
     @Override

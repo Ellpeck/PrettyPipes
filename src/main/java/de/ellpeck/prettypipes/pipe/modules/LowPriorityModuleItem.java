@@ -21,7 +21,7 @@ public class LowPriorityModuleItem extends ModuleItem {
 
     @Override
     public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
-        return !(other instanceof LowPriorityModuleItem);
+        return !(other instanceof LowPriorityModuleItem) && !(other instanceof HighPriorityModuleItem);
     }
 
     @Override

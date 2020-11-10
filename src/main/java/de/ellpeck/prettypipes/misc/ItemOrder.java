@@ -6,8 +6,8 @@ import java.util.Comparator;
 
 public enum ItemOrder {
     AMOUNT(Comparator.comparingInt(ItemStack::getCount)),
-    NAME(Comparator.comparing(s -> s.getDisplayName().getFormattedText())),
-    MOD(Comparator.comparing(s -> s.getItem().getRegistryName().getNamespace()));
+    NAME(Comparator.comparing(s -> s.getDisplayName().getString())),
+    MOD(Comparator.comparing(s -> s.getItem().getCreatorModId(s)));
 
     public final Comparator<ItemStack> comparator;
 

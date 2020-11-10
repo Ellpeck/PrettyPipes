@@ -1,17 +1,22 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.IVertexBuilder;
+import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BlockModelRenderer;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraftforge.client.model.data.EmptyModelData;
 
 import java.util.Random;
 
@@ -24,59 +29,30 @@ public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
     }
 
     @Override
-    public void render(PipeTileEntity tile, float v, MatrixStack matrixStack, IRenderTypeBuffer iRenderTypeBuffer, int k, int i1) {
-        if (tile.getItems().isEmpty())
-            return;
-        matrixStack.push();
-        BlockPos tilePos = tile.getPos();
-        matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
-        for (PipeItem item : tile.getItems()) {
+    public void render(PipeTileEntity tile, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer buffer, int light, int overlay) {
+        if (!tile.getItems().isEmpty()) {
             matrixStack.push();
-            matrixStack.translate(
-                    MathHelper.lerp(v, item.lastX, item.x),
-                    MathHelper.lerp(v, item.lastY, item.y),
-                    MathHelper.lerp(v, item.lastZ, item.z));
-
-            if (item.stack.getItem() instanceof BlockItem) {
-                float scale = 0.7F;
-                matrixStack.scale(scale, scale, scale);
-                matrixStack.translate(0, -0.2F, 0);
-            } else {
-                float scale = 0.45F;
-                matrixStack.scale(scale, scale, scale);
-                matrixStack.translate(0, -0.1F, 0);
-            }
-
-            this.random.setSeed(Item.getIdFromItem(item.stack.getItem()) + item.stack.getDamage());
-            int amount = this.getModelCount(item.stack);
-
-            for (int i = 0; i < amount; i++) {
+            BlockPos tilePos = tile.getPos();
+            matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
+            for (IPipeItem item : tile.getItems()) {
                 matrixStack.push();
-                if (amount > 1) {
-                    matrixStack.translate(
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                            (this.random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
-                }
-                Minecraft.getInstance().getItemRenderer().renderItem(item.stack, ItemCameraTransforms.TransformType.GROUND, k, i1, matrixStack, iRenderTypeBuffer);
+                item.render(tile, matrixStack, this.random, partialTicks, light, overlay, buffer);
                 matrixStack.pop();
             }
             matrixStack.pop();
         }
-        matrixStack.pop();
-    }
-
-    protected int getModelCount(ItemStack stack) {
-        int i = 1;
-        if (stack.getCount() > 48) {
-            i = 5;
-        } else if (stack.getCount() > 32) {
-            i = 4;
-        } else if (stack.getCount() > 16) {
-            i = 3;
-        } else if (stack.getCount() > 1) {
-            i = 2;
+        if (tile.cover != null) {
+            matrixStack.push();
+            BlockModelRenderer.enableCache();
+            for (RenderType layer : RenderType.getBlockRenderTypes()) {
+                if (!RenderTypeLookup.canRenderInLayer(tile.cover, layer))
+                    continue;
+                ForgeHooksClient.setRenderLayer(layer);
+                Minecraft.getInstance().getBlockRendererDispatcher().renderBlock(tile.cover, matrixStack, buffer, light, overlay, EmptyModelData.INSTANCE);
+            }
+            ForgeHooksClient.setRenderLayer(null);
+            BlockModelRenderer.disableCache();
+            matrixStack.pop();
         }
-        return i;
     }
 }

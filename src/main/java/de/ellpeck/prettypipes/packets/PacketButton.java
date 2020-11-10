@@ -113,8 +113,11 @@ public class PacketButton {
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
             CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, player.world, pos);
-            boolean all = data[0] > 0;
-            tile.requestCraftingItems(player, all);
+            tile.requestCraftingItems(player, data[0]);
+        }),
+        CANCEL_CRAFTING((pos, data, player) -> {
+            ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos);
+            tile.cancelCrafting();
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;

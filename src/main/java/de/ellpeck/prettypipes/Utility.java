@@ -2,22 +2,32 @@ package de.ellpeck.prettypipes;
 
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.ISidedInventory;
+import net.minecraft.inventory.ISidedInventoryProvider;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.text.*;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -25,10 +35,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class Utility {
 
-    public static <T extends TileEntity> T getTileEntity(Class<T> type, World world, BlockPos pos) {
+    public static <T extends TileEntity> T getTileEntity(Class<T> type, IBlockReader world, BlockPos pos) {
         TileEntity tile = world.getTileEntity(pos);
         return type.isInstance(tile) ? (T) tile : null;
     }
@@ -107,11 +118,32 @@ public final class Utility {
         return list;
     }
 
+    public static void sendTileEntityToClients(TileEntity tile) {
+        ServerWorld world = (ServerWorld) tile.getWorld();
+        Stream<ServerPlayerEntity> entities = world.getChunkProvider().chunkManager.getTrackingPlayers(new ChunkPos(tile.getPos()), false);
+        SUpdateTileEntityPacket packet = new SUpdateTileEntityPacket(tile.getPos(), -1, tile.write(new CompoundNBT()));
+        entities.forEach(e -> e.connection.sendPacket(packet));
+    }
+
     public static <T extends INBTSerializable<CompoundNBT>> List<T> deserializeAll(ListNBT list, Function<CompoundNBT, T> supplier) {
         List<T> items = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++)
-            items.add(supplier.apply(list.getCompound(i)));
+        for (int i = 0; i < list.size(); i++) {
+            T item = supplier.apply(list.getCompound(i));
+            if (item != null)
+                items.add(item);
+        }
         return items;
+    }
+
+    public static IItemHandler getBlockItemHandler(World world, BlockPos pos, Direction direction) {
+        BlockState state = world.getBlockState(pos);
+        Block block = state.getBlock();
+        if (!(block instanceof ISidedInventoryProvider))
+            return null;
+        ISidedInventory inventory = ((ISidedInventoryProvider) block).createInventory(state, world, pos);
+        if (inventory == null)
+            return null;
+        return new SidedInvWrapper(inventory, direction);
     }
 
     public interface IMergeItemStack {

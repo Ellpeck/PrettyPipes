@@ -31,12 +31,12 @@ public class PipeFrameRenderer extends ItemFrameRenderer {
 
         FontRenderer font = this.getFontRendererFromRenderManager();
         int amount = ((PipeFrameEntity) entityIn).getAmount();
-        String ammountStrg = amount < 0 ? "?" : String.valueOf(amount);
-        float x = 0.5F - font.getStringWidth(ammountStrg) / 2F;
-        Matrix4f matrix4f = matrixStackIn.getLast().getPositionMatrix();
+        String amountStr = amount < 0 ? "?" : String.valueOf(amount);
+        float x = 0.5F - font.getStringWidth(amountStr) / 2F;
+        Matrix4f matrix4f = matrixStackIn.getLast().getMatrix();
         matrixStackIn.translate(0, 0.285F, 0.415F);
         matrixStackIn.scale(-0.02F, -0.02F, 0.02F);
-        font.renderString(ammountStrg, x, 0, 0xFFFFFF, true, matrix4f, bufferIn, false, 0, packedLightIn);
+        font.renderString(amountStr, x, 0, 0xFFFFFF, true, matrix4f, bufferIn, false, 0, packedLightIn);
 
         matrixStackIn.pop();
     }

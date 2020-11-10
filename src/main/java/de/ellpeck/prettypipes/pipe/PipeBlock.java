@@ -1,6 +1,8 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.datafixers.types.Func;
+import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeItem;
@@ -10,6 +12,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.BlockItemUseContext;
@@ -24,6 +27,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
@@ -34,15 +38,19 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
-public class PipeBlock extends ContainerBlock implements IPipeConnectable {
+public class PipeBlock extends ContainerBlock {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
-    private static final Map<BlockState, VoxelShape> SHAPE_CACHE = new HashMap<>();
+    private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
+    private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = makeCuboidShape(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
             .put(Direction.UP, makeCuboidShape(5, 10, 5, 11, 16, 11))
@@ -55,7 +63,7 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
 
     static {
         for (Direction dir : Direction.values())
-            DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
+            DIRECTIONS.put(dir, EnumProperty.create(dir.getName2(), ConnectionType.class));
     }
 
     public PipeBlock() {
@@ -130,22 +138,46 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     }
 
     @Override
-    public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos) {
-        return false;
+    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getShape(worldIn, pos, context), SHAPE_CACHE, null);
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
-        VoxelShape shape = SHAPE_CACHE.get(state);
-        if (shape != null)
-            return shape;
+    public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), COLL_SHAPE_CACHE, s -> {
+            // make the shape a bit higher so we can jump up onto a higher block
+            MutableObject<VoxelShape> newShape = new MutableObject<>(VoxelShapes.empty());
+            s.forEachBox((x1, y1, z1, x2, y2, z2) -> newShape.setValue(VoxelShapes.combine(VoxelShapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), IBooleanFunction.OR)));
+            return newShape.getValue().simplify();
+        });
+    }
 
-        shape = CENTER_SHAPE;
-        for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-            if (state.get(entry.getValue()).isConnected())
-                shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+    private VoxelShape cacheAndGetShape(BlockState state, IBlockReader worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
+        VoxelShape coverShape = null;
+        BlockState cover = null;
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile != null && tile.cover != null) {
+            cover = tile.cover;
+            // try catch since the block might expect to find itself at the position
+            try {
+                coverShape = coverShapeSelector.apply(cover);
+            } catch (Exception ignored) {
+            }
         }
-        SHAPE_CACHE.put(state, shape);
+        Pair<BlockState, BlockState> key = Pair.of(state, cover);
+        VoxelShape shape = cache.get(key);
+        if (shape == null) {
+            shape = CENTER_SHAPE;
+            for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
+                if (state.get(entry.getValue()).isConnected())
+                    shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+            }
+            if (shapeModifier != null)
+                shape = shapeModifier.apply(shape);
+            if (coverShape != null)
+                shape = VoxelShapes.or(shape, coverShape);
+            cache.put(key, shape);
+        }
         return shape;
     }
 
@@ -170,16 +202,20 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         BlockPos offset = pos.offset(direction);
         if (!world.isBlockLoaded(offset))
             return ConnectionType.DISCONNECTED;
-        BlockState offState = world.getBlockState(offset);
-        Block block = offState.getBlock();
-        if (block instanceof IPipeConnectable)
-            return ((IPipeConnectable) block).getConnectionType(world, pos, direction);
+        Direction opposite = direction.getOpposite();
         TileEntity tile = world.getTileEntity(offset);
         if (tile != null) {
-            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, direction.getOpposite()).orElse(null);
+            IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
+            if (connectable != null)
+                return connectable.getConnectionType(pos, direction);
+            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, opposite).orElse(null);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
+        IItemHandler blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
+        if (blockHandler != null)
+            return ConnectionType.CONNECTED;
+        BlockState offState = world.getBlockState(offset);
         if (hasLegsTo(world, offState, offset, direction)) {
             if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
@@ -191,14 +227,15 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
         if (state.getMaterial() == Material.ROCK || state.getMaterial() == Material.IRON)
-            return hasSolidSide(state, world, pos, direction.getOpposite());
+            return hasEnoughSolidSide(world, pos, direction.getOpposite());
         return false;
     }
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
+        // wait a few ticks before checking if we have to drop our modules, so that things like iron -> gold chest work
         PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
-        if (tile != null && !tile.canHaveModules())
-            Utility.dropInventory(tile, tile.modules);
+        if (tile != null)
+            tile.moduleDropCheck = 5;
 
         PipeNetwork network = PipeNetwork.get(world);
         int connections = 0;
@@ -226,17 +263,24 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     @Override
     public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
-            if (tile != null) {
-                Utility.dropInventory(tile, tile.modules);
-                for (PipeItem item : tile.getItems())
-                    item.drop(worldIn);
-            }
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
             super.onReplaced(state, worldIn, pos, newState, isMoving);
         }
+    }
+
+    @Override
+    public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile != null) {
+            Utility.dropInventory(tile, tile.modules);
+            for (IPipeItem item : tile.getItems())
+                item.drop(worldIn, item.getContent());
+            if (tile.cover != null)
+                tile.removeCover(player, Hand.MAIN_HAND);
+        }
+        super.onBlockHarvested(worldIn, pos, state, player);
     }
 
     @Override
@@ -261,13 +305,5 @@ public class PipeBlock extends ContainerBlock implements IPipeConnectable {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
-    }
-
-    @Override
-    public ConnectionType getConnectionType(World world, BlockPos pipePos, Direction direction) {
-        BlockState state = world.getBlockState(pipePos.offset(direction));
-        if (state.get(DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
-            return ConnectionType.BLOCKED;
-        return ConnectionType.CONNECTED;
     }
 }

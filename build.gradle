@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.5.5'
+version = '1.8.2'
 group = 'de.ellpeck.prettypipes' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'PrettyPipes'
 
@@ -23,7 +23,7 @@ if (System.getenv('BUILD_NUMBER') != null) {
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 
 minecraft {
-    mappings channel: 'snapshot', version: '20200128-1.15.1'
+    mappings channel: 'snapshot', version: '20200514-1.15.1'
 
     runs {
         client {
@@ -87,6 +87,9 @@ repositories {
     maven {
         url = "https://dvs1.progwml6.com/files/maven"
     }
+    maven {
+        url = "https://www.cursemaven.com"
+    }
 }
 
 configurations {
@@ -95,11 +98,15 @@ configurations {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.15.2-31.1.19'
+    minecraft 'net.minecraftforge:forge:1.15.2-31.2.45'
     embed "org.jgrapht:jgrapht-core:1.4.0"
 
     compileOnly fg.deobf("mezz.jei:jei-1.15.2:6.0.0.2:api")
     runtimeOnly fg.deobf("mezz.jei:jei-1.15.2:6.0.0.2")
+
+    // to test the rf requiring stuff
+    runtimeOnly fg.deobf("curse.maven:powah:3057732")
+    runtimeOnly fg.deobf("curse.maven:lollipop:3057731")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..

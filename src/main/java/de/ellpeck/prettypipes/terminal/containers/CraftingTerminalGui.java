@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.PrettyPipes;
@@ -15,6 +16,7 @@ import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
@@ -29,8 +31,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     protected void init() {
         super.init();
         this.requestButton = this.addButton(new Button(this.guiLeft + 8, this.guiTop + 100, 50, 20, I18n.format("info." + PrettyPipes.ID + ".request"), button -> {
-            int all = hasShiftDown() ? 1 : 0;
-            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, all));
+            int amount = requestModifier();
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount));
         }));
         this.tick();
     }

@@ -1,0 +1,7 @@
+{
+    "parent": "block/cube_column",
+    "textures": {
+        "end": "prettypipes:block/pressurizer",
+        "side": "prettypipes:block/pressurizer"
+    }
+}
