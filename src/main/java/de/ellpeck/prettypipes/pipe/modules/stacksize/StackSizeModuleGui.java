@@ -51,7 +51,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     @Override
     protected void drawGuiContainerForegroundLayer(MatrixStack matrix, int mouseX, int mouseY) {
         super.drawGuiContainerForegroundLayer(matrix, mouseX, mouseY);
-        this.font.drawString(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752);
+        this.font.drawString(matrix, I18n.format("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752);
 
     }
 }
