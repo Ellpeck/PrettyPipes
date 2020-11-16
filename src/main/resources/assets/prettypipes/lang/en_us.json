@@ -79,7 +79,7 @@
     "info.prettypipes.sync_jei.on": "Sync JEI Search",
     "info.prettypipes.sync_jei.off": "Don't Sync JEI Search",
     "info.prettypipes.energy": "%s / %s FE",
-    "info.prettypipes.crafting": "Crafting",
+    "info.prettypipes.crafting": "Awaiting",
     "info.prettypipes.cancel_all": "Cancel",
-    "info.prettypipes.cancel_all.desc": "Cancels all ongoing crafting operations\nDoesn't remove inputs from blocks"
+    "info.prettypipes.cancel_all.desc": "Stops waiting for current crafting outputs\nDoesn't remove inputs from blocks"
 }
