@@ -182,12 +182,13 @@ public class CraftingModuleItem extends ModuleItem {
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 
+        ItemStack remain = stack.copy();
+        remain.shrink(resultAmount * toCraft);
+
         ItemStack result = stack.copy();
-        result.setCount(resultAmount * toCraft);
+        result.shrink(remain.getCount());
         tile.craftResultRequests.add(Pair.of(destPipe, result));
 
-        ItemStack remain = stack.copy();
-        remain.shrink(toCraft);
         return remain;
     }
 
