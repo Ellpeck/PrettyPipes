@@ -7,11 +7,11 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.packets.PacketHandler;
+import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -254,10 +254,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node) {
         this.startProfile("get_currently_crafting");
         List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
-        for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(node)) {
-            PipeTileEntity pipe = this.getPipe(craftable.getLeft());
-            if (pipe == null)
-                continue;
+        Iterator<PipeTileEntity> craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
+        while (craftingPipes.hasNext()) {
+            PipeTileEntity pipe = craftingPipes.next();
             for (Pair<BlockPos, ItemStack> request : pipe.craftResultRequests) {
                 BlockPos dest = request.getLeft();
                 ItemStack stack = request.getRight();
