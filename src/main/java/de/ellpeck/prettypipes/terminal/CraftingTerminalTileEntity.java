@@ -77,7 +77,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                 for (ItemStack stack : items) {
                     int amount = 0;
                     // check existing items
-                    NetworkItem network = this.networkItems.get(new EquatableItemStack(stack));
+                    NetworkItem network = this.networkItems.get(new EquatableItemStack(stack, ItemEqualityType.NBT));
                     if (network != null) {
                         amount = network.getLocations().stream()
                                 .mapToInt(l -> l.getItemAmount(this.world, stack, ItemEqualityType.NBT))
@@ -204,7 +204,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
             ItemStack requested = inputFunction.apply(i);
             if (requested.isEmpty())
                 continue;
-            MutableInt amount = requiredItems.computeIfAbsent(new EquatableItemStack(requested), s -> new MutableInt());
+            MutableInt amount = requiredItems.computeIfAbsent(new EquatableItemStack(requested, equalityTypes), s -> new MutableInt());
             amount.add(requested.getCount());
             // if no items fit into the crafting input, we still want to pretend they do for requesting
             int fit = Math.max(requested.getMaxStackSize() - (isGhost.test(i) ? 0 : requested.getCount()), 1);

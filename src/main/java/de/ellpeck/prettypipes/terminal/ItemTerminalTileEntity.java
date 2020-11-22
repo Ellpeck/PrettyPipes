@@ -5,8 +5,10 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
-import de.ellpeck.prettypipes.misc.ItemOrder;
-import de.ellpeck.prettypipes.network.*;
+import de.ellpeck.prettypipes.network.NetworkItem;
+import de.ellpeck.prettypipes.network.NetworkLocation;
+import de.ellpeck.prettypipes.network.NetworkLock;
+import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
@@ -16,7 +18,6 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.ItemStack;
@@ -31,23 +32,17 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ItemTerminalTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
@@ -131,7 +126,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeTileEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
-        this.networkItems = this.collectItems();
+        this.networkItems = this.collectItems(ItemEqualityType.NBT);
         if (playersToSync.length > 0) {
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
             List<ItemStack> clientCraftables = PipeNetwork.get(this.world).getAllCraftables(pipe.getPos()).stream().map(Pair::getRight).collect(Collectors.toList());
@@ -161,7 +156,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
-        NetworkItem item = this.networkItems.get(new EquatableItemStack(stack));
+        NetworkItem item = this.networkItems.get(new EquatableItemStack(stack, ItemEqualityType.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
         Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, ItemEqualityType.NBT);
         this.existingRequests.addAll(ret.getLeft());
@@ -175,14 +170,14 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 .toArray(PlayerEntity[]::new);
     }
 
-    private Map<EquatableItemStack, NetworkItem> collectItems() {
+    private Map<EquatableItemStack, NetworkItem> collectItems(ItemEqualityType... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_collect_items");
         PipeTileEntity pipe = this.getConnectedPipe();
         Map<EquatableItemStack, NetworkItem> items = new HashMap<>();
         for (NetworkLocation location : network.getOrderedNetworkItems(pipe.getPos())) {
             for (ItemStack stack : location.getItems(this.world).values()) {
-                EquatableItemStack equatable = new EquatableItemStack(stack);
+                EquatableItemStack equatable = new EquatableItemStack(stack, equalityTypes);
                 NetworkItem item = items.computeIfAbsent(equatable, NetworkItem::new);
                 item.add(location, stack);
             }
@@ -277,10 +272,10 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeNetwork network = PipeNetwork.get(world);
         // check for existing items
         for (NetworkLocation location : locations) {
-            int amount = location.getItemAmount(world, stack, ItemEqualityType.NBT);
+            int amount = location.getItemAmount(world, stack, equalityTypes);
             if (amount <= 0)
                 continue;
-            amount -= network.getLockedAmount(location.getPos(), stack, null, ItemEqualityType.NBT);
+            amount -= network.getLockedAmount(location.getPos(), stack, null, equalityTypes);
             if (amount > 0) {
                 if (remain.getCount() < amount)
                     amount = remain.getCount();

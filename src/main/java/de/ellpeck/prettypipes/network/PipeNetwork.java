@@ -251,7 +251,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return tile;
     }
 
-    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node) {
+    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, ItemEqualityType... equalityTypes) {
         this.startProfile("get_currently_crafting");
         List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
         Iterator<PipeTileEntity> craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
@@ -262,7 +262,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 ItemStack stack = request.getRight();
                 // add up all the items that should go to the same location
                 Optional<Pair<BlockPos, ItemStack>> existing = items.stream()
-                        .filter(s -> s.getLeft().equals(dest) && ItemEqualityType.compareItems(s.getRight(), stack, ItemEqualityType.NBT))
+                        .filter(s -> s.getLeft().equals(dest) && ItemEqualityType.compareItems(s.getRight(), stack, equalityTypes))
                         .findFirst();
                 if (existing.isPresent()) {
                     existing.get().getRight().grow(stack.getCount());
