@@ -6,8 +6,6 @@ import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.network.NetworkLocation;
-import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
@@ -15,10 +13,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.List;
 
 public class RetrievalModuleItem extends ModuleItem {
     private final int maxExtraction;
@@ -45,21 +40,23 @@ public class RetrievalModuleItem extends ModuleItem {
         ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
         ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         filter.isWhitelist = true;
-        // loop through filter to see which items to pull
-        for (int f = 0; f < filter.getSlots(); f++) {
-            ItemStack filtered = filter.getStackInSlot(f);
-            if (filtered.isEmpty())
-                continue;
-            ItemStack copy = filtered.copy();
-            copy.setCount(this.maxExtraction);
-            Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
-            if (dest == null)
-                continue;
-            ItemStack remain = dest.getRight().copy();
-            // are we already waiting for crafting results? If so, don't request those again
-            remain.shrink(network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes));
-            if (network.requestItem(tile.getPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
-                break;
+        // loop through filters to see which items to pull
+        for (ItemFilter subFilter : filter.getAllFilters()) {
+            for (int f = 0; f < subFilter.getSlots(); f++) {
+                ItemStack filtered = subFilter.getStackInSlot(f);
+                if (filtered.isEmpty())
+                    continue;
+                ItemStack copy = filtered.copy();
+                copy.setCount(this.maxExtraction);
+                Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
+                if (dest == null)
+                    continue;
+                ItemStack remain = dest.getRight().copy();
+                // are we already waiting for crafting results? If so, don't request those again
+                remain.shrink(network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes));
+                if (network.requestItem(tile.getPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
+                    break;
+            }
         }
     }
 

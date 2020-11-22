@@ -122,7 +122,7 @@ public class ItemFilter extends ItemStackHandler {
         return false;
     }
 
-    private List<ItemFilter> getAllFilters() {
+    public List<ItemFilter> getAllFilters() {
         List<ItemFilter> filters = this.pipe.streamModules()
                 .filter(p -> p.getRight() instanceof FilterIncreaseModuleItem)
                 .map(p -> new ItemFilter(18, p.getLeft(), this.pipe))
