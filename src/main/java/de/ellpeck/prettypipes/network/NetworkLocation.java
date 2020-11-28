@@ -1,7 +1,5 @@
 package de.ellpeck.prettypipes.network;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.item.ItemStack;
@@ -12,9 +10,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class NetworkLocation implements INBTSerializable<CompoundNBT> {
@@ -37,17 +37,16 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
         if (this.isEmpty(world))
             return Collections.emptyList();
         return this.getItems(world).entrySet().stream()
-                .filter(e -> ItemEqualityType.compareItems(e.getValue(), stack, equalityTypes))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .filter(kv -> ItemEqualityType.compareItems(kv.getValue(), stack, equalityTypes) && this.canExtract(world, kv.getKey()))
+                .map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
     public int getItemAmount(World world, ItemStack stack, ItemEqualityType... equalityTypes) {
         if (this.isEmpty(world))
             return 0;
-        return this.getItems(world).values().stream()
-                .filter(i -> ItemEqualityType.compareItems(stack, i, equalityTypes))
-                .mapToInt(ItemStack::getCount).sum();
+        return this.getItems(world).entrySet().stream()
+                .filter(kv -> ItemEqualityType.compareItems(stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
+                .mapToInt(kv -> kv.getValue().getCount()).sum();
     }
 
     public Map<Integer, ItemStack> getItems(World world) {
@@ -55,17 +54,23 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
             IItemHandler handler = this.getItemHandler(world);
             if (handler != null) {
                 for (int i = 0; i < handler.getSlots(); i++) {
+                    ItemStack stack = handler.getStackInSlot(i);
                     // check if the slot is accessible to us
-                    if (handler.extractItem(i, 1, true).isEmpty())
+                    if (stack.isEmpty())
                         continue;
                     if (this.itemCache == null)
                         this.itemCache = new HashMap<>();
                     // use getStackInSlot since there might be more than 64 items in there
-                    this.itemCache.put(i, handler.getStackInSlot(i));
+                    this.itemCache.put(i, stack);
                 }
             }
         }
         return this.itemCache;
+    }
+
+    public boolean canExtract(World world, int slot) {
+        IItemHandler handler = this.getItemHandler(world);
+        return handler != null && !handler.extractItem(slot, 1, true).isEmpty();
     }
 
     public IItemHandler getItemHandler(World world) {

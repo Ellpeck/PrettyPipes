@@ -36,6 +36,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraftforge.common.util.Lazy;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -76,6 +77,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     private int lastItemAmount;
     private int priority;
     private final LazyOptional<PipeTileEntity> lazyThis = LazyOptional.of(() -> this);
+    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.world.rand.nextInt(200));
 
     public PipeTileEntity() {
         this(Registry.pipeTileEntity);
@@ -382,6 +384,10 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         for (ItemStack drop : drops)
             Block.spawnAsEntity(this.world, this.pos, drop);
         this.cover = null;
+    }
+
+    public boolean shouldWorkNow(int speed) {
+        return (this.world.getGameTime() + this.workRandomizer.get()) % speed == 0;
     }
 
     @Override

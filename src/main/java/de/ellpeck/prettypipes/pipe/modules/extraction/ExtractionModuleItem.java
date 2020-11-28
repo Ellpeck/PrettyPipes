@@ -1,12 +1,12 @@
 package de.ellpeck.prettypipes.pipe.modules.extraction;
 
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.items.ModuleItem;
-import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -31,9 +31,7 @@ public class ExtractionModuleItem extends ModuleItem {
 
     @Override
     public void tick(ItemStack module, PipeTileEntity tile) {
-        if (tile.getWorld().getGameTime() % this.speed != 0)
-            return;
-        if (!tile.canWork())
+        if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
 

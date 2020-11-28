@@ -66,7 +66,7 @@ public class CraftingModuleItem extends ModuleItem {
 
     @Override
     public void tick(ItemStack module, PipeTileEntity tile) {
-        if (tile.getWorld().getGameTime() % this.speed != 0 || !tile.canWork())
+        if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // process crafting ingredient requests

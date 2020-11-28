@@ -176,10 +176,13 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeTileEntity pipe = this.getConnectedPipe();
         Map<EquatableItemStack, NetworkItem> items = new HashMap<>();
         for (NetworkLocation location : network.getOrderedNetworkItems(pipe.getPos())) {
-            for (ItemStack stack : location.getItems(this.world).values()) {
-                EquatableItemStack equatable = new EquatableItemStack(stack, equalityTypes);
+            for (Map.Entry<Integer, ItemStack> entry : location.getItems(this.world).entrySet()) {
+                // make sure we can extract from this slot to display it
+                if (!location.canExtract(this.world, entry.getKey()))
+                    continue;
+                EquatableItemStack equatable = new EquatableItemStack(entry.getValue(), equalityTypes);
                 NetworkItem item = items.computeIfAbsent(equatable, NetworkItem::new);
-                item.add(location, stack);
+                item.add(location, entry.getValue());
             }
         }
         network.endProfile();
