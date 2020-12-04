@@ -48,6 +48,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private int requestAmount = 1;
     private int scrollOffset;
     private ItemStack hoveredCrafting;
+    private boolean isScrolling;
 
     public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
         super(screenContainer, inv, titleIn);
@@ -137,6 +138,15 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && mouseX >= this.guiLeft + this.getXOffset() + 172 && this.guiTop + mouseY >= 18 && mouseX < this.guiLeft + this.getXOffset() + 172 + 12 && mouseY < this.guiTop + 18 + 70) {
+            this.isScrolling = true;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         // we have to do the click logic here because JEI is activated when letting go of the mouse button
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
@@ -147,7 +157,23 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 return true;
             }
         }
+        if (button == 0)
+            this.isScrolling = false;
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
+        if (this.isScrolling) {
+            float percentage = MathHelper.clamp(((float) mouseY - (this.guiTop + 18) - 7.5F) / (70 - 15), 0, 1);
+            int offset = (int) (percentage * (float) (this.sortedItems.size() / 9 - 3));
+            if (offset != this.scrollOffset) {
+                this.scrollOffset = offset;
+                this.updateWidgets();
+            }
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, i, j, k);
     }
 
     @Override
