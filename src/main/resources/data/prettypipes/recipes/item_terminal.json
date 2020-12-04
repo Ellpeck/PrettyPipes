@@ -22,7 +22,7 @@
             "item": "minecraft:chest"
         },
         "D": {
-            "item": "minecraft:diamond_block"
+            "item": "minecraft:diamond"
         }
     },
     "result": {
