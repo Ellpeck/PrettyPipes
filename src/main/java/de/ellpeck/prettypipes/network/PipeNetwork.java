@@ -144,7 +144,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         if (startPipe == null)
             return stack;
         this.startProfile("find_destination");
-        for (BlockPos pipePos : this.getOrderedNetworkNodes(startPipePos)) {
+        List<BlockPos> nodes = this.getOrderedNetworkNodes(startPipePos);
+        for (int i = 0; i < nodes.size(); i++) {
+            BlockPos pipePos = nodes.get(startPipe.getNextNode(nodes, i));
             if (!this.world.isBlockLoaded(pipePos))
                 continue;
             PipeTileEntity pipe = this.getPipe(pipePos);

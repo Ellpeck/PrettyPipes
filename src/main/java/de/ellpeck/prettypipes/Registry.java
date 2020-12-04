@@ -152,6 +152,7 @@ public final class Registry {
         registry.register(new RedstoneModuleItem("redstone_module"));
         registry.register(new FilterIncreaseModuleItem("filter_increase_modifier"));
         registry.registerAll(createTieredModule("crafting_module", CraftingModuleItem::new));
+        registry.registerAll(Arrays.stream(SortingModuleItem.Type.values()).map(t -> new SortingModuleItem(t.name().toLowerCase(Locale.ROOT) + "_sorting_modifier", t)).toArray(Item[]::new));
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))

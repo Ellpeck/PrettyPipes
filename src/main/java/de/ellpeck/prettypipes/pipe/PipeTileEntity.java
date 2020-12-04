@@ -390,6 +390,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return (this.world.getGameTime() + this.workRandomizer.get()) % speed == 0;
     }
 
+    public int getNextNode(List<BlockPos> nodes, int index) {
+        return this.streamModules()
+                .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
+                .filter(Objects::nonNull).findFirst().orElse(index);
+    }
+
     @Override
     public void remove() {
         super.remove();

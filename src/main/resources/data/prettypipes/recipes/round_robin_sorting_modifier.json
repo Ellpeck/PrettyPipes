@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " H ",
+        "RMR",
+        " R "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "H": {
+            "item": "minecraft:arrow"
+        },
+        "M": {
+            "item": "prettypipes:blank_module"
+        }
+    },
+    "result": {
+        "item": "prettypipes:round_robin_sorting_modifier"
+    }
+}
