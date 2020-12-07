@@ -19,7 +19,7 @@
             "item": "minecraft:iron_block"
         },
         "C": {
-            "item": "minecraft:chest"
+            "tag": "forge:chests"
         },
         "D": {
             "item": "minecraft:diamond"

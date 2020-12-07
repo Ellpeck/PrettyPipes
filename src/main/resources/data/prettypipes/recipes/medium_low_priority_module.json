@@ -7,7 +7,7 @@
     ],
     "key": {
         "C": {
-            "item": "minecraft:cobblestone"
+            "tag": "forge:cobblestone"
         },
         "M": {
             "item": "prettypipes:low_low_priority_module"

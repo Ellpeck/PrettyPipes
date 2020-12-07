@@ -10,7 +10,7 @@
             "item": "minecraft:redstone"
         },
         "C": {
-            "item": "minecraft:cobblestone"
+            "tag": "forge:cobblestone"
         },
         "M": {
             "item": "prettypipes:blank_module"
