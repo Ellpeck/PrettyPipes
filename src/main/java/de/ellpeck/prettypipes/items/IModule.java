@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 public interface IModule {
@@ -35,7 +36,7 @@ public interface IModule {
 
     List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile);
 
-    int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack);
+    int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain);
 
     ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack);
 

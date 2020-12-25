@@ -5,6 +5,8 @@ import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.network.NetworkItem;
@@ -87,7 +89,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                     if (amount <= 0 && highestAmount <= 0) {
                         PipeTileEntity pipe = this.getConnectedPipe();
                         if (pipe != null)
-                            amount = PipeNetwork.get(this.world).getCraftableAmount(pipe.getPos(), null, stack, ItemEqualityType.NBT);
+                            amount = PipeNetwork.get(this.world).getCraftableAmount(pipe.getPos(), null, stack, new Stack<>(), ItemEqualityType.NBT);
                     }
                     if (amount > highestAmount) {
                         highestAmount = amount;
@@ -117,7 +119,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         int lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             NetworkItem item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, onItemUnavailable(player), ItemEqualityType.NBT);
+        }, onItemUnavailable(player), new Stack<>(), ItemEqualityType.NBT);
         if (lowestAvailable > 0) {
             // if we're limiting the amount, pretend we only have that amount available
             if (maxAmount < lowestAvailable)
@@ -194,7 +196,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         return remain;
     }
 
-    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, ItemEqualityType... equalityTypes) {
+    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, Stack<IModule> dependencyChain, ItemEqualityType... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // the highest amount we can craft with the items we have
         int lowestAvailable = Integer.MAX_VALUE;
@@ -229,7 +231,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
 
             // check how many craftable items we have and add those on if we need to
             if (available < lowestAvailable) {
-                int craftable = network.getCraftableAmount(tile.getPos(), unavailableConsumer, stack.stack, equalityTypes);
+                int craftable = network.getCraftableAmount(tile.getPos(), unavailableConsumer, stack.stack, dependencyChain, equalityTypes);
                 if (craftable > 0)
                     available += craftable / entry.getValue().intValue();
             }
