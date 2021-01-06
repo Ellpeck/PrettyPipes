@@ -2,19 +2,16 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
+import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
-import net.minecraft.loot.LootContext;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
@@ -25,7 +22,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 
 import java.util.List;
 import java.util.Map;
@@ -56,6 +52,7 @@ public class WrenchItem extends Item {
                     Utility.sendTileEntityToClients(tile);
                 } else {
                     // remove the pipe
+                    PipeBlock.dropItems(world, pos, player);
                     Block.spawnDrops(state, world, pos, tile, null, ItemStack.EMPTY);
                     world.removeBlock(pos, false);
                 }

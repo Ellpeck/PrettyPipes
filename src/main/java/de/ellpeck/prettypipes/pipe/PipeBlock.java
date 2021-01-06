@@ -1,11 +1,9 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.types.Func;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.network.PipeItem;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
@@ -271,14 +269,7 @@ public class PipeBlock extends ContainerBlock {
 
     @Override
     public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
-        if (tile != null) {
-            Utility.dropInventory(tile, tile.modules);
-            for (IPipeItem item : tile.getItems())
-                item.drop(worldIn, item.getContent());
-            if (tile.cover != null)
-                tile.removeCover(player, Hand.MAIN_HAND);
-        }
+        dropItems(worldIn, pos, player);
         super.onBlockHarvested(worldIn, pos, state, player);
     }
 
@@ -304,5 +295,16 @@ public class PipeBlock extends ContainerBlock {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
+    }
+
+    public static void dropItems(World worldIn, BlockPos pos, PlayerEntity player) {
+        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        if (tile != null) {
+            Utility.dropInventory(tile, tile.modules);
+            for (IPipeItem item : tile.getItems())
+                item.drop(worldIn, item.getContent());
+            if (tile.cover != null)
+                tile.removeCover(player, Hand.MAIN_HAND);
+        }
     }
 }
