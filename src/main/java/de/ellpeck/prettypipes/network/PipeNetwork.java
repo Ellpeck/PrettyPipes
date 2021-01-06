@@ -6,6 +6,8 @@ import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
@@ -299,7 +301,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return craftables;
     }
 
-    public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain, ItemEqualityType... equalityTypes) {
         int total = 0;
         for (Pair<BlockPos, ItemStack> pair : this.getAllCraftables(node)) {
             if (!ItemEqualityType.compareItems(pair.getRight(), stack, equalityTypes))
@@ -308,7 +310,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 continue;
             PipeTileEntity pipe = this.getPipe(pair.getLeft());
             if (pipe != null)
-                total += pipe.getCraftableAmount(unavailableConsumer, stack);
+                total += pipe.getCraftableAmount(unavailableConsumer, stack, dependencyChain);
         }
         return total;
     }

@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 public class CraftingModuleItem extends ModuleItem {
@@ -136,7 +137,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
         ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
@@ -147,8 +148,10 @@ public class CraftingModuleItem extends ModuleItem {
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
+                // we can craft this item *in general*, so add us to the dependency chain
+                dependencyChain.push(this);
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, equalityTypes);
+                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, dependencyChain, equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -159,7 +162,7 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
         // check if we can craft the required amount of items
-        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack);
+        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, new Stack<>());
         if (craftableAmount <= 0)
             return stack;
 

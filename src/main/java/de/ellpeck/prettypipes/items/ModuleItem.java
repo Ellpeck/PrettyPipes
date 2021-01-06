@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 public abstract class ModuleItem extends Item implements IModule {
@@ -84,7 +85,7 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain) {
         return 0;
     }
 
