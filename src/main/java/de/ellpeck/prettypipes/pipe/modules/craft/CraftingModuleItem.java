@@ -148,10 +148,12 @@ public class CraftingModuleItem extends ModuleItem {
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
+                // we copy the dependency chain, because we want to pass down the dependencies for this output only
+                Stack<IModule> deps = (Stack<IModule>) dependencyChain.clone();
                 // we can craft this item *in general*, so add us to the dependency chain
-                dependencyChain.push(this);
+                deps.push(this);
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, dependencyChain, equalityTypes);
+                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, deps, equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
