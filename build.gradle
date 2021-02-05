@@ -104,9 +104,12 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25")
 
-    // to test the rf requiring stuff
-    runtimeOnly fg.deobf("curse.maven:powah:3057732")
-    runtimeOnly fg.deobf("curse.maven:lollipop:3057731")
+    // to test the rf requiring and crafting stuff
+    runtimeOnly fg.deobf("curse.maven:powah-352656:3057732")
+    runtimeOnly fg.deobf("curse.maven:lollipop-347954:3057731")
+    runtimeOnly fg.deobf("curse.maven:mcjtylib-233105:3131241")
+    runtimeOnly fg.deobf("curse.maven:rftools-base-326041:3140147")
+    runtimeOnly fg.deobf("curse.maven:rftools-utility-342466:3152948")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..

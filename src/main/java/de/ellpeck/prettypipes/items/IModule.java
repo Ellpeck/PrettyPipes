@@ -36,9 +36,9 @@ public interface IModule {
 
     List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile);
 
-    int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain);
+    int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
 
-    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack);
+    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
 
     Integer getCustomNextNode(ItemStack module, PipeTileEntity tile, List<BlockPos> nodes, int index);
 }

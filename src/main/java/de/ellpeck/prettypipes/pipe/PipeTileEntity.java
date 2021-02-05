@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.items.ModuleItem;
+import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
@@ -307,13 +307,13 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
                 .collect(Collectors.toList());
     }
 
-    public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain) {
+    public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         int total = 0;
         Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
             // make sure we don't factor in recursive dependencies like ingot -> block -> ingot etc.
-            if (!dependencyChain.contains(module.getRight())) {
+            if (dependencyChain.stream().noneMatch(d -> ItemEqualityType.compareItems(module.getLeft(), d, ItemEqualityType.NBT))) {
                 int amount = module.getRight().getCraftableAmount(module.getLeft(), this, unavailableConsumer, stack, dependencyChain);
                 if (amount > 0)
                     total += amount;
@@ -322,11 +322,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return total;
     }
 
-    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         Iterator<Pair<ItemStack, IModule>> modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack);
+            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, dependencyChain);
             if (stack.isEmpty())
                 break;
         }

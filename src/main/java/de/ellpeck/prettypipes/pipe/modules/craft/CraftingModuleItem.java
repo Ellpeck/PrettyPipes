@@ -137,7 +137,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain) {
+    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
         ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
@@ -148,12 +148,8 @@ public class CraftingModuleItem extends ModuleItem {
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
-                // we copy the dependency chain, because we want to pass down the dependencies for this output only
-                Stack<IModule> deps = (Stack<IModule>) dependencyChain.clone();
-                // we can craft this item *in general*, so add us to the dependency chain
-                deps.push(this);
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, deps, equalityTypes);
+                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -162,9 +158,9 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack) {
+    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         // check if we can craft the required amount of items
-        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, new Stack<>());
+        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
             return stack;
 
@@ -183,7 +179,7 @@ public class CraftingModuleItem extends ModuleItem {
                 continue;
             ItemStack copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
-            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, equalityTypes);
+            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 
@@ -228,5 +224,11 @@ public class CraftingModuleItem extends ModuleItem {
                 resultAmount += out.getCount();
         }
         return resultAmount;
+    }
+
+    private static Stack<ItemStack> addDependency(Stack<ItemStack> deps, ItemStack module) {
+        deps = (Stack<ItemStack>) deps.clone();
+        deps.push(module);
+        return deps;
     }
 }

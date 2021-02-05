@@ -196,7 +196,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         return remain;
     }
 
-    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, Stack<IModule> dependencyChain, ItemEqualityType... equalityTypes) {
+    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, Stack<ItemStack> dependencyChain, ItemEqualityType... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // the highest amount we can craft with the items we have
         int lowestAvailable = Integer.MAX_VALUE;

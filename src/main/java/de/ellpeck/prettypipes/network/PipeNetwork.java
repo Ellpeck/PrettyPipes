@@ -6,8 +6,6 @@ import com.google.common.collect.Streams;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
@@ -196,17 +194,17 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
                 return remain;
         }
         // check craftable items
-        return this.requestCraftedItem(destPipe, null, remain, equalityTypes);
+        return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes);
     }
 
-    public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEqualityType... equalityTypes) {
         for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(destPipe)) {
             if (!ItemEqualityType.compareItems(stack, craftable.getRight(), equalityTypes))
                 continue;
             PipeTileEntity pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
                 continue;
-            stack = pipe.craft(destPipe, unavailableConsumer, stack);
+            stack = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
             if (stack.isEmpty())
                 break;
         }
@@ -301,7 +299,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         return craftables;
     }
 
-    public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<IModule> dependencyChain, ItemEqualityType... equalityTypes) {
+    public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEqualityType... equalityTypes) {
         int total = 0;
         for (Pair<BlockPos, ItemStack> pair : this.getAllCraftables(node)) {
             if (!ItemEqualityType.compareItems(pair.getRight(), stack, equalityTypes))

@@ -158,7 +158,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         NetworkItem item = this.networkItems.get(new EquatableItemStack(stack, ItemEqualityType.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, ItemEqualityType.NBT);
+        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEqualityType.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getRight().getCount();
     }
@@ -269,7 +269,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return true;
     }
 
-    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEqualityType... equalityTypes) {
         List<NetworkLock> requests = new ArrayList<>();
         ItemStack remain = stack.copy();
         PipeNetwork network = PipeNetwork.get(world);
@@ -297,7 +297,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
         // check for craftable items
         if (!remain.isEmpty())
-            remain = network.requestCraftedItem(destPipe, unavailableConsumer, remain, equalityTypes);
+            remain = network.requestCraftedItem(destPipe, unavailableConsumer, remain, dependencyChain, equalityTypes);
         return Pair.of(requests, remain);
     }
 
