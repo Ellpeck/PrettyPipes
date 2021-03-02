@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.client.util.ITooltipFlag;
@@ -96,6 +97,11 @@ public abstract class ModuleItem extends Item implements IModule {
 
     @Override
     public Integer getCustomNextNode(ItemStack module, PipeTileEntity tile, List<BlockPos> nodes, int index) {
+        return null;
+    }
+
+    @Override
+    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
         return null;
     }
 }

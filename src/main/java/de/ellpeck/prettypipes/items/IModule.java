@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.items;
 
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
@@ -41,4 +42,6 @@ public interface IModule {
     ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
 
     Integer getCustomNextNode(ItemStack module, PipeTileEntity tile, List<BlockPos> nodes, int index);
+
+    ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile);
 }

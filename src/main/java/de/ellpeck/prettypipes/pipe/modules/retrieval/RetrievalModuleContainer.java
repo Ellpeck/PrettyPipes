@@ -20,8 +20,7 @@ public class RetrievalModuleContainer extends AbstractPipeContainer<RetrievalMod
 
     @Override
     protected void addSlots() {
-        this.filter = new ItemFilter(this.module.filterSlots, this.moduleStack, this.tile);
-        this.filter.canModifyWhitelist = false;
+        this.filter = this.module.getItemFilter(this.moduleStack, this.tile);
         for (Slot slot : this.filter.getSlots((176 - this.module.filterSlots * 18) / 2 + 1, 17 + 32))
             this.addSlot(slot);
     }

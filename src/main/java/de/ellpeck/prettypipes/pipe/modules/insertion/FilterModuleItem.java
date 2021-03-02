@@ -14,7 +14,7 @@ import net.minecraft.item.ItemStack;
 public class FilterModuleItem extends ModuleItem {
 
     public final int filterSlots;
-    public final boolean canPopulateFromInventories;
+    private final boolean canPopulateFromInventories;
 
     public FilterModuleItem(String name, ModuleTier tier) {
         super(name);
@@ -24,7 +24,7 @@ public class FilterModuleItem extends ModuleItem {
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
-        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        ItemFilter filter = this.getItemFilter(module, tile);
         return filter.isAllowed(stack);
     }
 
@@ -41,5 +41,12 @@ public class FilterModuleItem extends ModuleItem {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new FilterModuleContainer(Registry.filterModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    }
+
+    @Override
+    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
+        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        filter.canPopulateFromInventories = this.canPopulateFromInventories;
+        return filter;
     }
 }

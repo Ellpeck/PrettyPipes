@@ -33,7 +33,7 @@ public class ExtractionModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeTileEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        ItemFilter filter = this.getItemFilter(module, tile);
 
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         for (Direction dir : Direction.values()) {
@@ -78,5 +78,10 @@ public class ExtractionModuleItem extends ModuleItem {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new ExtractionModuleContainer(Registry.extractionModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    }
+
+    @Override
+    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
+        return new ItemFilter(this.filterSlots, module, tile);
     }
 }

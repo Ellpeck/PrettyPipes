@@ -35,11 +35,9 @@ public class RetrievalModuleItem extends ModuleItem {
             return;
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
 
-        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
         ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-        filter.isWhitelist = true;
         // loop through filters to see which items to pull
-        for (ItemFilter subFilter : filter.getAllFilters()) {
+        for (ItemFilter subFilter : tile.getFilters()) {
             for (int f = 0; f < subFilter.getSlots(); f++) {
                 ItemStack filtered = subFilter.getStackInSlot(f);
                 if (filtered.isEmpty())
@@ -81,5 +79,13 @@ public class RetrievalModuleItem extends ModuleItem {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new RetrievalModuleContainer(Registry.retrievalModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    }
+
+    @Override
+    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
+        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        filter.canModifyWhitelist = false;
+        filter.isWhitelist = true;
+        return filter;
     }
 }

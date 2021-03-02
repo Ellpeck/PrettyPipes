@@ -5,6 +5,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
@@ -404,6 +405,12 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         return this.streamModules()
                 .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
                 .filter(Objects::nonNull).findFirst().orElse(index);
+    }
+
+    public List<ItemFilter> getFilters() {
+        return this.streamModules()
+                .map(p -> p.getRight().getItemFilter(p.getLeft(), this))
+                .filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     @Override

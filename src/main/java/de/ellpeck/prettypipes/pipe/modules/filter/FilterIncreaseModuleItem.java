@@ -9,7 +9,6 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.items.ItemStackHandler;
 
 public class FilterIncreaseModuleItem extends ModuleItem {
 
@@ -31,5 +30,12 @@ public class FilterIncreaseModuleItem extends ModuleItem {
     @Override
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new FilterIncreaseModuleContainer(Registry.filterIncreaseModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    }
+
+    @Override
+    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
+        ItemFilter filter = new ItemFilter(18, module, tile);
+        filter.canModifyWhitelist = false;
+        return filter;
     }
 }

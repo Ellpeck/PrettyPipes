@@ -5,7 +5,6 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.modules.FilterModifierModuleItem;
-import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleItem;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
@@ -25,7 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ItemFilter extends ItemStackHandler {
 
@@ -80,7 +78,7 @@ public class ItemFilter extends ItemStackHandler {
             this.save();
         } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
-            List<ItemFilter> filters = this.getAllFilters();
+            List<ItemFilter> filters = this.pipe.getFilters();
             for (Direction direction : Direction.values()) {
                 IItemHandler handler = this.pipe.getItemHandler(direction);
                 if (handler == null)
@@ -110,7 +108,7 @@ public class ItemFilter extends ItemStackHandler {
     private boolean isFiltered(ItemStack stack) {
         ItemEqualityType[] types = getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
-        for (ItemStackHandler handler : this.getAllFilters()) {
+        for (ItemStackHandler handler : this.pipe.getFilters()) {
             for (int i = 0; i < handler.getSlots(); i++) {
                 ItemStack filter = handler.getStackInSlot(i);
                 if (filter.isEmpty())
@@ -120,16 +118,6 @@ public class ItemFilter extends ItemStackHandler {
             }
         }
         return false;
-    }
-
-    public List<ItemFilter> getAllFilters() {
-        List<ItemFilter> filters = this.pipe.streamModules()
-                .filter(p -> p.getRight() instanceof FilterIncreaseModuleItem)
-                .map(p -> new ItemFilter(18, p.getLeft(), this.pipe))
-                .collect(Collectors.toList());
-        // add ourselves to the front
-        filters.add(0, this);
-        return filters;
     }
 
     public void save() {
