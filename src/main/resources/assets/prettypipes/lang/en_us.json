@@ -43,7 +43,7 @@
     "info.prettypipes.stack_size_module": "Limits the amount of items that can enter adjacent inventories\nAutomatically prevents over-sending",
     "info.prettypipes.damage_filter_modifier": "Causes any filter slots to filter by item damage",
     "info.prettypipes.nbt_filter_modifier": "Causes any filter slots to filter by item data (NBT)",
-    "info.prettypipes.tag_filter_modifier": "Causes any filter slots to filter by tags\n(Modern equivalent of the Ore Dictionary)",
+    "info.prettypipes.tag_filter_modifier": "Causes any filter slots to filter by tags\nTag can be chosen from items in filter slots",
     "info.prettypipes.mod_filter_modifier": "Causes any filter slots to filter by mod",
     "info.prettypipes.redstone_module": "Allows disabling the pipe with a redstone signal\nWorks for both extraction and retrieval",
     "info.prettypipes.item_terminal": "Allows viewing and requesting all items in a pipe network\nAlso has slots for putting items into the network",

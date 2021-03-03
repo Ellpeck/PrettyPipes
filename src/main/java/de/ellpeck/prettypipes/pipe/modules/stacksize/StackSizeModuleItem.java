@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.pipe.modules.stacksize;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
@@ -51,7 +51,7 @@ public class StackSizeModuleItem extends ModuleItem {
             ItemStack stored = destination.getStackInSlot(i);
             if (stored.isEmpty())
                 continue;
-            if (!ItemEqualityType.compareItems(stored, stack))
+            if (!ItemEquality.compareItems(stored, stack))
                 continue;
             amount += stored.getCount();
             if (amount >= max)

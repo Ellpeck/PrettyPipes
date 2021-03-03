@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
@@ -91,7 +91,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             if (!this.existingRequests.isEmpty()) {
                 NetworkLock request = this.existingRequests.remove();
                 network.resolveNetworkLock(request);
-                network.requestExistingItem(request.location, pipe.getPos(), this.pos, request, request.stack, ItemEqualityType.NBT);
+                network.requestExistingItem(request.location, pipe.getPos(), this.pos, request, request.stack, ItemEquality.NBT);
                 update = true;
             }
         }
@@ -126,7 +126,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         PipeTileEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
-        this.networkItems = this.collectItems(ItemEqualityType.NBT);
+        this.networkItems = this.collectItems(ItemEquality.NBT);
         if (playersToSync.length > 0) {
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
             List<ItemStack> clientCraftables = PipeNetwork.get(this.world).getAllCraftables(pipe.getPos()).stream().map(Pair::getRight).collect(Collectors.toList());
@@ -156,9 +156,9 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
-        NetworkItem item = this.networkItems.get(new EquatableItemStack(stack, ItemEqualityType.NBT));
+        NetworkItem item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEqualityType.NBT);
+        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getRight().getCount();
     }
@@ -170,7 +170,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                 .toArray(PlayerEntity[]::new);
     }
 
-    private Map<EquatableItemStack, NetworkItem> collectItems(ItemEqualityType... equalityTypes) {
+    private Map<EquatableItemStack, NetworkItem> collectItems(ItemEquality... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_collect_items");
         PipeTileEntity pipe = this.getConnectedPipe();
@@ -269,7 +269,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return true;
     }
 
-    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEqualityType... equalityTypes) {
+    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(World world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
         List<NetworkLock> requests = new ArrayList<>();
         ItemStack remain = stack.copy();
         PipeNetwork network = PipeNetwork.get(world);

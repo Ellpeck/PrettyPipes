@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -314,7 +314,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
         while (modules.hasNext()) {
             Pair<ItemStack, IModule> module = modules.next();
             // make sure we don't factor in recursive dependencies like ingot -> block -> ingot etc.
-            if (dependencyChain.stream().noneMatch(d -> ItemEqualityType.compareItems(module.getLeft(), d, ItemEqualityType.NBT))) {
+            if (dependencyChain.stream().noneMatch(d -> ItemEquality.compareItems(module.getLeft(), d, ItemEquality.NBT))) {
                 int amount = module.getRight().getCraftableAmount(module.getLeft(), this, unavailableConsumer, stack, dependencyChain);
                 if (amount > 0)
                     total += amount;

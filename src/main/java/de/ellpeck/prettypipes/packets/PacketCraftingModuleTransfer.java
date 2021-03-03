@@ -1,30 +1,15 @@
 package de.ellpeck.prettypipes.packets;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.misc.FilterSlot;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
-import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class PacketCraftingModuleTransfer {

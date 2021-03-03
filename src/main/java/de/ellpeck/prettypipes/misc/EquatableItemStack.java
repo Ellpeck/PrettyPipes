@@ -8,9 +8,9 @@ import java.util.Objects;
 public class EquatableItemStack {
 
     public final ItemStack stack;
-    public final ItemEqualityType[] equalityTypes;
+    public final ItemEquality[] equalityTypes;
 
-    public EquatableItemStack(ItemStack stack, ItemEqualityType... equalityTypes) {
+    public EquatableItemStack(ItemStack stack, ItemEquality... equalityTypes) {
         this.stack = stack;
         this.equalityTypes = equalityTypes;
     }
@@ -18,7 +18,7 @@ public class EquatableItemStack {
     public boolean equals(Object o) {
         if (o instanceof EquatableItemStack) {
             EquatableItemStack other = (EquatableItemStack) o;
-            return Arrays.equals(this.equalityTypes, other.equalityTypes) && ItemEqualityType.compareItems(this.stack, other.stack, this.equalityTypes);
+            return Arrays.equals(this.equalityTypes, other.equalityTypes) && ItemEquality.compareItems(this.stack, other.stack, this.equalityTypes);
         }
         return false;
     }

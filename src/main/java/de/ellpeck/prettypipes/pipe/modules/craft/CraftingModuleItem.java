@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
@@ -74,7 +74,7 @@ public class CraftingModuleItem extends ModuleItem {
         if (!tile.craftIngredientRequests.isEmpty()) {
             network.startProfile("crafting_ingredients");
             NetworkLock request = tile.craftIngredientRequests.peek();
-            ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
+            ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
                 ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
@@ -96,7 +96,7 @@ public class CraftingModuleItem extends ModuleItem {
         if (!tile.craftResultRequests.isEmpty()) {
             network.startProfile("crafting_results");
             List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-            ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
+            ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             for (Pair<BlockPos, ItemStack> request : tile.craftResultRequests) {
                 ItemStack remain = request.getRight().copy();
                 PipeTileEntity destPipe = network.getPipe(request.getLeft());
@@ -140,14 +140,14 @@ public class CraftingModuleItem extends ModuleItem {
     public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
+        ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         ItemStackHandler input = this.getInput(module);
 
         int craftable = 0;
         ItemStackHandler output = this.getOutput(module);
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack out = output.getStackInSlot(i);
-            if (!out.isEmpty() && ItemEqualityType.compareItems(out, stack, equalityTypes)) {
+            if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
                 int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
@@ -167,7 +167,7 @@ public class CraftingModuleItem extends ModuleItem {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
 
-        ItemEqualityType[] equalityTypes = ItemFilter.getEqualityTypes(tile);
+        ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
         int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
         int toCraft = Math.min(craftableAmount, requiredCrafts);
@@ -215,12 +215,12 @@ public class CraftingModuleItem extends ModuleItem {
             tag.put("output", output.serializeNBT());
     }
 
-    private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEqualityType... equalityTypes) {
+    private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
         ItemStackHandler output = this.getOutput(module);
         int resultAmount = 0;
         for (int i = 0; i < output.getSlots(); i++) {
             ItemStack out = output.getStackInSlot(i);
-            if (ItemEqualityType.compareItems(stack, out, equalityTypes))
+            if (ItemEquality.compareItems(stack, out, equalityTypes))
                 resultAmount += out.getCount();
         }
         return resultAmount;

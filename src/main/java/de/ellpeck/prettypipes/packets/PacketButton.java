@@ -1,12 +1,13 @@
 package de.ellpeck.prettypipes.packets;
 
-import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
@@ -118,6 +119,10 @@ public class PacketButton {
         CANCEL_CRAFTING((pos, data, player) -> {
             ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos);
             tile.cancelCrafting();
+        }),
+        TAG_FILTER((pos, data, player) -> {
+            FilterModifierModuleContainer container = (FilterModifierModuleContainer) player.openContainer;
+            FilterModifierModuleItem.setFilterTag(container.moduleStack, container.getTags().get(data[0]));
         });
 
         public final TriConsumer<BlockPos, int[], PlayerEntity> action;

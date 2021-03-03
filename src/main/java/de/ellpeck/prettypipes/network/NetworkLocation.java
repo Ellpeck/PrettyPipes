@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -33,19 +33,19 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
         this.deserializeNBT(nbt);
     }
 
-    public List<Integer> getStackSlots(World world, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public List<Integer> getStackSlots(World world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return Collections.emptyList();
         return this.getItems(world).entrySet().stream()
-                .filter(kv -> ItemEqualityType.compareItems(kv.getValue(), stack, equalityTypes) && this.canExtract(world, kv.getKey()))
+                .filter(kv -> ItemEquality.compareItems(kv.getValue(), stack, equalityTypes) && this.canExtract(world, kv.getKey()))
                 .map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
-    public int getItemAmount(World world, ItemStack stack, ItemEqualityType... equalityTypes) {
+    public int getItemAmount(World world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return 0;
         return this.getItems(world).entrySet().stream()
-                .filter(kv -> ItemEqualityType.compareItems(stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
+                .filter(kv -> ItemEquality.compareItems(stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
                 .mapToInt(kv -> kv.getValue().getCount()).sum();
     }
 

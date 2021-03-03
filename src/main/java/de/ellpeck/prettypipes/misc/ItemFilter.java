@@ -4,7 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import de.ellpeck.prettypipes.pipe.modules.FilterModifierModuleItem;
+import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
@@ -19,7 +19,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -106,14 +105,14 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
-        ItemEqualityType[] types = getEqualityTypes(this.pipe);
+        ItemEquality[] types = getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
         for (ItemStackHandler handler : this.pipe.getFilters()) {
             for (int i = 0; i < handler.getSlots(); i++) {
                 ItemStack filter = handler.getStackInSlot(i);
                 if (filter.isEmpty())
                     continue;
-                if (ItemEqualityType.compareItems(stack, filter, types))
+                if (ItemEquality.compareItems(stack, filter, types))
                     return true;
             }
         }
@@ -147,12 +146,11 @@ public class ItemFilter extends ItemStackHandler {
         this.modified = true;
     }
 
-    public static ItemEqualityType[] getEqualityTypes(PipeTileEntity pipe) {
+    public static ItemEquality[] getEqualityTypes(PipeTileEntity pipe) {
         return pipe.streamModules()
-                .map(Pair::getRight)
-                .filter(m -> m instanceof FilterModifierModuleItem)
-                .map(m -> ((FilterModifierModuleItem) m).type)
-                .toArray(ItemEqualityType[]::new);
+                .filter(m -> m.getRight() instanceof FilterModifierModuleItem)
+                .map(m -> ((FilterModifierModuleItem) m.getRight()).getEqualityType(m.getLeft()))
+                .toArray(ItemEquality[]::new);
     }
 
     public interface IFilteredContainer {

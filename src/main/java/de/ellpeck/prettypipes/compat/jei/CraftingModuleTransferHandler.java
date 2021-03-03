@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-import de.ellpeck.prettypipes.misc.ItemEqualityType;
+import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.packets.PacketCraftingModuleTransfer;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
@@ -35,7 +35,7 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
             ItemStack remain = allIngredients.get(0).copy();
             List<ItemStack> toAdd = entry.getValue().isInput() ? inputs : outputs;
             for (ItemStack stack : toAdd) {
-                if (ItemEqualityType.compareItems(stack, remain)) {
+                if (ItemEquality.compareItems(stack, remain)) {
                     int fits = Math.min(stack.getMaxStackSize() - stack.getCount(), remain.getCount());
                     stack.grow(fits);
                     remain.shrink(fits);
