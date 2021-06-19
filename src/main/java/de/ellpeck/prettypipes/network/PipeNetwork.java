@@ -254,8 +254,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     public void uncachePipe(BlockPos pos) {
-        if (this.tileCache.remove(pos) != null)
-            System.out.println("Uncaching pipe at " + pos);
+        this.tileCache.remove(pos);
     }
 
     public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, ItemEquality... equalityTypes) {
