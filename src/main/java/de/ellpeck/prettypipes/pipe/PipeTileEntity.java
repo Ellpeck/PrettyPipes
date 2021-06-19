@@ -90,6 +90,11 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     }
 
     @Override
+    public void onChunkUnloaded() {
+        PipeNetwork.get(this.world).uncachePipe(this.pos);
+    }
+
+    @Override
     public CompoundNBT write(CompoundNBT compound) {
         compound.put("modules", this.modules.serializeNBT());
         compound.putInt("module_drop_check", this.moduleDropCheck);
