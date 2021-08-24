@@ -59,6 +59,13 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     @Override
     protected void init() {
         super.init();
+
+        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, new StringTextComponent("")));
+        this.search.setEnableBackgroundDrawing(false);
+        this.lastSearchText = "";
+        if (this.items != null)
+            this.updateWidgets();
+
         this.plusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 + 12, this.guiTop + 103, 12, 12, new StringTextComponent("+"), button -> {
             int modifier = requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
@@ -109,11 +116,6 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             for (int x = 0; x < 9; x++)
                 this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
         }
-        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, new StringTextComponent("")));
-        this.search.setEnableBackgroundDrawing(false);
-        this.lastSearchText = "";
-        if (this.items != null)
-            this.updateWidgets();
     }
 
     protected int getXOffset() {
@@ -159,6 +161,11 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
         }
         if (button == 0)
             this.isScrolling = false;
+        else if (button == 1 && mouseX >= this.search.x && mouseX <= this.search.x + this.search.getWidth() && mouseY >= this.search.y && mouseY <= this.search.y + 8) {
+            //clear text from search field when letting go of right mouse button within search field
+            this.search.setText("");
+            return true;
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
