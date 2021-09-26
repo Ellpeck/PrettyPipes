@@ -112,6 +112,18 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         this.lazyThis.invalidate();
     }
 
+    public String getInvalidTerminalReason() {
+        PipeNetwork network = PipeNetwork.get(this.world);
+        long pipes = Arrays.stream(Direction.values())
+                .map(d -> network.getPipe(this.pos.offset(d)))
+                .filter(Objects::nonNull).count();
+        if (pipes <= 0)
+            return "info." + PrettyPipes.ID + ".no_pipe_connected";
+        if (pipes > 1)
+            return "info." + PrettyPipes.ID + ".too_many_pipes_connected";
+        return null;
+    }
+
     public PipeTileEntity getConnectedPipe() {
         PipeNetwork network = PipeNetwork.get(this.world);
         for (Direction dir : Direction.values()) {
