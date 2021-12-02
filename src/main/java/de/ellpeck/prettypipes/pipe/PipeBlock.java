@@ -33,7 +33,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.network.NetworkHooks;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -60,31 +59,31 @@ public class PipeBlock extends BaseEntityBlock {
             .build();
 
     static {
-        for (Direction dir : Direction.values())
+        for (var dir : Direction.values())
             DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
     }
 
     public PipeBlock() {
         super(Block.Properties.of(Material.STONE).strength(2).sound(SoundType.STONE).noOcclusion());
 
-        BlockState state = this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false);
-        for (EnumProperty<ConnectionType> prop : DIRECTIONS.values())
+        var state = this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false);
+        for (var prop : DIRECTIONS.values())
             state = state.setValue(prop, ConnectionType.DISCONNECTED);
         this.registerDefaultState(state);
     }
 
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
-        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
+        var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile == null)
             return InteractionResult.PASS;
         if (!tile.canHaveModules())
             return InteractionResult.PASS;
-        ItemStack stack = player.getItemInHand(handIn);
+        var stack = player.getItemInHand(handIn);
         if (stack.getItem() instanceof IModule) {
-            ItemStack copy = stack.copy();
+            var copy = stack.copy();
             copy.setCount(1);
-            ItemStack remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
+            var remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
             if (remain.isEmpty()) {
                 stack.shrink(1);
                 return InteractionResult.SUCCESS;
@@ -110,7 +109,7 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-        BlockState newState = this.createState(worldIn, pos, state);
+        var newState = this.createState(worldIn, pos, state);
         if (newState != state) {
             worldIn.setBlockAndUpdate(pos, newState);
             onStateChanged(worldIn, pos, newState);
@@ -144,7 +143,7 @@ public class PipeBlock extends BaseEntityBlock {
     public VoxelShape getCollisionShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), COLL_SHAPE_CACHE, s -> {
             // make the shape a bit higher so we can jump up onto a higher block
-            MutableObject<VoxelShape> newShape = new MutableObject<>(Shapes.empty());
+            var newShape = new MutableObject<VoxelShape>(Shapes.empty());
             s.forAllBoxes((x1, y1, z1, x2, y2, z2) -> newShape.setValue(Shapes.join(Shapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), BooleanOp.OR)));
             return newShape.getValue().optimize();
         });
@@ -153,7 +152,7 @@ public class PipeBlock extends BaseEntityBlock {
     private VoxelShape cacheAndGetShape(BlockState state, BlockGetter worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
         VoxelShape coverShape = null;
         BlockState cover = null;
-        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
+        var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile != null && tile.cover != null) {
             cover = tile.cover;
             // try catch since the block might expect to find itself at the position
@@ -162,11 +161,11 @@ public class PipeBlock extends BaseEntityBlock {
             } catch (Exception ignored) {
             }
         }
-        Pair<BlockState, BlockState> key = Pair.of(state, cover);
-        VoxelShape shape = cache.get(key);
+        var key = Pair.of(state, cover);
+        var shape = cache.get(key);
         if (shape == null) {
             shape = CENTER_SHAPE;
-            for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
+            for (var entry : DIRECTIONS.entrySet()) {
                 if (state.getValue(entry.getValue()).isConnected())
                     shape = Shapes.or(shape, DIR_SHAPES.get(entry.getKey()));
             }
@@ -180,14 +179,14 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     private BlockState createState(Level world, BlockPos pos, BlockState curr) {
-        BlockState state = this.defaultBlockState();
-        FluidState fluid = world.getFluidState(pos);
+        var state = this.defaultBlockState();
+        var fluid = world.getFluidState(pos);
         if (fluid.is(FluidTags.WATER) && fluid.getAmount() == 8)
             state = state.setValue(BlockStateProperties.WATERLOGGED, true);
 
-        for (Direction dir : Direction.values()) {
-            EnumProperty<ConnectionType> prop = DIRECTIONS.get(dir);
-            ConnectionType type = this.getConnectionType(world, pos, dir, state);
+        for (var dir : Direction.values()) {
+            var prop = DIRECTIONS.get(dir);
+            var type = this.getConnectionType(world, pos, dir, state);
             // don't reconnect on blocked faces
             if (type.isConnected() && curr.getValue(prop) == ConnectionType.BLOCKED)
                 type = ConnectionType.BLOCKED;
@@ -197,23 +196,23 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState state) {
-        BlockPos offset = pos.relative(direction);
+        var offset = pos.relative(direction);
         if (!world.isLoaded(offset))
             return ConnectionType.DISCONNECTED;
-        Direction opposite = direction.getOpposite();
-        BlockEntity tile = world.getBlockEntity(offset);
+        var opposite = direction.getOpposite();
+        var tile = world.getBlockEntity(offset);
         if (tile != null) {
-            IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
+            var connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
             if (connectable != null)
                 return connectable.getConnectionType(pos, direction);
-            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, opposite).orElse(null);
+            var handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, opposite).orElse(null);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
-        IItemHandler blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
+        var blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
         if (blockHandler != null)
             return ConnectionType.CONNECTED;
-        BlockState offState = world.getBlockState(offset);
+        var offState = world.getBlockState(offset);
         if (hasLegsTo(world, offState, offset, direction)) {
             if (DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
@@ -231,19 +230,19 @@ public class PipeBlock extends BaseEntityBlock {
 
     public static void onStateChanged(Level world, BlockPos pos, BlockState newState) {
         // wait a few ticks before checking if we have to drop our modules, so that things like iron -> gold chest work
-        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
+        var tile = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
         if (tile != null)
             tile.moduleDropCheck = 5;
 
-        PipeNetwork network = PipeNetwork.get(world);
-        int connections = 0;
-        boolean force = false;
-        for (Direction dir : Direction.values()) {
-            ConnectionType value = newState.getValue(DIRECTIONS.get(dir));
+        var network = PipeNetwork.get(world);
+        var connections = 0;
+        var force = false;
+        for (var dir : Direction.values()) {
+            var value = newState.getValue(DIRECTIONS.get(dir));
             if (!value.isConnected())
                 continue;
             connections++;
-            BlockState otherState = world.getBlockState(pos.relative(dir));
+            var otherState = world.getBlockState(pos.relative(dir));
             // force a node if we're connecting to a different block (inventory etc.)
             if (otherState.getBlock() != newState.getBlock()) {
                 force = true;
@@ -261,7 +260,7 @@ public class PipeBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            PipeNetwork network = PipeNetwork.get(worldIn);
+            var network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
             super.onRemove(state, worldIn, pos, newState, isMoving);
@@ -281,7 +280,7 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos) {
-        PipeBlockEntity pipe = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
+        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
         if (pipe == null)
             return 0;
         return Math.min(15, pipe.getItems().size());
@@ -290,7 +289,7 @@ public class PipeBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new PipeBlockEntity();
+        return new PipeBlockEntity(Registry.pipeTileEntity, pos, state);
     }
 
     @Override
@@ -299,10 +298,10 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     public static void dropItems(Level worldIn, BlockPos pos, Player player) {
-        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
+        var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile != null) {
             Utility.dropInventory(tile, tile.modules);
-            for (IPipeItem item : tile.getItems())
+            for (var item : tile.getItems())
                 item.drop(worldIn, item.getContent());
             if (tile.cover != null)
                 tile.removeCover(player, InteractionHand.MAIN_HAND);

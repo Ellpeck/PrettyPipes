@@ -1,30 +1,22 @@
 package de.ellpeck.prettypipes.pipe.containers;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
-import net.minecraft.client.audio.SimpleSound;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Widget;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.ContainerScreen;
-import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Slot;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.items.SlotItemHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,10 +85,9 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             tab.draw(matrix);
 
         // draw the slots since we're using a blank ui
-        for (Slot slot : this.container.inventorySlots) {
-            if (slot.inventory == this.playerInventory)
-                continue;
-            this.blit(matrix, this.guiLeft + slot.xPos - 1, this.guiTop + slot.yPos - 1, 176, 62, 18, 18);
+        for (Slot slot : this.menu.slots) {
+            if (slot instanceof SlotItemHandler)
+                this.blit(matrix, this.leftPos + slot.x - 1, this.topPos + slot.y - 1, 176, 62, 18, 18);
         }
     }
 
@@ -112,12 +103,12 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     private void initTabs() {
         this.tabs.clear();
         this.tabs.add(new Tab(new ItemStack(Registry.pipeBlock), 0, -1));
-        for (int i = 0; i < this.container.tile.modules.getSlots(); i++) {
-            ItemStack stack = this.container.tile.modules.getStackInSlot(i);
+        for (int i = 0; i < this.menu.tile.modules.getSlots(); i++) {
+            ItemStack stack = this.menu.tile.modules.getStackInSlot(i);
             if (stack.isEmpty())
                 continue;
             IModule module = (IModule) stack.getItem();
-            if (module.hasContainer(stack, this.container.tile))
+            if (module.hasContainer(stack, this.menu.tile))
                 this.tabs.add(new Tab(stack, this.tabs.size(), i));
         }
     }
@@ -156,7 +147,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
         private void drawForeground(PoseStack matrix, int mouseX, int mouseY) {
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return;
-            AbstractPipeGui.this.renderTooltip(matrix, this.moduleStack.getDisplayName(), mouseX - AbstractPipeGui.this.guiLeft, mouseY - AbstractPipeGui.this.guiTop);
+            AbstractPipeGui.this.renderTooltip(matrix, this.moduleStack.getDisplayName(), mouseX - AbstractPipeGui.this.leftPos, mouseY - AbstractPipeGui.this.topPos);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

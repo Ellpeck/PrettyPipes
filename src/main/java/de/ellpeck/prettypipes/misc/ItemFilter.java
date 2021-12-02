@@ -9,6 +9,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -42,7 +44,7 @@ public class ItemFilter extends ItemStackHandler {
 
     public List<Slot> getSlots(int x, int y) {
         List<Slot> slots = new ArrayList<>();
-        for (int i = 0; i < this.getSlots(); i++)
+        for (var i = 0; i < this.getSlots(); i++)
             slots.add(new FilterSlot(this, i, x + i % 9 * 18, y + i / 9 * 18, true));
         return slots;
     }
@@ -51,14 +53,14 @@ public class ItemFilter extends ItemStackHandler {
     public List<Widget> getButtons(Screen gui, int x, int y) {
         List<Widget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
-            Supplier<TranslatableComponent> whitelistText = () -> new TranslatableComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
+            var whitelistText = (Supplier<TranslatableComponent>) () -> new TranslatableComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
             buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
-                PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
+                PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
                 button.setMessage(whitelistText.get());
             }));
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+            buttons.add(new Button(x + 72, y, 70, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
                 @Override
                 public void renderToolTip(PoseStack matrix, int x, int y) {
                     gui.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
@@ -75,19 +77,19 @@ public class ItemFilter extends ItemStackHandler {
             this.save();
         } else if (id == 1 && this.canPopulateFromInventories) {
             // populate filter from inventories
-            List<ItemFilter> filters = this.pipe.getFilters();
-            for (Direction direction : Direction.values()) {
-                IItemHandler handler = this.pipe.getItemHandler(direction);
+            var filters = this.pipe.getFilters();
+            for (var direction : Direction.values()) {
+                var handler = this.pipe.getItemHandler(direction);
                 if (handler == null)
                     continue;
-                for (int i = 0; i < handler.getSlots(); i++) {
-                    ItemStack stack = handler.getStackInSlot(i);
+                for (var i = 0; i < handler.getSlots(); i++) {
+                    var stack = handler.getStackInSlot(i);
                     if (stack.isEmpty() || this.isFiltered(stack))
                         continue;
-                    ItemStack copy = stack.copy();
+                    var copy = stack.copy();
                     copy.setCount(1);
                     // try inserting into ourselves and any filter increase modifiers
-                    for (ItemFilter filter : filters) {
+                    for (var filter : filters) {
                         if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty()) {
                             filter.save();
                             break;
@@ -103,11 +105,11 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
-        ItemEquality[] types = getEqualityTypes(this.pipe);
+        var types = getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
         for (ItemStackHandler handler : this.pipe.getFilters()) {
-            for (int i = 0; i < handler.getSlots(); i++) {
-                ItemStack filter = handler.getStackInSlot(i);
+            for (var i = 0; i < handler.getSlots(); i++) {
+                var filter = handler.getStackInSlot(i);
                 if (filter.isEmpty())
                     continue;
                 if (ItemEquality.compareItems(stack, filter, types))
@@ -126,7 +128,7 @@ public class ItemFilter extends ItemStackHandler {
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag nbt = super.serializeNBT();
+        var nbt = super.serializeNBT();
         if (this.canModifyWhitelist)
             nbt.putBoolean("whitelist", this.isWhitelist);
         return nbt;
@@ -152,6 +154,7 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     public interface IFilteredContainer {
+
         ItemFilter getFilter();
     }
 }

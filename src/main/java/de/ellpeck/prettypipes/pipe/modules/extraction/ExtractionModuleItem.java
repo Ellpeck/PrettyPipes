@@ -8,11 +8,10 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.Direction;
-import net.minecraftforge.items.IItemHandler;
 
 public class ExtractionModuleItem extends ModuleItem {
 
@@ -33,20 +32,20 @@ public class ExtractionModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        ItemFilter filter = this.getItemFilter(module, tile);
+        var filter = this.getItemFilter(module, tile);
 
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
-        for (Direction dir : Direction.values()) {
-            IItemHandler handler = tile.getItemHandler(dir);
+        var network = PipeNetwork.get(tile.getLevel());
+        for (var dir : Direction.values()) {
+            var handler = tile.getItemHandler(dir);
             if (handler == null)
                 continue;
-            for (int j = 0; j < handler.getSlots(); j++) {
-                ItemStack stack = handler.extractItem(j, this.maxExtraction, true);
+            for (var j = 0; j < handler.getSlots(); j++) {
+                var stack = handler.extractItem(j, this.maxExtraction, true);
                 if (stack.isEmpty())
                     continue;
                 if (!filter.isAllowed(stack))
                     continue;
-                ItemStack remain = network.routeItem(tile.getPos(), tile.getPos().offset(dir), stack, this.preventOversending);
+                var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), stack, this.preventOversending);
                 if (remain.getCount() != stack.getCount()) {
                     handler.extractItem(j, stack.getCount() - remain.getCount(), false);
                     return;
@@ -76,8 +75,8 @@ public class ExtractionModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new ExtractionModuleContainer(Registry.extractionModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new ExtractionModuleContainer(Registry.extractionModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 
     @Override

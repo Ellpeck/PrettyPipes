@@ -7,10 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.*;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -53,7 +50,7 @@ public final class Utility {
         return Direction.fromNormal(diff.getX(), diff.getY(), diff.getZ());
     }
 
-    public static void addTooltip(String name, List<MutableComponent> tooltip) {
+    public static void addTooltip(String name, List<Component> tooltip) {
         if (Screen.hasShiftDown()) {
             var content = I18n.get("info." + PrettyPipes.ID + "." + name).split("\n");
             for (var s : content)

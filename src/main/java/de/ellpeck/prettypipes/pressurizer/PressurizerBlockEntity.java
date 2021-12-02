@@ -2,29 +2,23 @@ package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.tileentity.ITickableTileEntity;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -33,15 +27,15 @@ import net.minecraftforge.energy.IEnergyStorage;
 
 import javax.annotation.Nullable;
 
-public class PressurizerBlockEntity extends BlockEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
+public class PressurizerBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable {
 
     private final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
     private final LazyOptional<IEnergyStorage> lazyStorage = LazyOptional.of(() -> this.storage);
     private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
     private int lastEnergy;
 
-    public PressurizerBlockEntity() {
-        super(Registry.pressurizerTileEntity);
+    public PressurizerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
     }
 
     public boolean pressurizeItem(ItemStack stack, boolean simulate) {
@@ -62,41 +56,41 @@ public class PressurizerBlockEntity extends BlockEntity implements INamedContain
     }
 
     @Override
-    public CompoundTag write(CompoundTag compound) {
+    public CompoundTag save(CompoundTag compound) {
         compound.putInt("energy", this.getEnergy());
-        return super.write(compound);
+        return super.save(compound);
     }
 
     @Override
-    public void read(BlockState state, CompoundTag nbt) {
+    public void load(CompoundTag nbt) {
         this.storage.setEnergyStored(nbt.getInt("energy"));
-        super.read(state, nbt);
+        super.load(nbt);
     }
 
     @Override
     public CompoundTag getUpdateTag() {
-        return this.write(new CompoundTag());
+        return this.save(new CompoundTag());
     }
 
     @Override
-    public void handleUpdateTag(BlockState state, CompoundTag tag) {
-        this.read(state, tag);
+    public void handleUpdateTag(CompoundTag tag) {
+        this.load(tag);
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
-        this.read(this.getBlockState(), pkt.getNbtCompound());
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        this.load(pkt.getTag());
     }
 
     @Override
-    public ITextComponent getDisplayName() {
-        return new TranslationTextComponent("container." + PrettyPipes.ID + ".pressurizer");
+    public Component getDisplayName() {
+        return new TranslatableComponent("container." + PrettyPipes.ID + ".pressurizer");
     }
 
     @Nullable
     @Override
-    public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
-        return new PressurizerContainer(Registry.pressurizerContainer, window, player, this.pos);
+    public AbstractContainerMenu createMenu(int window, Inventory inv, Player player) {
+        return new PressurizerContainer(Registry.pressurizerContainer, window, player, this.worldPosition);
     }
 
     @Override
@@ -111,13 +105,14 @@ public class PressurizerBlockEntity extends BlockEntity implements INamedContain
     }
 
     @Override
-    public void remove() {
-        super.remove();
+    public void setRemoved() {
+        super.setRemoved();
         this.lazyStorage.invalidate();
         this.lazyThis.invalidate();
     }
 
-    @Override
+    // TODO tick
+    /*@Override
     public void tick() {
         if (this.world.isRemote)
             return;
@@ -141,7 +136,7 @@ public class PressurizerBlockEntity extends BlockEntity implements INamedContain
             this.lastEnergy = this.storage.getEnergyStored();
             Utility.sendBlockEntityToClients(this);
         }
-    }
+    }*/
 
     @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
