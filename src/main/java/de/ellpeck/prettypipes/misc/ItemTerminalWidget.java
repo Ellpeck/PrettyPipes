@@ -78,6 +78,6 @@ public class ItemTerminalWidget extends AbstractWidget {
 
     @Override
     public void updateNarration(NarrationElementOutput output) {
-        // TODO narration
+        this.defaultButtonNarrationText(output);
     }
 }

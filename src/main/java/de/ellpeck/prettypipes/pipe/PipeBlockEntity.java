@@ -28,6 +28,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -142,52 +143,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
         this.load(pkt.getTag());
     }
-
-    // TODO tick
-  /*  @Override
-    public void tick() {
-        // invalidate our pressurizer reference if it was removed
-        if (this.pressurizer != null && this.pressurizer.isRemoved())
-            this.pressurizer = null;
-
-        if (!this.world.isAreaLoaded(this.pos, 1))
-            return;
-        IProfiler profiler = this.world.getProfiler();
-
-        if (!this.world.isRemote) {
-            // drop modules here to give a bit of time for blocks to update (iron -> gold chest etc.)
-            if (this.moduleDropCheck > 0) {
-                this.moduleDropCheck--;
-                if (this.moduleDropCheck <= 0 && !this.canHaveModules())
-                    Utility.dropInventory(this, this.modules);
-            }
-
-            profiler.startSection("ticking_modules");
-            var prio = 0;
-            var modules = this.streamModules().iterator();
-            while (modules.hasNext()) {
-                var module = modules.next();
-                module.getRight().tick(module.getLeft(), this);
-                prio += module.getRight().getPriority(module.getLeft(), this);
-            }
-            if (prio != this.priority) {
-                this.priority = prio;
-                // clear the cache so that it's reevaluated based on priority
-                PipeNetwork.get(this.world).clearDestinationCache(this.pos);
-            }
-            profiler.endSection();
-        }
-
-        profiler.startSection("ticking_items");
-        var items = this.getItems();
-        for (var i = items.size() - 1; i >= 0; i--)
-            items.get(i).updateInPipe(this);
-        if (items.size() != this.lastItemAmount) {
-            this.lastItemAmount = items.size();
-            this.world.updateComparatorOutputLevel(this.pos, this.getBlockState().getBlock());
-        }
-        profiler.endSection();
-    }*/
 
     public List<IPipeItem> getItems() {
         if (this.items == null)
@@ -453,4 +408,49 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             return ConnectionType.BLOCKED;
         return ConnectionType.CONNECTED;
     }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, PipeBlockEntity pipe) {
+        // invalidate our pressurizer reference if it was removed
+        if (pipe.pressurizer != null && pipe.pressurizer.isRemoved())
+            pipe.pressurizer = null;
+
+        if (!pipe.level.isAreaLoaded(pipe.worldPosition, 1))
+            return;
+        var profiler = pipe.level.getProfiler();
+
+        if (!pipe.level.isClientSide) {
+            // drop modules here to give a bit of time for blocks to update (iron -> gold chest etc.)
+            if (pipe.moduleDropCheck > 0) {
+                pipe.moduleDropCheck--;
+                if (pipe.moduleDropCheck <= 0 && !pipe.canHaveModules())
+                    Utility.dropInventory(pipe, pipe.modules);
+            }
+
+            profiler.push("ticking_modules");
+            var prio = 0;
+            var modules = pipe.streamModules().iterator();
+            while (modules.hasNext()) {
+                var module = modules.next();
+                module.getRight().tick(module.getLeft(), pipe);
+                prio += module.getRight().getPriority(module.getLeft(), pipe);
+            }
+            if (prio != pipe.priority) {
+                pipe.priority = prio;
+                // clear the cache so that it's reevaluated based on priority
+                PipeNetwork.get(pipe.level).clearDestinationCache(pipe.worldPosition);
+            }
+            profiler.pop();
+        }
+
+        profiler.push("ticking_items");
+        var items = pipe.getItems();
+        for (var i = items.size() - 1; i >= 0; i--)
+            items.get(i).updateInPipe(pipe);
+        if (items.size() != pipe.lastItemAmount) {
+            pipe.lastItemAmount = items.size();
+            pipe.level.updateNeighbourForOutputSignal(pipe.worldPosition, pipe.getBlockState().getBlock());
+        }
+        profiler.pop();
+    }
+
 }

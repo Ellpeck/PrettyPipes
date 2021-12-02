@@ -64,44 +64,42 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         this(Registry.itemTerminalBlockEntity, pos, state);
     }
 
-    // TODO tick
-/*    @Override
-    public void tick() {
-        if (this.level.isRemote)
+    public static void tick(Level level, BlockPos pos, BlockState state, ItemTerminalBlockEntity terminal) {
+        if (terminal.level.isClientSide)
             return;
-        PipeNetwork network = PipeNetwork.get(this.level);
-        PipeBlockEntity pipe = this.getConnectedPipe();
+        var network = PipeNetwork.get(terminal.level);
+        var pipe = terminal.getConnectedPipe();
         if (pipe == null)
             return;
 
-        boolean update = false;
-        int interval = pipe.pressurizer != null ? 2 : 10;
-        if (this.level.getGameTime() % interval == 0) {
-            for (int i = 6; i < 12; i++) {
-                ItemStack extracted = this.items.extractItem(i, Integer.MAX_VALUE, true);
+        var update = false;
+        var interval = pipe.pressurizer != null ? 2 : 10;
+        if (terminal.level.getGameTime() % interval == 0) {
+            for (var i = 6; i < 12; i++) {
+                var extracted = terminal.items.extractItem(i, Integer.MAX_VALUE, true);
                 if (extracted.isEmpty())
                     continue;
-                ItemStack remain = network.routeItem(pipe.getPos(), this.pos, extracted, true);
+                var remain = network.routeItem(pipe.getBlockPos(), terminal.getBlockPos(), extracted, true);
                 if (remain.getCount() == extracted.getCount())
                     continue;
-                this.items.extractItem(i, extracted.getCount() - remain.getCount(), false);
+                terminal.items.extractItem(i, extracted.getCount() - remain.getCount(), false);
                 break;
             }
 
-            if (!this.existingRequests.isEmpty()) {
-                NetworkLock request = this.existingRequests.remove();
+            if (!terminal.existingRequests.isEmpty()) {
+                var request = terminal.existingRequests.remove();
                 network.resolveNetworkLock(request);
-                network.requestExistingItem(request.location, pipe.getPos(), this.pos, request, request.stack, ItemEquality.NBT);
+                network.requestExistingItem(request.location, pipe.getBlockPos(), terminal.getBlockPos(), request, request.stack, ItemEquality.NBT);
                 update = true;
             }
         }
 
-        if (this.level.getGameTime() % 100 == 0 || update) {
-            PlayerEntity[] lookingPlayers = this.getLookingPlayers();
+        if (terminal.level.getGameTime() % 100 == 0 || update) {
+            var lookingPlayers = terminal.getLookingPlayers();
             if (lookingPlayers.length > 0)
-                this.updateItems(lookingPlayers);
+                terminal.updateItems(lookingPlayers);
         }
-    }*/
+    }
 
     @Override
     public void setRemoved() {

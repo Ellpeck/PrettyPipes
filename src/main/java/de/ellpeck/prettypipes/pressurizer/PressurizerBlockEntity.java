@@ -2,6 +2,8 @@ package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import net.minecraft.core.BlockPos;
@@ -16,6 +18,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -110,36 +113,32 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
         this.lazyThis.invalidate();
     }
 
-    // TODO tick
-    /*@Override
-    public void tick() {
-        if (this.world.isRemote)
-            return;
+    @Override
+    public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
+        return ConnectionType.CONNECTED;
+    }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, PressurizerBlockEntity pressurizer) {
         // notify pipes in network about us
-        if (this.world.getGameTime() % 10 == 0) {
-            PipeNetwork network = PipeNetwork.get(this.world);
-            for (Direction dir : Direction.values()) {
-                BlockPos offset = this.pos.offset(dir);
-                for (BlockPos node : network.getOrderedNetworkNodes(offset)) {
-                    if (!this.world.isBlockLoaded(node))
+        if (pressurizer.level.getGameTime() % 10 == 0) {
+            var network = PipeNetwork.get(pressurizer.level);
+            for (var dir : Direction.values()) {
+                var offset = pressurizer.worldPosition.relative(dir);
+                for (var node : network.getOrderedNetworkNodes(offset)) {
+                    if (!pressurizer.level.isLoaded(node))
                         continue;
-                    PipeBlockEntity pipe = network.getPipe(node);
+                    var pipe = network.getPipe(node);
                     if (pipe != null)
-                        pipe.pressurizer = this;
+                        pipe.pressurizer = pressurizer;
                 }
             }
         }
 
         // send energy update
-        if (this.lastEnergy != this.storage.getEnergyStored() && this.world.getGameTime() % 10 == 0) {
-            this.lastEnergy = this.storage.getEnergyStored();
-            Utility.sendBlockEntityToClients(this);
+        if (pressurizer.lastEnergy != pressurizer.storage.getEnergyStored() && pressurizer.level.getGameTime() % 10 == 0) {
+            pressurizer.lastEnergy = pressurizer.storage.getEnergyStored();
+            Utility.sendBlockEntityToClients(pressurizer);
         }
-    }*/
-
-    @Override
-    public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
-        return ConnectionType.CONNECTED;
     }
 
     private static class ModifiableEnergyStorage extends EnergyStorage {

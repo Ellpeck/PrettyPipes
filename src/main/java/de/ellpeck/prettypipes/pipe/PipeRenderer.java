@@ -1,10 +1,12 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.core.BlockPos;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.pipeline.ForgeBlockModelRenderer;
 
@@ -33,13 +35,13 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
         if (tile.cover != null) {
             matrixStack.pushPose();
             ForgeBlockModelRenderer.enableCaching();
-            // TODO figure out how to render covers, maybe finally use baked models bleh
-            /*for (RenderType layer : RenderType.chunkBufferLayers()) {
-                if (!RenderTypeLookup.canRenderInLayer(tile.cover, layer))
+            var renderer = Minecraft.getInstance().getBlockRenderer();
+            for (var layer : RenderType.chunkBufferLayers()) {
+                if (!ItemBlockRenderTypes.canRenderInLayer(tile.cover, layer))
                     continue;
                 ForgeHooksClient.setRenderType(layer);
-                Minecraft.getInstance().getBlockRenderer().renderBatched(tile.cover,tile.getBlockPos(),null, matrixStack,null, light, overlay, EmptyModelData.INSTANCE);
-            }*/
+                renderer.getModelRenderer().tesselateBlock(tile.getLevel(), renderer.getBlockModel(tile.cover), tile.cover, tile.getBlockPos(), matrixStack, source.getBuffer(layer), true, new Random(), tile.cover.getSeed(tile.getBlockPos()), overlay);
+            }
             ForgeHooksClient.setRenderType(null);
             ForgeBlockModelRenderer.clearCache();
             matrixStack.popPose();
