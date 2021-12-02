@@ -1,15 +1,16 @@
 package de.ellpeck.prettypipes.misc;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class ItemEquality {
 
-    public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamage() == filter.getDamage(), false, Type.DAMAGE);
-    public static final ItemEquality NBT = new ItemEquality(ItemStack::areItemStackTagsEqual, false, Type.NBT);
+    public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamageValue() == filter.getDamageValue(), false, Type.DAMAGE);
+    public static final ItemEquality NBT = new ItemEquality(ItemStack::isSameItemSameTags, false, Type.NBT);
     public static final ItemEquality MOD = new ItemEquality((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true, Type.MOD);
 
     public final Type type;
@@ -27,10 +28,10 @@ public class ItemEquality {
     }
 
     public static boolean compareItems(ItemStack stack, ItemStack filter, ItemEquality... types) {
-        boolean equal = ItemStack.areItemsEqual(stack, filter);
+        var equal = ItemStack.isSameIgnoreDurability(stack, filter);
         if (types.length <= 0)
             return equal;
-        for (ItemEquality type : types) {
+        for (var type : types) {
             if (!type.ignoreItemEquality && !equal)
                 return false;
             if (!type.filter.apply(stack, filter))

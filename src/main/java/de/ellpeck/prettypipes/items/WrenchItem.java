@@ -40,7 +40,7 @@ public class WrenchItem extends Item {
         BlockState state = world.getBlockState(pos);
         if (!(state.getBlock() instanceof PipeBlock))
             return ActionResultType.PASS;
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
+        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, world, pos);
         if (tile == null)
             return ActionResultType.FAIL;
 
@@ -49,7 +49,7 @@ public class WrenchItem extends Item {
                 if (tile.cover != null) {
                     // remove the cover
                     tile.removeCover(player, context.getHand());
-                    Utility.sendTileEntityToClients(tile);
+                    Utility.sendBlockEntityToClients(tile);
                 } else {
                     // remove the pipe
                     PipeBlock.dropItems(world, pos, player);
@@ -71,7 +71,7 @@ public class WrenchItem extends Item {
                     BlockState cover = block.getStateForPlacement(blockContext);
                     if (cover != null && !block.hasTileEntity(cover)) {
                         tile.cover = cover;
-                        Utility.sendTileEntityToClients(tile);
+                        Utility.sendBlockEntityToClients(tile);
                         offhand.shrink(1);
                         world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM, SoundCategory.PLAYERS, 1, 1);
                     }

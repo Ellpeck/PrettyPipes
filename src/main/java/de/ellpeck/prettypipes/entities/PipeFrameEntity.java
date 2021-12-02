@@ -5,12 +5,19 @@ import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import net.minecraft.block.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.item.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.FilledMapItem;
-import net.minecraft.item.ItemStack;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
@@ -21,55 +28,58 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.storage.MapData;
+import net.minecraftforge.entity.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditionalSpawnData {
+public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawnData {
 
-    private static final DataParameter<Integer> AMOUNT = EntityDataManager.createKey(PipeFrameEntity.class, DataSerializers.VARINT);
+    private static final EntityDataAccessor<Integer> AMOUNT = SynchedEntityData.defineId(PipeFrameEntity.class, EntityDataSerializers.INT);
 
-    public PipeFrameEntity(EntityType<PipeFrameEntity> type, World world) {
+    public PipeFrameEntity(EntityType<PipeFrameEntity> type, Level world) {
         super(type, world);
     }
 
-    public PipeFrameEntity(EntityType<PipeFrameEntity> type, World world, BlockPos pos, Direction dir) {
+    public PipeFrameEntity(EntityType<PipeFrameEntity> type, Level world, BlockPos pos, Direction dir) {
         this(type, world);
-        this.hangingPosition = pos;
-        this.updateFacingWithBoundingBox(dir);
+        this.pos = pos;
+        this.setDirection(dir);
     }
 
     @Override
-    protected void registerData() {
-        super.registerData();
-        this.dataManager.register(AMOUNT, -1);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(AMOUNT, -1);
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (this.world.isRemote)
+        if (this.level.isClientSide)
             return;
-        if (this.ticksExisted % 40 != 0)
+        if (this.tickCount % 40 != 0)
             return;
-        PipeNetwork network = PipeNetwork.get(this.world);
-        BlockPos attached = getAttachedPipe(this.world, this.hangingPosition, this.facingDirection);
+        PipeNetwork network = PipeNetwork.get(this.level);
+        BlockPos attached = getAttachedPipe(this.level, this.pos, this.direction);
         if (attached != null) {
             BlockPos node = network.getNodeFromPipe(attached);
             if (node != null) {
-                ItemStack stack = this.getDisplayedItem();
+                ItemStack stack = this.getItem();
                 if (!stack.isEmpty()) {
                     List<NetworkLocation> items = network.getOrderedNetworkItems(node);
-                    int amount = items.stream().mapToInt(i -> i.getItemAmount(this.world, stack)).sum();
-                    this.dataManager.set(AMOUNT, amount);
+                    int amount = items.stream().mapToInt(i -> i.getItemAmount(this.level, stack)).sum();
+                    this.entityData.set(AMOUNT, amount);
                     return;
                 }
             }
         }
-        this.dataManager.set(AMOUNT, -1);
+        this.entityData.set(AMOUNT, -1);
     }
 
     @Override
@@ -77,9 +87,9 @@ public class PipeFrameEntity extends ItemFrameEntity implements IEntityAdditiona
         return super.onValidSurface() && canPlace(this.world, this.hangingPosition, this.facingDirection);
     }
 
-    private static BlockPos getAttachedPipe(World world, BlockPos pos, Direction direction) {
+    private static BlockPos getAttachedPipe(Level world, BlockPos pos, Direction direction) {
         for (int i = 1; i <= 2; i++) {
-            BlockPos offset = pos.offset(direction.getOpposite(), i);
+            BlockPos offset = pos.relative(direction.getOpposite(), i);
             BlockState state = world.getBlockState(offset);
             if (state.getBlock() instanceof PipeBlock)
                 return offset;

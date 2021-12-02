@@ -13,13 +13,18 @@ import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.*;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -46,7 +51,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphListener<BlockPos, NetworkEdge> {
+public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphListener<BlockPos, NetworkEdge> {
 
     public final ListenableGraph<BlockPos, NetworkEdge> graph;
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
@@ -54,10 +59,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
     private final ListMultimap<BlockPos, IPipeItem> pipeItems = ArrayListMultimap.create();
     private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
-    private final World world;
+    private final Level world;
     private final LazyOptional<PipeNetwork> lazyThis = LazyOptional.of(() -> this);
 
-    public PipeNetwork(World world) {
+    public PipeNetwork(Level world) {
         this.world = world;
         this.graph = new DefaultListenableGraph<>(new SimpleWeightedGraph<>(NetworkEdge.class));
         this.graph.addGraphListener(this);
@@ -71,13 +76,13 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = new CompoundNBT();
-        ListNBT nodes = new ListNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
+        ListTag nodes = new ListTag();
         for (BlockPos node : this.graph.vertexSet())
-            nodes.add(NBTUtil.writeBlockPos(node));
+            nodes.add(NbtUtils.writeBlockPos(node));
         nbt.put("nodes", nodes);
-        ListNBT edges = new ListNBT();
+        ListTag edges = new ListTag();
         for (NetworkEdge edge : this.graph.edgeSet())
             edges.add(edge.serializeNBT());
         nbt.put("edges", edges);
@@ -87,15 +92,15 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         this.graph.removeAllVertices(new ArrayList<>(this.graph.vertexSet()));
         this.pipeItems.clear();
         this.networkLocks.clear();
 
-        ListNBT nodes = nbt.getList("nodes", NBT.TAG_COMPOUND);
+        ListTag nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
         for (int i = 0; i < nodes.size(); i++)
             this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
-        ListNBT edges = nbt.getList("edges", NBT.TAG_COMPOUND);
+        ListTag edges = nbt.getList("edges", Tag.TAG_COMPOUND);
         for (int i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
         for (IPipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), IPipeItem::load))
@@ -247,7 +252,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
     public PipeTileEntity getPipe(BlockPos pos) {
         PipeTileEntity tile = this.tileCache.get(pos);
         if (tile == null || tile.isRemoved()) {
-            tile = Utility.getTileEntity(PipeTileEntity.class, this.world, pos);
+            tile = Utility.getBlockEntity(PipeTileEntity.class, this.world, pos);
             this.tileCache.put(pos, tile);
         }
         return tile;
@@ -517,7 +522,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundNBT>, GraphL
         this.world.getProfiler().endSection();
     }
 
-    public static PipeNetwork get(World world) {
+    public static PipeNetwork get(Level world) {
         return world.getCapability(Registry.pipeNetworkCapability).orElse(null);
     }
 

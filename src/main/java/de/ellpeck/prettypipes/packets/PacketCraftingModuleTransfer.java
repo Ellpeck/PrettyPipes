@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.items.ItemHandlerHelper;

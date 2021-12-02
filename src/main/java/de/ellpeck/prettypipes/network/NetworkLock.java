@@ -1,14 +1,14 @@
 package de.ellpeck.prettypipes.network;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraftforge.common.util.INBTSerializable;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class NetworkLock implements INBTSerializable<CompoundNBT> {
+public class NetworkLock implements INBTSerializable<CompoundTag> {
 
     // identify locks by UUID since network locks can't be identified by location and locked item alone
     // (two locks could be set for the same item and the same amount if it exists twice in the chest)
@@ -21,21 +21,21 @@ public class NetworkLock implements INBTSerializable<CompoundNBT> {
         this.stack = stack;
     }
 
-    public NetworkLock(CompoundNBT nbt) {
+    public NetworkLock(CompoundTag nbt) {
         this.deserializeNBT(nbt);
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putUniqueId("id", this.lockId);
         nbt.put("location", this.location.serializeNBT());
-        nbt.put("stack", this.stack.write(new CompoundNBT()));
+        nbt.put("stack", this.stack.write(new CompoundTag()));
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         this.lockId = nbt.getUniqueId("id");
         this.location = new NetworkLocation(nbt.getCompound("location"));
         this.stack = ItemStack.read(nbt.getCompound("stack"));

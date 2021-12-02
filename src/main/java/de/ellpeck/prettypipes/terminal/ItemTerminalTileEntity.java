@@ -20,8 +20,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
@@ -230,14 +230,14 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
+    public CompoundTag write(CompoundTag compound) {
         compound.put("items", this.items.serializeNBT());
         compound.put("requests", Utility.serializeAll(this.existingRequests));
         return super.write(compound);
     }
 
     @Override
-    public void read(BlockState state, CompoundNBT compound) {
+    public void read(BlockState state, CompoundTag compound) {
         this.items.deserializeNBT(compound.getCompound("items"));
         this.existingRequests.clear();
         this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", NBT.TAG_COMPOUND), NetworkLock::new));
@@ -270,7 +270,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     @Override
     public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
-        ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, world, pos);
+        ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, world, pos);
         if (tile != null)
             return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
         return stack;

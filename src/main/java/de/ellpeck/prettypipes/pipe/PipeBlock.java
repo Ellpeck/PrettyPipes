@@ -7,13 +7,19 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemStack;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
@@ -31,10 +37,21 @@ import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import net.minecraftforge.network.NetworkHooks;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -43,57 +60,57 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class PipeBlock extends ContainerBlock {
+public class PipeBlock extends BaseEntityBlock {
 
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
-    private static final VoxelShape CENTER_SHAPE = makeCuboidShape(5, 5, 5, 11, 11, 11);
+    private static final VoxelShape CENTER_SHAPE = box(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
-            .put(Direction.UP, makeCuboidShape(5, 10, 5, 11, 16, 11))
-            .put(Direction.DOWN, makeCuboidShape(5, 0, 5, 11, 6, 11))
-            .put(Direction.NORTH, makeCuboidShape(5, 5, 0, 11, 11, 6))
-            .put(Direction.SOUTH, makeCuboidShape(5, 5, 10, 11, 11, 16))
-            .put(Direction.EAST, makeCuboidShape(10, 5, 5, 16, 11, 11))
-            .put(Direction.WEST, makeCuboidShape(0, 5, 5, 6, 11, 11))
+            .put(Direction.UP, box(5, 10, 5, 11, 16, 11))
+            .put(Direction.DOWN, box(5, 0, 5, 11, 6, 11))
+            .put(Direction.NORTH, box(5, 5, 0, 11, 11, 6))
+            .put(Direction.SOUTH, box(5, 5, 10, 11, 11, 16))
+            .put(Direction.EAST, box(10, 5, 5, 16, 11, 11))
+            .put(Direction.WEST, box(0, 5, 5, 6, 11, 11))
             .build();
 
     static {
         for (Direction dir : Direction.values())
-            DIRECTIONS.put(dir, EnumProperty.create(dir.getName2(), ConnectionType.class));
+            DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
     }
 
     public PipeBlock() {
-        super(Block.Properties.create(Material.ROCK).hardnessAndResistance(2).sound(SoundType.STONE).notSolid());
+        super(Block.Properties.of(Material.STONE).strength(2).sound(SoundType.STONE).noOcclusion());
 
-        BlockState state = this.getDefaultState().with(BlockStateProperties.WATERLOGGED, false);
+        BlockState state = this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false);
         for (EnumProperty<ConnectionType> prop : DIRECTIONS.values())
-            state = state.with(prop, ConnectionType.DISCONNECTED);
-        this.setDefaultState(state);
+            state = state.setValue(prop, ConnectionType.DISCONNECTED);
+        this.registerDefaultState(state);
     }
 
     @Override
-    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
+        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
         if (tile == null)
-            return ActionResultType.PASS;
+            return InteractionResult.PASS;
         if (!tile.canHaveModules())
-            return ActionResultType.PASS;
-        ItemStack stack = player.getHeldItem(handIn);
+            return InteractionResult.PASS;
+        ItemStack stack = player.getItemInHand(handIn);
         if (stack.getItem() instanceof IModule) {
             ItemStack copy = stack.copy();
             copy.setCount(1);
             ItemStack remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
             if (remain.isEmpty()) {
                 stack.shrink(1);
-                return ActionResultType.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
-        } else if (handIn == Hand.MAIN_HAND && stack.isEmpty()) {
-            if (!worldIn.isRemote)
-                NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
-            return ActionResultType.SUCCESS;
+        } else if (handIn == InteractionHand.MAIN_HAND && stack.isEmpty()) {
+            if (!worldIn.isClientSide)
+                NetworkHooks.openGui((ServerPlayer) player, tile, pos);
+            return InteractionResult.SUCCESS;
         }
-        return ActionResultType.PASS;
+        return InteractionResult.PASS;
     }
 
     @Override
@@ -152,7 +169,7 @@ public class PipeBlock extends ContainerBlock {
     private VoxelShape cacheAndGetShape(BlockState state, IBlockReader worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
         VoxelShape coverShape = null;
         BlockState cover = null;
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
         if (tile != null && tile.cover != null) {
             cover = tile.cover;
             // try catch since the block might expect to find itself at the position
@@ -230,7 +247,7 @@ public class PipeBlock extends ContainerBlock {
 
     public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
         // wait a few ticks before checking if we have to drop our modules, so that things like iron -> gold chest work
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, world, pos);
+        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, world, pos);
         if (tile != null)
             tile.moduleDropCheck = 5;
 
@@ -280,7 +297,7 @@ public class PipeBlock extends ContainerBlock {
 
     @Override
     public int getComparatorInputOverride(BlockState blockState, World worldIn, BlockPos pos) {
-        PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        PipeTileEntity pipe = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
         if (pipe == null)
             return 0;
         return Math.min(15, pipe.getItems().size());
@@ -298,7 +315,7 @@ public class PipeBlock extends ContainerBlock {
     }
 
     public static void dropItems(World worldIn, BlockPos pos, PlayerEntity player) {
-        PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, worldIn, pos);
+        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
         if (tile != null) {
             Utility.dropInventory(tile, tile.modules);
             for (IPipeItem item : tile.getItems())

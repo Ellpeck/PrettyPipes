@@ -10,7 +10,7 @@ import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.Direction;
 import net.minecraftforge.items.IItemHandler;
 

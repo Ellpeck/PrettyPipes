@@ -12,8 +12,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.ITickableTileEntity;
@@ -24,6 +24,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -32,14 +33,14 @@ import net.minecraftforge.energy.IEnergyStorage;
 
 import javax.annotation.Nullable;
 
-public class PressurizerTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
+public class PressurizerBlockEntity extends BlockEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     private final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
     private final LazyOptional<IEnergyStorage> lazyStorage = LazyOptional.of(() -> this.storage);
     private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
     private int lastEnergy;
 
-    public PressurizerTileEntity() {
+    public PressurizerBlockEntity() {
         super(Registry.pressurizerTileEntity);
     }
 
@@ -61,24 +62,24 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
+    public CompoundTag write(CompoundTag compound) {
         compound.putInt("energy", this.getEnergy());
         return super.write(compound);
     }
 
     @Override
-    public void read(BlockState state, CompoundNBT nbt) {
+    public void read(BlockState state, CompoundTag nbt) {
         this.storage.setEnergyStored(nbt.getInt("energy"));
         super.read(state, nbt);
     }
 
     @Override
-    public CompoundNBT getUpdateTag() {
-        return this.write(new CompoundNBT());
+    public CompoundTag getUpdateTag() {
+        return this.write(new CompoundTag());
     }
 
     @Override
-    public void handleUpdateTag(BlockState state, CompoundNBT tag) {
+    public void handleUpdateTag(BlockState state, CompoundTag tag) {
         this.read(state, tag);
     }
 
@@ -138,7 +139,7 @@ public class PressurizerTileEntity extends TileEntity implements INamedContainer
         // send energy update
         if (this.lastEnergy != this.storage.getEnergyStored() && this.world.getGameTime() % 10 == 0) {
             this.lastEnergy = this.storage.getEnergyStored();
-            Utility.sendTileEntityToClients(this);
+            Utility.sendBlockEntityToClients(this);
         }
     }
 

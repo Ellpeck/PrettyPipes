@@ -12,12 +12,12 @@ import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
@@ -67,7 +67,7 @@ public class PipeItem implements IPipeItem {
         this(TYPE, stack, speed);
     }
 
-    public PipeItem(ResourceLocation type, CompoundNBT nbt) {
+    public PipeItem(ResourceLocation type, CompoundTag nbt) {
         this.type = type;
         this.path = new ArrayList<>();
         this.deserializeNBT(nbt);
@@ -244,8 +244,8 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putString("type", this.type.toString());
         nbt.put("stack", this.stack.serializeNBT());
         nbt.putFloat("speed", this.speed);
@@ -257,7 +257,7 @@ public class PipeItem implements IPipeItem {
         nbt.putFloat("x", this.x);
         nbt.putFloat("y", this.y);
         nbt.putFloat("z", this.z);
-        ListNBT list = new ListNBT();
+        ListTag list = new ListTag();
         for (BlockPos pos : this.path)
             list.add(NBTUtil.writeBlockPos(pos));
         nbt.put("path", list);
@@ -265,7 +265,7 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         this.stack = ItemStack.read(nbt.getCompound("stack"));
         this.speed = nbt.getFloat("speed");
         this.startInventory = NBTUtil.readBlockPos(nbt.getCompound("start_inv"));
@@ -277,7 +277,7 @@ public class PipeItem implements IPipeItem {
         this.y = nbt.getFloat("y");
         this.z = nbt.getFloat("z");
         this.path.clear();
-        ListNBT list = nbt.getList("path", Constants.NBT.TAG_COMPOUND);
+        ListTag list = nbt.getList("path", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)
             this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
     }

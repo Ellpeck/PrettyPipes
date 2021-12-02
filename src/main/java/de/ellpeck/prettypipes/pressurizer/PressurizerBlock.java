@@ -9,7 +9,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
@@ -31,7 +31,7 @@ public class PressurizerBlock extends ContainerBlock {
 
     @Override
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        PressurizerTileEntity tile = Utility.getTileEntity(PressurizerTileEntity.class, worldIn, pos);
+        PressurizerBlockEntity tile = Utility.getBlockEntity(PressurizerBlockEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
         if (!worldIn.isRemote)
@@ -41,7 +41,7 @@ public class PressurizerBlock extends ContainerBlock {
 
     @Override
     public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new PressurizerTileEntity();
+        return new PressurizerBlockEntity();
     }
 
     @Override

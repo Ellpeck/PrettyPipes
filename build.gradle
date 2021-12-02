@@ -100,7 +100,7 @@ configurations {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.18-38.0.8'
-    embed "org.jgrapht:jgrapht-core:1.5.1"
+    embed 'org.jgrapht:jgrapht-core:1.5.1'
 
     // TODO JEI?
 /*    compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")

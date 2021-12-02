@@ -1,10 +1,10 @@
 package de.ellpeck.prettypipes.pipe;
 
-import net.minecraft.util.IStringSerializable;
+import net.minecraft.util.StringRepresentable;
 
 import java.util.Locale;
 
-public enum ConnectionType implements IStringSerializable {
+public enum ConnectionType implements StringRepresentable {
     CONNECTED(true),
     DISCONNECTED(false),
     BLOCKED(false),
@@ -23,7 +23,7 @@ public enum ConnectionType implements IStringSerializable {
     }
 
     @Override
-    public String getString() {
+    public String getSerializedName() {
         return this.name;
     }
 }

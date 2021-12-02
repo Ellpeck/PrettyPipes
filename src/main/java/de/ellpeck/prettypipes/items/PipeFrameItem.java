@@ -11,9 +11,9 @@ import net.minecraft.entity.item.ItemFrameEntity;
 import net.minecraft.entity.item.PaintingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -42,9 +42,9 @@ public class PipeFrameItem extends Item {
             World world = context.getWorld();
             HangingEntity hangingentity = new PipeFrameEntity(Registry.pipeFrameEntity, world, blockpos1, direction);
 
-            CompoundNBT compoundnbt = itemstack.getTag();
-            if (compoundnbt != null) {
-                EntityType.applyItemNBT(world, playerentity, hangingentity, compoundnbt);
+            CompoundTag CompoundTag = itemstack.getTag();
+            if (CompoundTag != null) {
+                EntityType.applyItemNBT(world, playerentity, hangingentity, CompoundTag);
             }
 
             if (hangingentity.onValidSurface()) {

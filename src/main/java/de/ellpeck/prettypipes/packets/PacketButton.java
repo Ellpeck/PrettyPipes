@@ -17,7 +17,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -77,7 +77,7 @@ public class PacketButton {
 
     public enum ButtonResult {
         PIPE_TAB((pos, data, player) -> {
-            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, player.world, pos);
+            PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, player.world, pos);
             if (data[0] < 0) {
                 NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
             } else {
@@ -113,11 +113,11 @@ public class PacketButton {
             StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
-            CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, player.world, pos);
+            CraftingTerminalTileEntity tile = Utility.getBlockEntity(CraftingTerminalTileEntity.class, player.world, pos);
             tile.requestCraftingItems(player, data[0]);
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
-            ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos);
+            ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, player.world, pos);
             tile.cancelCrafting();
         }),
         TAG_FILTER((pos, data, player) -> {

@@ -1,19 +1,17 @@
 package de.ellpeck.prettypipes.misc;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Direction;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Widget;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandler;
@@ -53,17 +51,17 @@ public class ItemFilter extends ItemStackHandler {
     public List<Widget> getButtons(Screen gui, int x, int y) {
         List<Widget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
-            Supplier<TranslationTextComponent> whitelistText = () -> new TranslationTextComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
+            Supplier<TranslatableComponent> whitelistText = () -> new TranslatableComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
             buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
                 PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
                 button.setMessage(whitelistText.get());
             }));
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+            buttons.add(new Button(x + 72, y, 70, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
                 @Override
-                public void renderToolTip(MatrixStack matrix, int x, int y) {
-                    gui.renderTooltip(matrix, new TranslationTextComponent("info." + PrettyPipes.ID + ".populate.description").mergeStyle(TextFormatting.GRAY), x, y);
+                public void renderToolTip(PoseStack matrix, int x, int y) {
+                    gui.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
                 }
             });
         }
@@ -127,15 +125,15 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = super.serializeNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = super.serializeNBT();
         if (this.canModifyWhitelist)
             nbt.putBoolean("whitelist", this.isWhitelist);
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         super.deserializeNBT(nbt);
         if (this.canModifyWhitelist)
             this.isWhitelist = nbt.getBoolean("whitelist");

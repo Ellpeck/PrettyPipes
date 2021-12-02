@@ -38,7 +38,7 @@ import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
 import de.ellpeck.prettypipes.pressurizer.PressurizerContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerGui;
-import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
@@ -57,7 +57,7 @@ import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.INBT;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
@@ -116,7 +116,7 @@ public final class Registry {
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
     public static Block pressurizerBlock;
-    public static TileEntityType<PressurizerTileEntity> pressurizerTileEntity;
+    public static TileEntityType<PressurizerBlockEntity> pressurizerTileEntity;
     public static ContainerType<PressurizerContainer> pressurizerContainer;
 
     public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
@@ -169,7 +169,7 @@ public final class Registry {
                 pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
                 itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
                 craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
-                pressurizerTileEntity = (TileEntityType<PressurizerTileEntity>) TileEntityType.Builder.create(PressurizerTileEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
+                pressurizerTileEntity = (TileEntityType<PressurizerBlockEntity>) TileEntityType.Builder.create(PressurizerBlockEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
         );
     }
 
@@ -199,7 +199,7 @@ public final class Registry {
 
     private static <T extends AbstractPipeContainer<?>> ContainerType<T> createPipeContainer(String name) {
         return (ContainerType<T>) IForgeContainerType.create((windowId, inv, data) -> {
-            PipeTileEntity tile = Utility.getTileEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
+            PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
             int moduleIndex = data.readInt();
             ItemStack moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);

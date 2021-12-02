@@ -18,8 +18,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -136,13 +136,13 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
+    public CompoundTag write(CompoundTag compound) {
         compound.put("craft_items", this.craftItems.serializeNBT());
         return super.write(compound);
     }
 
     @Override
-    public void read(BlockState state, CompoundNBT compound) {
+    public void read(BlockState state, CompoundTag compound) {
         this.craftItems.deserializeNBT(compound.getCompound("craft_items"));
         super.read(state, compound);
     }
@@ -161,7 +161,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     @Override
     public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack remain, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
-        CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, this.world, pos);
+        CraftingTerminalTileEntity tile = Utility.getBlockEntity(CraftingTerminalTileEntity.class, this.world, pos);
         if (tile != null) {
             remain = remain.copy();
             int lowestSlot = -1;

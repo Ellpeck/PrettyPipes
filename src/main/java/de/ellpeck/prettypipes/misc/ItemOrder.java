@@ -1,6 +1,6 @@
 package de.ellpeck.prettypipes.misc;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Comparator;
 

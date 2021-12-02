@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class LowPriorityModuleItem extends ModuleItem {
     private final int priority;

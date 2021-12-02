@@ -1,10 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.network.NetworkItem;
-import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.packets.PacketNetworkItems;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -12,16 +8,13 @@ import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.items.SlotItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ItemTerminalContainer extends Container {
 
@@ -29,7 +22,7 @@ public class ItemTerminalContainer extends Container {
 
     public ItemTerminalContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos) {
         super(type, id);
-        this.tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, pos);
+        this.tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, player.world, pos);
 
         this.addOwnSlots(player);
 

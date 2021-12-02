@@ -9,17 +9,19 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
-import de.ellpeck.prettypipes.pressurizer.PressurizerTileEntity;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
@@ -33,6 +35,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -53,15 +57,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PipeTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
+public class PipeTileEntity extends BlockEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            Item item = stack.getItem();
-            if (!(item instanceof IModule))
+            var item = stack.getItem();
+            if (!(item instanceof IModule module))
                 return false;
-            IModule module = (IModule) item;
             return PipeTileEntity.this.streamModules().allMatch(m -> module.isCompatible(stack, PipeTileEntity.this, m.getRight()) && m.getRight().isCompatible(m.getLeft(), PipeTileEntity.this, module));
         }
 
@@ -72,74 +75,66 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
     };
     public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
     public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
-    public PressurizerTileEntity pressurizer;
+    public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
     protected List<IPipeItem> items;
     private int lastItemAmount;
     private int priority;
     private final LazyOptional<PipeTileEntity> lazyThis = LazyOptional.of(() -> this);
-    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.world.rand.nextInt(200));
-
-    public PipeTileEntity() {
-        this(Registry.pipeTileEntity);
-    }
-
-    protected PipeTileEntity(TileEntityType<?> type) {
-        super(type);
-    }
+    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
     @Override
     public void onChunkUnloaded() {
-        PipeNetwork.get(this.world).uncachePipe(this.pos);
+        PipeNetwork.get(this.level).uncachePipe(this.worldPosition);
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
+    public CompoundTag save(CompoundTag compound) {
         compound.put("modules", this.modules.serializeNBT());
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
         if (this.cover != null)
-            compound.put("cover", NBTUtil.writeBlockState(this.cover));
-        ListNBT results = new ListNBT();
+            compound.put("cover", NbtUtils.writeBlockState(this.cover));
+        ListTag results = new ListTag();
         for (Pair<BlockPos, ItemStack> triple : this.craftResultRequests) {
-            CompoundNBT nbt = new CompoundNBT();
-            nbt.putLong("dest_pipe", triple.getLeft().toLong());
+            CompoundTag nbt = new CompoundTag();
+            nbt.putLong("dest_pipe", triple.getLeft().asLong());
             nbt.put("item", triple.getRight().serializeNBT());
             results.add(nbt);
         }
         compound.put("craft_results", results);
-        return super.write(compound);
+        return super.save(compound);
     }
 
     @Override
-    public void read(BlockState state, CompoundNBT compound) {
+    public void load(CompoundTag compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
-        this.cover = compound.contains("cover") ? NBTUtil.readBlockState(compound.getCompound("cover")) : null;
+        this.cover = compound.contains("cover") ? NbtUtils.readBlockState(compound.getCompound("cover")) : null;
         this.craftIngredientRequests.clear();
         this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", NBT.TAG_COMPOUND), NetworkLock::new));
         this.craftResultRequests.clear();
-        ListNBT results = compound.getList("craft_results", NBT.TAG_COMPOUND);
+        ListTag results = compound.getList("craft_results", NBT.TAG_COMPOUND);
         for (int i = 0; i < results.size(); i++) {
-            CompoundNBT nbt = results.getCompound(i);
+            CompoundTag nbt = results.getCompound(i);
             this.craftResultRequests.add(Pair.of(
-                    BlockPos.fromLong(nbt.getLong("dest_pipe")),
-                    ItemStack.read(nbt.getCompound("item"))));
+                    BlockPos.of(nbt.getLong("dest_pipe")),
+                    ItemStack.of(nbt.getCompound("item"))));
         }
-        super.read(state, compound);
+        super.load(compound);
     }
 
     @Override
-    public CompoundNBT getUpdateTag() {
+    public CompoundTag getUpdateTag() {
         // sync pipe items on load
-        CompoundNBT nbt = this.write(new CompoundNBT());
+        CompoundTag nbt = this.write(new CompoundTag());
         nbt.put("items", Utility.serializeAll(this.getItems()));
         return nbt;
     }
 
     @Override
-    public void handleUpdateTag(BlockState state, CompoundNBT nbt) {
+    public void handleUpdateTag(BlockState state, CompoundTag nbt) {
         this.read(state, nbt);
         List<IPipeItem> items = this.getItems();
         items.clear();

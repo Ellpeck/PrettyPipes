@@ -4,7 +4,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.inventory.container.Container;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.item.crafting.RecipeItemHelper;
 import net.minecraftforge.items.ItemStackHandler;
 

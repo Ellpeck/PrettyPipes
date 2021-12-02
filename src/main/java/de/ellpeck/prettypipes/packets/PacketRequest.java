@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.packets;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -46,7 +46,7 @@ public class PacketRequest {
             @Override
             public void run() {
                 PlayerEntity player = ctx.get().getSender();
-                ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, message.pos);
+                ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, player.world, message.pos);
                 message.stack.setCount(message.amount);
                 tile.requestItem(player, message.stack);
             }

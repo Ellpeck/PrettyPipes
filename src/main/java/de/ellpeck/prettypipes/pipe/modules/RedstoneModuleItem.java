@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.pipe.modules;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class RedstoneModuleItem extends ModuleItem {
 

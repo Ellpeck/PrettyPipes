@@ -1,3 +1,4 @@
+/*
 package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.misc.ItemEquality;
@@ -9,7 +10,7 @@ import mezz.jei.api.gui.ingredient.IGuiIngredient;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,3 +51,4 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
         return null;
     }
 }
+*/

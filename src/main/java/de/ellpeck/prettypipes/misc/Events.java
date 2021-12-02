@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;

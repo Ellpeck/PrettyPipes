@@ -1,10 +1,6 @@
 package de.ellpeck.prettypipes.terminal;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.pipe.ConnectionType;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ContainerBlock;
@@ -13,7 +9,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
@@ -26,8 +22,6 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -41,7 +35,7 @@ public class ItemTerminalBlock extends ContainerBlock {
 
     @Override
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, worldIn, pos);
+        ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
         String reason = tile.getInvalidTerminalReason();
@@ -60,7 +54,7 @@ public class ItemTerminalBlock extends ContainerBlock {
     @Override
     public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, worldIn, pos);
+            ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, worldIn, pos);
             if (tile != null)
                 Utility.dropInventory(tile, tile.items);
             super.onReplaced(state, worldIn, pos, newState, isMoving);

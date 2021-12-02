@@ -15,8 +15,8 @@ import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.items.ItemStackHandler;
@@ -208,7 +208,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     public void save(ItemStackHandler input, ItemStackHandler output, ItemStack module) {
-        CompoundNBT tag = module.getOrCreateTag();
+        CompoundTag tag = module.getOrCreateTag();
         if (input != null)
             tag.put("input", input.serializeNBT());
         if (output != null)

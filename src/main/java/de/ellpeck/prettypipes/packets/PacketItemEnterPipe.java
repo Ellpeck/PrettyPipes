@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public class PacketItemEnterPipe {
 
     private BlockPos tilePos;
-    private CompoundNBT item;
+    private CompoundTag item;
 
     public PacketItemEnterPipe(BlockPos tilePos, IPipeItem item) {
         this.tilePos = tilePos;
@@ -46,7 +46,7 @@ public class PacketItemEnterPipe {
                 if (mc.world == null)
                     return;
                 IPipeItem item = IPipeItem.load(message.item);
-                PipeTileEntity pipe = Utility.getTileEntity(PipeTileEntity.class, mc.world, message.tilePos);
+                PipeTileEntity pipe = Utility.getBlockEntity(PipeTileEntity.class, mc.world, message.tilePos);
                 if (pipe != null)
                     pipe.getItems().add(item);
             }

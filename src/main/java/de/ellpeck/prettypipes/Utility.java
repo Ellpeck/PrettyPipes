@@ -1,30 +1,29 @@
 package de.ellpeck.prettypipes;
 
-import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.network.PipeItem;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.ISidedInventory;
-import net.minecraft.inventory.ISidedInventoryProvider;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.text.*;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.*;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
+import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.WorldlyContainerHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
@@ -34,56 +33,54 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public final class Utility {
 
-    public static <T extends TileEntity> T getTileEntity(Class<T> type, IBlockReader world, BlockPos pos) {
-        TileEntity tile = world.getTileEntity(pos);
+    public static <T extends BlockEntity> T getBlockEntity(Class<T> type, LevelAccessor world, BlockPos pos) {
+        var tile = world.getBlockEntity(pos);
         return type.isInstance(tile) ? (T) tile : null;
     }
 
-    public static void dropInventory(TileEntity tile, IItemHandler inventory) {
-        BlockPos pos = tile.getPos();
-        for (int i = 0; i < inventory.getSlots(); i++) {
-            ItemStack stack = inventory.getStackInSlot(i);
+    public static void dropInventory(BlockEntity tile, IItemHandler inventory) {
+        var pos = tile.getBlockPos();
+        for (var i = 0; i < inventory.getSlots(); i++) {
+            var stack = inventory.getStackInSlot(i);
             if (!stack.isEmpty())
-                InventoryHelper.spawnItemStack(tile.getWorld(), pos.getX(), pos.getY(), pos.getZ(), stack);
+                Containers.dropItemStack(tile.getLevel(), pos.getX(), pos.getY(), pos.getZ(), stack);
         }
     }
 
     public static Direction getDirectionFromOffset(BlockPos pos, BlockPos other) {
-        BlockPos diff = pos.subtract(other);
-        return Direction.getFacingFromVector(diff.getX(), diff.getY(), diff.getZ());
+        var diff = pos.subtract(other);
+        return Direction.fromNormal(diff.getX(), diff.getY(), diff.getZ());
     }
 
-    public static void addTooltip(String name, List<ITextComponent> tooltip) {
+    public static void addTooltip(String name, List<MutableComponent> tooltip) {
         if (Screen.hasShiftDown()) {
-            String[] content = I18n.format("info." + PrettyPipes.ID + "." + name).split("\n");
-            for (String s : content)
-                tooltip.add(new StringTextComponent(s).setStyle(Style.EMPTY.setFormatting(TextFormatting.GRAY)));
+            var content = I18n.get("info." + PrettyPipes.ID + "." + name).split("\n");
+            for (var s : content)
+                tooltip.add(new TextComponent(s).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY)));
         } else {
-            tooltip.add(new TranslationTextComponent("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.setFormatting(TextFormatting.DARK_GRAY)));
+            tooltip.add(new TranslatableComponent("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.applyFormat(ChatFormatting.DARK_GRAY)));
         }
     }
 
-    public static ItemStack transferStackInSlot(Container container, IMergeItemStack merge, PlayerEntity player, int slotIndex, Function<ItemStack, Pair<Integer, Integer>> predicate) {
-        int inventoryStart = (int) container.inventorySlots.stream().filter(slot -> slot.inventory != player.inventory).count();
-        int inventoryEnd = inventoryStart + 26;
-        int hotbarStart = inventoryEnd + 1;
-        int hotbarEnd = hotbarStart + 8;
+    public static ItemStack transferStackInSlot(AbstractContainerMenu container, IMergeItemStack merge, Player player, int slotIndex, Function<ItemStack, Pair<Integer, Integer>> predicate) {
+        var inventoryStart = (int) container.slots.stream().filter(slot -> slot.container != player.getInventory()).count();
+        var inventoryEnd = inventoryStart + 26;
+        var hotbarStart = inventoryEnd + 1;
+        var hotbarEnd = hotbarStart + 8;
 
-        Slot slot = container.inventorySlots.get(slotIndex);
-        if (slot != null && slot.getHasStack()) {
-            ItemStack newStack = slot.getStack();
-            ItemStack currentStack = newStack.copy();
+        var slot = container.slots.get(slotIndex);
+        if (slot != null && slot.hasItem()) {
+            var newStack = slot.getItem();
+            var currentStack = newStack.copy();
 
             if (slotIndex >= inventoryStart) {
                 // shift into this container here
                 // mergeItemStack with the slots that newStack should go into
                 // return an empty stack if mergeItemStack fails
-                Pair<Integer, Integer> slots = predicate.apply(newStack);
+                var slots = predicate.apply(newStack);
                 if (slots != null) {
                     if (!merge.mergeItemStack(newStack, slots.getLeft(), slots.getRight(), false))
                         return ItemStack.EMPTY;
@@ -99,9 +96,9 @@ public final class Utility {
                 return ItemStack.EMPTY;
             }
             if (newStack.isEmpty()) {
-                slot.putStack(ItemStack.EMPTY);
+                slot.set(ItemStack.EMPTY);
             } else {
-                slot.onSlotChanged();
+                slot.setChanged();
             }
             if (newStack.getCount() == currentStack.getCount())
                 return ItemStack.EMPTY;
@@ -111,42 +108,44 @@ public final class Utility {
         return ItemStack.EMPTY;
     }
 
-    public static ListNBT serializeAll(Collection<? extends INBTSerializable<CompoundNBT>> items) {
-        ListNBT list = new ListNBT();
-        for (INBTSerializable<CompoundNBT> item : items)
+    public static ListTag serializeAll(Collection<? extends INBTSerializable<CompoundTag>> items) {
+        var list = new ListTag();
+        for (INBTSerializable<CompoundTag> item : items)
             list.add(item.serializeNBT());
         return list;
     }
 
-    public static void sendTileEntityToClients(TileEntity tile) {
-        ServerWorld world = (ServerWorld) tile.getWorld();
-        Stream<ServerPlayerEntity> entities = world.getChunkProvider().chunkManager.getTrackingPlayers(new ChunkPos(tile.getPos()), false);
-        SUpdateTileEntityPacket packet = new SUpdateTileEntityPacket(tile.getPos(), -1, tile.write(new CompoundNBT()));
-        entities.forEach(e -> e.connection.sendPacket(packet));
+    public static void sendBlockEntityToClients(BlockEntity tile) {
+        var world = (ServerLevel) tile.getLevel();
+        var entities = world.getChunkSource().chunkMap.getPlayers(new ChunkPos(tile.getBlockPos()), false);
+        var packet = ClientboundBlockEntityDataPacket.create(tile, t -> t.save(new CompoundTag()));
+        for (var e : entities)
+            e.connection.send(packet);
     }
 
-    public static <T extends INBTSerializable<CompoundNBT>> List<T> deserializeAll(ListNBT list, Function<CompoundNBT, T> supplier) {
+    public static <T extends INBTSerializable<CompoundTag>> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> supplier) {
         List<T> items = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++) {
-            T item = supplier.apply(list.getCompound(i));
+        for (var i = 0; i < list.size(); i++) {
+            var item = supplier.apply(list.getCompound(i));
             if (item != null)
                 items.add(item);
         }
         return items;
     }
 
-    public static IItemHandler getBlockItemHandler(World world, BlockPos pos, Direction direction) {
-        BlockState state = world.getBlockState(pos);
-        Block block = state.getBlock();
-        if (!(block instanceof ISidedInventoryProvider))
+    public static IItemHandler getBlockItemHandler(Level world, BlockPos pos, Direction direction) {
+        var state = world.getBlockState(pos);
+        var block = state.getBlock();
+        if (!(block instanceof WorldlyContainerHolder holder))
             return null;
-        ISidedInventory inventory = ((ISidedInventoryProvider) block).createInventory(state, world, pos);
+        var inventory = holder.getContainer(state, world, pos);
         if (inventory == null)
             return null;
         return new SidedInvWrapper(inventory, direction);
     }
 
     public interface IMergeItemStack {
+
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);
     }
 }

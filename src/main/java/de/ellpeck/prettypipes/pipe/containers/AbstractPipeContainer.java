@@ -9,7 +9,7 @@ import net.minecraft.inventory.container.ClickType;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -24,7 +24,7 @@ public abstract class AbstractPipeContainer<T extends IModule> extends Container
 
     public AbstractPipeContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
         super(type, id);
-        this.tile = Utility.getTileEntity(PipeTileEntity.class, player.world, pos);
+        this.tile = Utility.getBlockEntity(PipeTileEntity.class, player.world, pos);
         this.moduleStack = moduleIndex < 0 ? null : this.tile.modules.getStackInSlot(moduleIndex);
         this.module = moduleIndex < 0 ? null : (T) this.moduleStack.getItem();
         this.moduleIndex = moduleIndex;

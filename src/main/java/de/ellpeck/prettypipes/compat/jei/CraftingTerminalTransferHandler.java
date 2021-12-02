@@ -1,3 +1,4 @@
+/*
 package de.ellpeck.prettypipes.compat.jei;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -13,7 +14,7 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -39,3 +40,4 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         return null;
     }
 }
+*/

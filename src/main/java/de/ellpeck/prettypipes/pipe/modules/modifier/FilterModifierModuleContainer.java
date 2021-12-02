@@ -4,8 +4,8 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nullable;

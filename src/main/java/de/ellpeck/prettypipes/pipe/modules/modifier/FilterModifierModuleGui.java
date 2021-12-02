@@ -5,7 +5,7 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.client.audio.SimpleSound;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;

@@ -2,8 +2,8 @@ package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class NetworkLocation implements INBTSerializable<CompoundNBT> {
+public class NetworkLocation implements INBTSerializable<CompoundTag> {
 
     public BlockPos pipePos;
     public Direction direction;
@@ -29,7 +29,7 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
         this.direction = direction;
     }
 
-    public NetworkLocation(CompoundNBT nbt) {
+    public NetworkLocation(CompoundTag nbt) {
         this.deserializeNBT(nbt);
     }
 
@@ -92,15 +92,15 @@ public class NetworkLocation implements INBTSerializable<CompoundNBT> {
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
         nbt.put("pipe_pos", NBTUtil.writeBlockPos(this.pipePos));
         nbt.putInt("direction", this.direction.getIndex());
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         this.pipePos = NBTUtil.readBlockPos(nbt.getCompound("pipe_pos"));
         this.direction = Direction.byIndex(nbt.getInt("direction"));
     }

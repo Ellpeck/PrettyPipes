@@ -1,24 +1,24 @@
 package de.ellpeck.prettypipes.network;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraftforge.common.util.INBTSerializable;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable<CompoundNBT> {
+public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable<CompoundTag> {
 
     public final List<BlockPos> pipes = new ArrayList<>();
 
     public NetworkEdge() {
     }
 
-    public NetworkEdge(CompoundNBT nbt) {
+    public NetworkEdge(CompoundTag nbt) {
         this.deserializeNBT(nbt);
     }
 
@@ -31,20 +31,20 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     }
 
     @Override
-    public CompoundNBT serializeNBT() {
-        CompoundNBT nbt = new CompoundNBT();
-        ListNBT list = new ListNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag nbt = new CompoundTag();
+        ListTag list = new ListTag();
         for (BlockPos pos : this.pipes)
-            list.add(NBTUtil.writeBlockPos(pos));
+            list.add(NbtUtils.writeBlockPos(pos));
         nbt.put("pipes", list);
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundNBT nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         this.pipes.clear();
-        ListNBT list = nbt.getList("pipes", Constants.NBT.TAG_COMPOUND);
+        ListTag list = nbt.getList("pipes", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)
-            this.pipes.add(NBTUtil.readBlockPos(list.getCompound(i)));
+            this.pipes.add(NbtUtils.readBlockPos(list.getCompound(i)));
     }
 }

@@ -6,7 +6,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -50,7 +50,7 @@ public class PacketGhostSlot {
     @SuppressWarnings("Convert2Lambda")
     public static void onMessage(PacketGhostSlot message, Supplier<NetworkEvent.Context> ctx) {
         Consumer<PlayerEntity> doIt = p -> {
-            CraftingTerminalTileEntity tile = Utility.getTileEntity(CraftingTerminalTileEntity.class, p.world, message.pos);
+            CraftingTerminalTileEntity tile = Utility.getBlockEntity(CraftingTerminalTileEntity.class, p.world, message.pos);
             if (tile != null)
                 tile.setGhostItems(message.stacks);
         };

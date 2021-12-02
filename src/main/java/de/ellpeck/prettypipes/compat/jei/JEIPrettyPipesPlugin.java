@@ -1,3 +1,4 @@
+/*
 package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
@@ -16,7 +17,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.Rectangle2d;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -132,3 +133,4 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         }
     }
 }
+*/
