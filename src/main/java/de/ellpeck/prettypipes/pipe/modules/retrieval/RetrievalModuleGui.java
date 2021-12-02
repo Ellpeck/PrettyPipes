@@ -1,19 +1,20 @@
 package de.ellpeck.prettypipes.pipe.modules.retrieval;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
 
 public class RetrievalModuleGui extends AbstractPipeGui<RetrievalModuleContainer> {
-    public RetrievalModuleGui(RetrievalModuleContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+
+    public RetrievalModuleGui(RetrievalModuleContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
     }
 
     @Override
     protected void init() {
         super.init();
-        for (Widget widget : this.container.filter.getButtons(this, this.guiLeft + 7, this.guiTop + 17 + 32 + 20))
-            this.addButton(widget);
+        for (AbstractWidget widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 20))
+            this.addRenderableWidget(widget);
     }
 }

@@ -1,33 +1,29 @@
 package de.ellpeck.prettypipes.network;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.model.ItemCameraTransforms;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.util.Direction;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
-import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 
 import java.util.ArrayList;
@@ -88,9 +84,9 @@ public class PipeItem implements IPipeItem {
 
         // initialize position if new
         if (this.x == 0 && this.y == 0 && this.z == 0) {
-            this.x = MathHelper.lerp(0.5F, startInventory.getX(), this.currGoalPos.getX()) + 0.5F;
-            this.y = MathHelper.lerp(0.5F, startInventory.getY(), this.currGoalPos.getY()) + 0.5F;
-            this.z = MathHelper.lerp(0.5F, startInventory.getZ(), this.currGoalPos.getZ()) + 0.5F;
+            this.x = Mth.lerp(0.5F, startInventory.getX(), this.currGoalPos.getX()) + 0.5F;
+            this.y = Mth.lerp(0.5F, startInventory.getY(), this.currGoalPos.getY()) + 0.5F;
+            this.z = Mth.lerp(0.5F, startInventory.getZ(), this.currGoalPos.getZ()) + 0.5F;
         }
     }
 
@@ -98,25 +94,25 @@ public class PipeItem implements IPipeItem {
     public void updateInPipe(PipeBlockEntity currPipe) {
         // this prevents pipes being updated after one another
         // causing an item that just switched to tick twice
-        long worldTick = currPipe.getWorld().getGameTime();
+        var worldTick = currPipe.getLevel().getGameTime();
         if (this.lastWorldTick == worldTick)
             return;
         this.lastWorldTick = worldTick;
 
-        float motionLeft = this.speed;
+        var motionLeft = this.speed;
         while (motionLeft > 0) {
-            float currSpeed = Math.min(0.25F, motionLeft);
+            var currSpeed = Math.min(0.25F, motionLeft);
             motionLeft -= currSpeed;
 
-            BlockPos myPos = new BlockPos(this.x, this.y, this.z);
-            if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
+            var myPos = new BlockPos(this.x, this.y, this.z);
+            if (!myPos.equals(currPipe.getBlockPos()) && (currPipe.getBlockPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
                 // we're done with the current pipe, so switch to the next one
                 currPipe.getItems().remove(this);
-                PipeBlockEntity next = this.getNextTile(currPipe, true);
+                var next = this.getNextTile(currPipe, true);
                 if (next == null) {
-                    if (!currPipe.getWorld().isRemote) {
-                        if (currPipe.getPos().equals(this.getDestPipe())) {
-                            // ..or store in our destination container if we reached our destination
+                    if (!currPipe.getLevel().isClientSide) {
+                        if (currPipe.getBlockPos().equals(this.getDestPipe())) {
+                            // ...or store in our destination container if we reached our destination
                             this.stack = this.store(currPipe);
                             if (!this.stack.isEmpty())
                                 this.onPathObstructed(currPipe, true);
@@ -130,29 +126,29 @@ public class PipeItem implements IPipeItem {
                     currPipe = next;
                 }
             } else {
-                double dist = Vector3d.copy(this.currGoalPos).squareDistanceTo(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
+                var dist = (this.currGoalPos).distSqr(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F, false);
                 if (dist < currSpeed * currSpeed) {
                     // we're past the start of the pipe, so move to the center of the next pipe
                     BlockPos nextPos;
-                    PipeBlockEntity next = this.getNextTile(currPipe, false);
+                    var next = this.getNextTile(currPipe, false);
                     if (next == null || next == currPipe) {
-                        if (currPipe.getPos().equals(this.getDestPipe())) {
+                        if (currPipe.getBlockPos().equals(this.getDestPipe())) {
                             nextPos = this.destInventory;
                         } else {
                             currPipe.getItems().remove(this);
-                            if (!currPipe.getWorld().isRemote)
+                            if (!currPipe.getLevel().isClientSide)
                                 this.onPathObstructed(currPipe, false);
                             return;
                         }
                     } else {
-                        nextPos = next.getPos();
+                        nextPos = next.getBlockPos();
                     }
-                    float tolerance = 0.001F;
+                    var tolerance = 0.001F;
                     if (dist >= tolerance * tolerance) {
                         // when going around corners, we want to move right up to the corner
-                        Vector3d motion = new Vector3d(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
-                        Vector3d diff = new Vector3d(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
-                        if (motion.crossProduct(diff).length() >= tolerance) {
+                        var motion = new Vec3(this.x - this.lastX, this.y - this.lastY, this.z - this.lastZ);
+                        var diff = new Vec3(nextPos.getX() + 0.5F - this.x, nextPos.getY() + 0.5F - this.y, nextPos.getZ() + 0.5F - this.z);
+                        if (motion.cross(diff).length() >= tolerance) {
                             currSpeed = (float) Math.sqrt(dist);
                         } else {
                             // we're not going around a corner, so continue
@@ -169,7 +165,7 @@ public class PipeItem implements IPipeItem {
             this.lastY = this.y;
             this.lastZ = this.z;
 
-            Vector3d dist = new Vector3d(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
+            var dist = new Vec3(this.currGoalPos.getX() + 0.5F - this.x, this.currGoalPos.getY() + 0.5F - this.y, this.currGoalPos.getZ() + 0.5F - this.z);
             dist = dist.normalize();
             this.x += dist.x * currSpeed;
             this.y += dist.y * currSpeed;
@@ -178,37 +174,37 @@ public class PipeItem implements IPipeItem {
     }
 
     protected void onPathObstructed(PipeBlockEntity currPipe, boolean tryReturn) {
-        if (currPipe.getWorld().isRemote)
+        if (currPipe.getLevel().isClientSide)
             return;
-        PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
+        var network = PipeNetwork.get(currPipe.getLevel());
         if (tryReturn) {
             // first time: we try to return to our input chest
-            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getPos(), this.destInventory, this.getStartPipe(), this.startInventory, this.stack, speed -> this)) {
+            if (!this.retryOnObstruction && network.routeItemToLocation(currPipe.getBlockPos(), this.destInventory, this.getStartPipe(), this.startInventory, this.stack, speed -> this)) {
                 this.retryOnObstruction = true;
                 return;
             }
             // second time: we arrived at our input chest, it is full, so we try to find a different goal location
-            ItemStack remain = network.routeItem(currPipe.getPos(), this.destInventory, this.stack, (stack, speed) -> this, false);
+            var remain = network.routeItem(currPipe.getBlockPos(), this.destInventory, this.stack, (stack, speed) -> this, false);
             if (!remain.isEmpty())
-                this.drop(currPipe.getWorld(), remain.copy());
+                this.drop(currPipe.getLevel(), remain.copy());
         } else {
             // if all re-routing attempts fail, we drop
-            this.drop(currPipe.getWorld(), this.stack);
+            this.drop(currPipe.getLevel(), this.stack);
         }
     }
 
     @Override
-    public void drop(World world, ItemStack stack) {
-        ItemEntity item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
-        item.world.addEntity(item);
+    public void drop(Level world, ItemStack stack) {
+        var item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
+        item.level.addFreshEntity(item);
     }
 
     protected ItemStack store(PipeBlockEntity currPipe) {
-        Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
-        IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
+        var dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
+        var connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
-            return connectable.insertItem(currPipe.getPos(), dir, this.stack, false);
-        IItemHandler handler = currPipe.getItemHandler(dir);
+            return connectable.insertItem(currPipe.getBlockPos(), dir, this.stack, false);
+        var handler = currPipe.getItemHandler(dir);
         if (handler != null)
             return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
         return this.stack;
@@ -217,10 +213,10 @@ public class PipeItem implements IPipeItem {
     protected PipeBlockEntity getNextTile(PipeBlockEntity currPipe, boolean progress) {
         if (this.path.size() <= this.currentTile + 1)
             return null;
-        BlockPos pos = this.path.get(this.currentTile + 1);
+        var pos = this.path.get(this.currentTile + 1);
         if (progress)
             this.currentTile++;
-        PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
+        var network = PipeNetwork.get(currPipe.getLevel());
         return network.getPipe(pos);
     }
 
@@ -245,41 +241,41 @@ public class PipeItem implements IPipeItem {
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag nbt = new CompoundTag();
+        var nbt = new CompoundTag();
         nbt.putString("type", this.type.toString());
         nbt.put("stack", this.stack.serializeNBT());
         nbt.putFloat("speed", this.speed);
-        nbt.put("start_inv", NBTUtil.writeBlockPos(this.startInventory));
-        nbt.put("dest_inv", NBTUtil.writeBlockPos(this.destInventory));
-        nbt.put("curr_goal", NBTUtil.writeBlockPos(this.currGoalPos));
+        nbt.put("start_inv", NbtUtils.writeBlockPos(this.startInventory));
+        nbt.put("dest_inv", NbtUtils.writeBlockPos(this.destInventory));
+        nbt.put("curr_goal", NbtUtils.writeBlockPos(this.currGoalPos));
         nbt.putBoolean("drop_on_obstruction", this.retryOnObstruction);
         nbt.putInt("tile", this.currentTile);
         nbt.putFloat("x", this.x);
         nbt.putFloat("y", this.y);
         nbt.putFloat("z", this.z);
-        ListTag list = new ListTag();
-        for (BlockPos pos : this.path)
-            list.add(NBTUtil.writeBlockPos(pos));
+        var list = new ListTag();
+        for (var pos : this.path)
+            list.add(NbtUtils.writeBlockPos(pos));
         nbt.put("path", list);
         return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundTag nbt) {
-        this.stack = ItemStack.read(nbt.getCompound("stack"));
+        this.stack = ItemStack.of(nbt.getCompound("stack"));
         this.speed = nbt.getFloat("speed");
-        this.startInventory = NBTUtil.readBlockPos(nbt.getCompound("start_inv"));
-        this.destInventory = NBTUtil.readBlockPos(nbt.getCompound("dest_inv"));
-        this.currGoalPos = NBTUtil.readBlockPos(nbt.getCompound("curr_goal"));
+        this.startInventory = NbtUtils.readBlockPos(nbt.getCompound("start_inv"));
+        this.destInventory = NbtUtils.readBlockPos(nbt.getCompound("dest_inv"));
+        this.currGoalPos = NbtUtils.readBlockPos(nbt.getCompound("curr_goal"));
         this.retryOnObstruction = nbt.getBoolean("drop_on_obstruction");
         this.currentTile = nbt.getInt("tile");
         this.x = nbt.getFloat("x");
         this.y = nbt.getFloat("y");
         this.z = nbt.getFloat("z");
         this.path.clear();
-        ListTag list = nbt.getList("path", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++)
-            this.path.add(NBTUtil.readBlockPos(list.getCompound(i)));
+        var list = nbt.getList("path", Tag.TAG_COMPOUND);
+        for (var i = 0; i < list.size(); i++)
+            this.path.add(NbtUtils.readBlockPos(list.getCompound(i)));
     }
 
     @Override
@@ -289,40 +285,40 @@ public class PipeItem implements IPipeItem {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void render(PipeBlockEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
+    public void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source) {
         matrixStack.translate(
-                MathHelper.lerp(partialTicks, this.lastX, this.x),
-                MathHelper.lerp(partialTicks, this.lastY, this.y),
-                MathHelper.lerp(partialTicks, this.lastZ, this.z));
+                Mth.lerp(partialTicks, this.lastX, this.x),
+                Mth.lerp(partialTicks, this.lastY, this.y),
+                Mth.lerp(partialTicks, this.lastZ, this.z));
 
         if (this.stack.getItem() instanceof BlockItem) {
-            float scale = 0.7F;
+            var scale = 0.7F;
             matrixStack.scale(scale, scale, scale);
             matrixStack.translate(0, -0.2F, 0);
         } else {
-            float scale = 0.45F;
+            var scale = 0.45F;
             matrixStack.scale(scale, scale, scale);
             matrixStack.translate(0, -0.1F, 0);
         }
 
-        random.setSeed(Item.getIdFromItem(this.stack.getItem()) + this.stack.getDamage());
-        int amount = this.getModelCount();
+        random.setSeed(Item.getId(this.stack.getItem()) + this.stack.getDamageValue());
+        var amount = this.getModelCount();
 
-        for (int i = 0; i < amount; i++) {
-            matrixStack.push();
+        for (var i = 0; i < amount; i++) {
+            matrixStack.pushPose();
             if (amount > 1) {
                 matrixStack.translate(
                         (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
                         (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
                         (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
             }
-            Minecraft.getInstance().getItemRenderer().renderItem(this.stack, ItemCameraTransforms.TransformType.GROUND, light, overlay, matrixStack, buffer);
-            matrixStack.pop();
+            Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemTransforms.TransformType.GROUND, light, overlay, matrixStack, source, 0);
+            matrixStack.popPose();
         }
     }
 
     protected int getModelCount() {
-        int i = 1;
+        var i = 1;
         if (this.stack.getCount() > 48) {
             i = 5;
         } else if (this.stack.getCount() > 32) {
@@ -336,32 +332,32 @@ public class PipeItem implements IPipeItem {
     }
 
     protected static List<BlockPos> compilePath(GraphPath<BlockPos, NetworkEdge> path) {
-        Graph<BlockPos, NetworkEdge> graph = path.getGraph();
+        var graph = path.getGraph();
         List<BlockPos> ret = new ArrayList<>();
-        List<BlockPos> nodes = path.getVertexList();
+        var nodes = path.getVertexList();
         if (nodes.size() == 1) {
             // add the single pipe twice if there's only one
-            // this is a dirty hack but it works fine so eh
-            for (int i = 0; i < 2; i++)
+            // this is a dirty hack, but it works fine so eh
+            for (var i = 0; i < 2; i++)
                 ret.add(nodes.get(0));
             return ret;
         }
-        for (int i = 0; i < nodes.size() - 1; i++) {
-            BlockPos first = nodes.get(i);
-            BlockPos second = nodes.get(i + 1);
-            NetworkEdge edge = graph.getEdge(first, second);
-            Consumer<Integer> add = j -> {
-                BlockPos pos = edge.pipes.get(j);
+        for (var i = 0; i < nodes.size() - 1; i++) {
+            var first = nodes.get(i);
+            var second = nodes.get(i + 1);
+            var edge = graph.getEdge(first, second);
+            var add = (Consumer<Integer>) j -> {
+                var pos = edge.pipes.get(j);
                 if (!ret.contains(pos))
                     ret.add(pos);
             };
             // if the edge is the other way around, we need to loop through tiles
             // the other way also
             if (!graph.getEdgeSource(edge).equals(first)) {
-                for (int j = edge.pipes.size() - 1; j >= 0; j--)
+                for (var j = edge.pipes.size() - 1; j >= 0; j--)
                     add.accept(j);
             } else {
-                for (int j = 0; j < edge.pipes.size(); j++)
+                for (var j = 0; j < edge.pipes.size(); j++)
                     add.accept(j);
             }
         }

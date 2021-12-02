@@ -1,8 +1,7 @@
 package de.ellpeck.prettypipes.network;
 
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.INBTSerializable;
 
 import java.util.Objects;
@@ -28,25 +27,23 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
     @Override
     public CompoundTag serializeNBT() {
         CompoundTag nbt = new CompoundTag();
-        nbt.putUniqueId("id", this.lockId);
+        nbt.putUUID("id", this.lockId);
         nbt.put("location", this.location.serializeNBT());
-        nbt.put("stack", this.stack.write(new CompoundTag()));
+        nbt.put("stack", this.stack.save(new CompoundTag()));
         return nbt;
     }
 
     @Override
     public void deserializeNBT(CompoundTag nbt) {
-        this.lockId = nbt.getUniqueId("id");
+        this.lockId = nbt.getUUID("id");
         this.location = new NetworkLocation(nbt.getCompound("location"));
-        this.stack = ItemStack.read(nbt.getCompound("stack"));
+        this.stack = ItemStack.of(nbt.getCompound("stack"));
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof NetworkLock) {
-            NetworkLock that = (NetworkLock) o;
+        if (o instanceof NetworkLock that)
             return this.lockId.equals(that.lockId);
-        }
         return false;
     }
 

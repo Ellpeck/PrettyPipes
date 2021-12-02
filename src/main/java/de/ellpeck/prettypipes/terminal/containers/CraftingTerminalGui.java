@@ -1,46 +1,42 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.entity.player.Inventory;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
+
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
     private Button requestButton;
 
-    public CraftingTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+    public CraftingTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
-        this.xSize = 256;
+        this.imageWidth = 256;
     }
 
     @Override
     protected void init() {
         super.init();
-        this.requestButton = this.addButton(new Button(this.guiLeft + 8, this.guiTop + 100, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
-            int amount = requestModifier();
-            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount));
+        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + 8, this.topPos + 100, 50, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".request"), button -> {
+            var amount = requestModifier();
+            PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount));
         }));
         this.tick();
     }
 
     @Override
-    public void tick() {
-        super.tick();
-        CraftingTerminalBlockEntity tile = this.getCraftingContainer().getTile();
+    public void containerTick() {
+        super.containerTick();
+        var tile = this.getCraftingContainer().getTile();
         this.requestButton.active = false;
-        for (int i = 0; i < tile.craftItems.getSlots(); i++) {
-            ItemStack stack = tile.getRequestedCraftItem(i);
+        for (var i = 0; i < tile.craftItems.getSlots(); i++) {
+            var stack = tile.getRequestedCraftItem(i);
             if (!stack.isEmpty() && stack.getCount() < stack.getMaxStackSize()) {
                 this.requestButton.active = true;
                 break;
@@ -49,23 +45,23 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(MatrixStack matrix, int mouseX, int mouseY) {
-        super.drawGuiContainerForegroundLayer(matrix, mouseX, mouseY);
+    protected void renderLabels(PoseStack matrix, int mouseX, int mouseY) {
+        super.renderLabels(matrix, mouseX, mouseY);
 
-        CraftingTerminalContainer container = this.getCraftingContainer();
-        CraftingTerminalBlockEntity tile = container.getTile();
-        for (int i = 0; i < tile.ghostItems.getSlots(); i++) {
+        var container = this.getCraftingContainer();
+        var tile = container.getTile();
+        for (var i = 0; i < tile.ghostItems.getSlots(); i++) {
             if (!tile.craftItems.getStackInSlot(i).isEmpty())
                 continue;
-            ItemStack ghost = tile.ghostItems.getStackInSlot(i);
+            var ghost = tile.ghostItems.getStackInSlot(i);
             if (ghost.isEmpty())
                 continue;
-            int finalI = i;
-            Slot slot = container.inventorySlots.stream().filter(s -> s.inventory == container.craftInventory && s.getSlotIndex() == finalI).findFirst().orElse(null);
+            var finalI = i;
+            var slot = container.slots.stream().filter(s -> s.container == container.craftInventory && s.getSlotIndex() == finalI).findFirst().orElse(null);
             if (slot == null)
                 continue;
-            this.minecraft.getItemRenderer().renderItemIntoGUI(ghost, slot.xPos, slot.yPos);
-            this.minecraft.getItemRenderer().renderItemOverlayIntoGUI(this.font, ghost, slot.xPos, slot.yPos, "0");
+            this.minecraft.getItemRenderer().renderGuiItem(ghost, slot.x, slot.y);
+            this.minecraft.getItemRenderer().renderGuiItemDecorations(this.font, ghost, slot.x, slot.y, "0");
         }
     }
 
@@ -80,6 +76,6 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     }
 
     protected CraftingTerminalContainer getCraftingContainer() {
-        return (CraftingTerminalContainer) this.container;
+        return (CraftingTerminalContainer) this.menu;
     }
 }

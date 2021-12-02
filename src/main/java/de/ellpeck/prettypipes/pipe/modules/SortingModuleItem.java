@@ -3,8 +3,8 @@ package de.ellpeck.prettypipes.pipe.modules;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class SortingModuleItem extends ModuleItem {
                 module.getOrCreateTag().putInt("last", next);
                 return next % nodes.size();
             case RANDOM:
-                return tile.getWorld().rand.nextInt(nodes.size());
+                return tile.getLevel().random.nextInt(nodes.size());
         }
         return null;
     }

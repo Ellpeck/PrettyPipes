@@ -22,7 +22,7 @@ import java.util.List;
 public class PipeFrameItem extends Item {
 
     public PipeFrameItem() {
-        super(new Properties().tab(Registry.GROUP));
+        super(new Properties().tab(Registry.TAB));
     }
 
     // HangingEntityItem copypasta mostly, since it hardcodes the entities bleh

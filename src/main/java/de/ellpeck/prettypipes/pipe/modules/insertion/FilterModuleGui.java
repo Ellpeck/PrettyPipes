@@ -1,20 +1,21 @@
 package de.ellpeck.prettypipes.pipe.modules.insertion;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Inventory;
 
 public class FilterModuleGui extends AbstractPipeGui<FilterModuleContainer> {
-    public FilterModuleGui(FilterModuleContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+
+    public FilterModuleGui(FilterModuleContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
     }
 
     @Override
     protected void init() {
         super.init();
-        for (Widget widget : this.container.filter.getButtons(this, this.guiLeft + 7, this.guiTop + 17 + 32 + 18 * MathHelper.ceil(this.container.filter.getSlots() / 9F) + 2))
-            this.addButton(widget);
+        for (AbstractWidget widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 18 * Mth.ceil(this.menu.filter.getSlots() / 9F) + 2))
+            this.addRenderableWidget(widget);
     }
 }

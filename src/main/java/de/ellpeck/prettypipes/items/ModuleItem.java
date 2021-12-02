@@ -28,7 +28,7 @@ public abstract class ModuleItem extends Item implements IModule {
     private final String name;
 
     public ModuleItem(String name) {
-        super(new Properties().tab(Registry.GROUP).stacksTo(16));
+        super(new Properties().tab(Registry.TAB).stacksTo(16));
         this.name = name;
     }
 

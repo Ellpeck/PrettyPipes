@@ -1,16 +1,14 @@
 package de.ellpeck.prettypipes.terminal;
 
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.IBlockReader;
-
-import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class CraftingTerminalBlock extends ItemTerminalBlock {
 
-    @Nullable
     @Override
-    public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new CraftingTerminalBlockEntity();
+    public @org.jetbrains.annotations.Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new CraftingTerminalBlockEntity(pos, state);
     }
 
 }

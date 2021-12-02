@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
@@ -13,11 +12,6 @@ import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,12 +19,6 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkHooks;
 import org.apache.logging.log4j.util.TriConsumer;
@@ -55,7 +43,7 @@ public class PacketButton {
     }
 
     public static PacketButton fromBytes(FriendlyByteBuf buf) {
-        PacketButton packet = new PacketButton();
+        var packet = new PacketButton();
         packet.pos = buf.readBlockPos();
         packet.result = ButtonResult.values()[buf.readByte()];
         packet.data = buf.readVarIntArray();
@@ -87,11 +75,11 @@ public class PacketButton {
 
     public enum ButtonResult {
         PIPE_TAB((pos, data, player) -> {
-            PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level, pos);
             if (data[0] < 0) {
                 NetworkHooks.openGui((ServerPlayer) player, tile, pos);
             } else {
-                ItemStack stack = tile.modules.getStackInSlot(data[0]);
+                var stack = tile.modules.getStackInSlot(data[0]);
                 NetworkHooks.openGui((ServerPlayer) player, new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
@@ -111,28 +99,28 @@ public class PacketButton {
             }
         }),
         FILTER_CHANGE((pos, data, player) -> {
-            IFilteredContainer container = (IFilteredContainer) player.containerMenu;
-            ItemFilter filter = container.getFilter();
+            var container = (IFilteredContainer) player.containerMenu;
+            var filter = container.getFilter();
             filter.onButtonPacket(data[0]);
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
-            AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.containerMenu;
+            var container = (AbstractPipeContainer<?>) player.containerMenu;
             StackSizeModuleItem.setLimitToMaxStackSize(container.moduleStack, !StackSizeModuleItem.getLimitToMaxStackSize(container.moduleStack));
         }),
         STACK_SIZE_AMOUNT((pos, data, player) -> {
-            AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.containerMenu;
+            var container = (AbstractPipeContainer<?>) player.containerMenu;
             StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
-            CraftingTerminalBlockEntity tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level, pos);
             tile.requestCraftingItems(player, data[0]);
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
-            ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);
             tile.cancelCrafting();
         }),
         TAG_FILTER((pos, data, player) -> {
-            FilterModifierModuleContainer container = (FilterModifierModuleContainer) player.containerMenu;
+            var container = (FilterModifierModuleContainer) player.containerMenu;
             FilterModifierModuleItem.setFilterTag(container.moduleStack, container.getTags().get(data[0]));
         });
 

@@ -1,26 +1,17 @@
 package de.ellpeck.prettypipes.misc;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import de.ellpeck.prettypipes.PrettyPipes;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.fml.client.gui.GuiUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
+import java.util.Optional;
 
-public class ItemTerminalWidget extends Widget {
+public class ItemTerminalWidget extends AbstractWidget {
 
     private final ItemTerminalGui screen;
     public final int gridX;
@@ -30,7 +21,7 @@ public class ItemTerminalWidget extends Widget {
     public boolean craftable;
 
     public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemTerminalGui screen) {
-        super(xIn, yIn, 16, 16, new StringTextComponent(""));
+        super(xIn, yIn, 16, 16, new TextComponent(""));
         this.gridX = gridX;
         this.gridY = gridY;
         this.screen = screen;
@@ -44,25 +35,25 @@ public class ItemTerminalWidget extends Widget {
     }
 
     @Override
-    public void renderButton(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
-        Minecraft mc = this.screen.getMinecraft();
-        ItemRenderer renderer = mc.getItemRenderer();
+    public void renderButton(PoseStack matrix, int mouseX, int mouseY, float partialTicks) {
+        var mc = this.screen.getMinecraft();
+        var renderer = mc.getItemRenderer();
         this.setBlitOffset(100);
-        renderer.zLevel = 100;
+        renderer.blitOffset = 100;
         if (this.selected)
             fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
-        renderer.renderItemAndEffectIntoGUI(mc.player, this.stack, this.x, this.y);
-        int amount = !this.craftable ? this.stack.getCount() : 0;
-        String amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        RenderSystem.pushMatrix();
-        RenderSystem.scalef(0.8F, 0.8F, 1);
-        renderer.renderItemOverlayIntoGUI(mc.fontRenderer, this.stack, (int) (this.x / 0.8F) + 4, (int) (this.y / 0.8F) + 4, amountStrg);
-        RenderSystem.popMatrix();
-        renderer.zLevel = 0;
+        renderer.renderGuiItem(this.stack, this.x, this.y);
+        var amount = !this.craftable ? this.stack.getCount() : 0;
+        var amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
+        matrix.pushPose();
+        matrix.scale(0.8F, 0.8F, 1);
+        renderer.renderGuiItemDecorations(mc.font, this.stack, (int) (this.x / 0.8F) + 4, (int) (this.y / 0.8F) + 4, amountStrg);
+        matrix.popPose();
+        renderer.blitOffset = 0;
         this.setBlitOffset(0);
 
-        if (this.isHovered()) {
+        if (this.isHoveredOrFocused()) {
             RenderSystem.disableDepthTest();
             RenderSystem.colorMask(true, true, true, false);
             this.fillGradient(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433, -2130706433);
@@ -72,18 +63,21 @@ public class ItemTerminalWidget extends Widget {
     }
 
     @Override
-    public void renderToolTip(MatrixStack matrix, int mouseX, int mouseY) {
-        if (this.visible && this.isHovered()) {
-            GuiUtils.preItemToolTip(this.stack);
-            List<ITextComponent> tooltip = this.screen.getTooltipFromItem(this.stack);
+    public void renderToolTip(PoseStack matrix, int mouseX, int mouseY) {
+        if (this.visible && this.isHoveredOrFocused()) {
+            var tooltip = this.screen.getTooltipFromItem(this.stack);
             if (this.stack.getCount() >= 1000) {
-                ITextComponent comp = tooltip.get(0);
-                if (comp instanceof TextComponent) {
-                    tooltip.set(0, ((TextComponent) comp).append(new StringTextComponent(" (" + this.stack.getCount() + ')').mergeStyle(TextFormatting.BOLD)));
+                var comp = tooltip.get(0);
+                if (comp instanceof TextComponent text) {
+                    tooltip.set(0, text.append(new TextComponent(" (" + this.stack.getCount() + ')').withStyle(ChatFormatting.BOLD)));
                 }
             }
-            this.screen.func_243308_b(matrix, tooltip, mouseX, mouseY);
-            GuiUtils.postItemToolTip();
+            this.screen.renderTooltip(matrix, tooltip, Optional.empty(), mouseX, mouseY);
         }
+    }
+
+    @Override
+    public void updateNarration(NarrationElementOutput output) {
+        // TODO narration
     }
 }

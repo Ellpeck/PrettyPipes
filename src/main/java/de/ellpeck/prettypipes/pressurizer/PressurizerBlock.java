@@ -1,56 +1,58 @@
 package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.Utility;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ContainerBlock;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.material.Material;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class PressurizerBlock extends ContainerBlock {
+public class PressurizerBlock extends BaseEntityBlock {
+
     public PressurizerBlock() {
-        super(Properties.create(Material.ROCK).hardnessAndResistance(3).sound(SoundType.STONE));
+        super(BlockBehaviour.Properties.of(Material.STONE).strength(3).sound(SoundType.STONE));
     }
 
     @Override
-    public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
         PressurizerBlockEntity tile = Utility.getBlockEntity(PressurizerBlockEntity.class, worldIn, pos);
         if (tile == null)
-            return ActionResultType.PASS;
-        if (!worldIn.isRemote)
-            NetworkHooks.openGui((ServerPlayerEntity) player, tile, pos);
-        return ActionResultType.SUCCESS;
+            return InteractionResult.PASS;
+        if (!worldIn.isClientSide)
+            NetworkHooks.openGui((ServerPlayer) player, tile, pos);
+        return InteractionResult.SUCCESS;
+    }
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new PressurizerBlockEntity(pos, state);
     }
 
     @Override
-    public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new PressurizerBlockEntity();
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
-    }
-
-    @Override
-    public void addInformation(ItemStack stack, @Nullable IBlockReader worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
+    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
     }
 }

@@ -26,7 +26,7 @@ public class NetworkItem {
     }
 
     public ItemStack asStack() {
-        ItemStack stack = this.item.stack.copy();
+        ItemStack stack = this.item.stack().copy();
         stack.setCount(this.amount);
         return stack;
     }

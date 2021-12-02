@@ -289,7 +289,7 @@ public class PipeBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new PipeBlockEntity(Registry.pipeTileEntity, pos, state);
+        return new PipeBlockEntity(pos, state);
     }
 
     @Override

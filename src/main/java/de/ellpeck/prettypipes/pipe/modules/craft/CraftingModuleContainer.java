@@ -2,9 +2,9 @@ package de.ellpeck.prettypipes.pipe.modules.craft;
 
 import de.ellpeck.prettypipes.misc.FilterSlot;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.items.ItemStackHandler;
 
 public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModuleItem> {
@@ -13,7 +13,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     public ItemStackHandler output;
     public boolean modified;
 
-    public CraftingModuleContainer(ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
+    public CraftingModuleContainer(MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
         super(type, id, player, pos, moduleIndex);
     }
 
@@ -23,10 +23,11 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
         for (int i = 0; i < this.input.getSlots(); i++) {
             this.addSlot(new FilterSlot(this.input, i, (176 - this.module.inputSlots * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
                 @Override
-                public void onSlotChanged() {
-                    super.onSlotChanged();
+                public void setChanged() {
+                    super.setChanged();
                     CraftingModuleContainer.this.modified = true;
                 }
+
             });
         }
 
@@ -34,8 +35,8 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
         for (int i = 0; i < this.output.getSlots(); i++) {
             this.addSlot(new FilterSlot(this.output, i, (176 - this.module.outputSlots * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
                 @Override
-                public void onSlotChanged() {
-                    super.onSlotChanged();
+                public void setChanged() {
+                    super.setChanged();
                     CraftingModuleContainer.this.modified = true;
                 }
             });
@@ -43,8 +44,8 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     }
 
     @Override
-    public void onContainerClosed(PlayerEntity playerIn) {
-        super.onContainerClosed(playerIn);
+    public void removed(Player playerIn) {
+        super.removed(playerIn);
         if (this.modified)
             this.module.save(this.input, this.output, this.moduleStack);
     }

@@ -9,13 +9,14 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class RetrievalModuleItem extends ModuleItem {
+
     private final int maxExtraction;
     private final int speed;
     private final boolean preventOversending;
@@ -33,7 +34,7 @@ public class RetrievalModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
+        PipeNetwork network = PipeNetwork.get(tile.getLevel());
 
         ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
@@ -49,8 +50,8 @@ public class RetrievalModuleItem extends ModuleItem {
                     continue;
                 ItemStack remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
-                remain.shrink(network.getCurrentlyCraftingAmount(tile.getPos(), copy, equalityTypes));
-                if (network.requestItem(tile.getPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
+                remain.shrink(network.getCurrentlyCraftingAmount(tile.getBlockPos(), copy, equalityTypes));
+                if (network.requestItem(tile.getBlockPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                     break;
             }
         }
@@ -77,8 +78,8 @@ public class RetrievalModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new RetrievalModuleContainer(Registry.retrievalModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new RetrievalModuleContainer(Registry.retrievalModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 
     @Override

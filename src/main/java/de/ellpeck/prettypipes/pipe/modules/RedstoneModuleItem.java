@@ -14,7 +14,7 @@ public class RedstoneModuleItem extends ModuleItem {
 
     @Override
     public boolean canPipeWork(ItemStack module, PipeBlockEntity tile) {
-        return !tile.getWorld().isBlockPowered(tile.getPos());
+        return !tile.getLevel().hasNeighborSignal(tile.getBlockPos());
     }
 
     @Override

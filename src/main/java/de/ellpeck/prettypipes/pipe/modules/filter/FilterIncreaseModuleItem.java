@@ -6,8 +6,8 @@ import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 public class FilterIncreaseModuleItem extends ModuleItem {
@@ -28,8 +28,8 @@ public class FilterIncreaseModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new FilterIncreaseModuleContainer(Registry.filterIncreaseModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new FilterIncreaseModuleContainer(Registry.filterIncreaseModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 
     @Override

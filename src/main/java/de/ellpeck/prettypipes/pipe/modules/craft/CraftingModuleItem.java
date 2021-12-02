@@ -6,19 +6,17 @@ import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -51,8 +49,8 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new CraftingModuleContainer(Registry.craftingModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new CraftingModuleContainer(Registry.craftingModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 
     @Override
@@ -69,23 +67,23 @@ public class CraftingModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
+        var network = PipeNetwork.get(tile.getLevel());
         // process crafting ingredient requests
         if (!tile.craftIngredientRequests.isEmpty()) {
             network.startProfile("crafting_ingredients");
-            NetworkLock request = tile.craftIngredientRequests.peek();
-            ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-            Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(request.stack, true, true);
+            var request = tile.craftIngredientRequests.peek();
+            var equalityTypes = ItemFilter.getEqualityTypes(tile);
+            var dest = tile.getAvailableDestination(request.stack, true, true);
             if (dest != null) {
-                ItemStack requestRemain = network.requestExistingItem(request.location, tile.getPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
+                var requestRemain = network.requestExistingItem(request.location, tile.getBlockPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
                 network.resolveNetworkLock(request);
                 tile.craftIngredientRequests.remove();
 
                 // if we couldn't fit all items into the destination, create another request for the rest
-                ItemStack remain = request.stack.copy();
+                var remain = request.stack.copy();
                 remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
                 if (!remain.isEmpty()) {
-                    NetworkLock remainRequest = new NetworkLock(request.location, remain);
+                    var remainRequest = new NetworkLock(request.location, remain);
                     tile.craftIngredientRequests.add(remainRequest);
                     network.createNetworkLock(remainRequest);
                 }
@@ -95,17 +93,17 @@ public class CraftingModuleItem extends ModuleItem {
         // pull requested crafting results from the network once they are stored
         if (!tile.craftResultRequests.isEmpty()) {
             network.startProfile("crafting_results");
-            List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-            ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-            for (Pair<BlockPos, ItemStack> request : tile.craftResultRequests) {
-                ItemStack remain = request.getRight().copy();
-                PipeBlockEntity destPipe = network.getPipe(request.getLeft());
+            var items = network.getOrderedNetworkItems(tile.getBlockPos());
+            var equalityTypes = ItemFilter.getEqualityTypes(tile);
+            for (var request : tile.craftResultRequests) {
+                var remain = request.getRight().copy();
+                var destPipe = network.getPipe(request.getLeft());
                 if (destPipe != null) {
-                    Pair<BlockPos, ItemStack> dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
+                    var dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
                     if (dest == null)
                         continue;
-                    for (NetworkLocation item : items) {
-                        ItemStack requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
+                    for (var item : items) {
+                        var requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
                         remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
                         if (remain.isEmpty())
                             break;
@@ -127,9 +125,9 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public List<ItemStack> getAllCraftables(ItemStack module, PipeBlockEntity tile) {
         List<ItemStack> ret = new ArrayList<>();
-        ItemStackHandler output = this.getOutput(module);
-        for (int i = 0; i < output.getSlots(); i++) {
-            ItemStack stack = output.getStackInSlot(i);
+        var output = this.getOutput(module);
+        for (var i = 0; i < output.getSlots(); i++) {
+            var stack = output.getStackInSlot(i);
             if (!stack.isEmpty())
                 ret.add(stack);
         }
@@ -138,18 +136,18 @@ public class CraftingModuleItem extends ModuleItem {
 
     @Override
     public int getCraftableAmount(ItemStack module, PipeBlockEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
-        List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
-        ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-        ItemStackHandler input = this.getInput(module);
+        var network = PipeNetwork.get(tile.getLevel());
+        var items = network.getOrderedNetworkItems(tile.getBlockPos());
+        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+        var input = this.getInput(module);
 
-        int craftable = 0;
-        ItemStackHandler output = this.getOutput(module);
-        for (int i = 0; i < output.getSlots(); i++) {
-            ItemStack out = output.getStackInSlot(i);
+        var craftable = 0;
+        var output = this.getOutput(module);
+        for (var i = 0; i < output.getSlots(); i++) {
+            var out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
+                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -160,33 +158,33 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         // check if we can craft the required amount of items
-        int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
+        var craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
             return stack;
 
-        PipeNetwork network = PipeNetwork.get(tile.getWorld());
-        List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
+        var network = PipeNetwork.get(tile.getLevel());
+        var items = network.getOrderedNetworkItems(tile.getBlockPos());
 
-        ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
-        int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
-        int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
-        int toCraft = Math.min(craftableAmount, requiredCrafts);
+        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+        var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
+        var requiredCrafts = Mth.ceil(stack.getCount() / (float) resultAmount);
+        var toCraft = Math.min(craftableAmount, requiredCrafts);
 
-        ItemStackHandler input = this.getInput(module);
-        for (int i = 0; i < input.getSlots(); i++) {
-            ItemStack in = input.getStackInSlot(i);
+        var input = this.getInput(module);
+        for (var i = 0; i < input.getSlots(); i++) {
+            var in = input.getStackInSlot(i);
             if (in.isEmpty())
                 continue;
-            ItemStack copy = in.copy();
+            var copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
-            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalBlockEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
+            var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 
-        ItemStack remain = stack.copy();
+        var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);
 
-        ItemStack result = stack.copy();
+        var result = stack.copy();
         result.shrink(remain.getCount());
         tile.craftResultRequests.add(Pair.of(destPipe, result));
 
@@ -194,21 +192,21 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     public ItemStackHandler getInput(ItemStack module) {
-        ItemStackHandler handler = new ItemStackHandler(this.inputSlots);
+        var handler = new ItemStackHandler(this.inputSlots);
         if (module.hasTag())
             handler.deserializeNBT(module.getTag().getCompound("input"));
         return handler;
     }
 
     public ItemStackHandler getOutput(ItemStack module) {
-        ItemStackHandler handler = new ItemStackHandler(this.outputSlots);
+        var handler = new ItemStackHandler(this.outputSlots);
         if (module.hasTag())
             handler.deserializeNBT(module.getTag().getCompound("output"));
         return handler;
     }
 
     public void save(ItemStackHandler input, ItemStackHandler output, ItemStack module) {
-        CompoundTag tag = module.getOrCreateTag();
+        var tag = module.getOrCreateTag();
         if (input != null)
             tag.put("input", input.serializeNBT());
         if (output != null)
@@ -216,10 +214,10 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
-        ItemStackHandler output = this.getOutput(module);
-        int resultAmount = 0;
-        for (int i = 0; i < output.getSlots(); i++) {
-            ItemStack out = output.getStackInSlot(i);
+        var output = this.getOutput(module);
+        var resultAmount = 0;
+        for (var i = 0; i < output.getSlots(); i++) {
+            var out = output.getStackInSlot(i);
             if (ItemEquality.compareItems(stack, out, equalityTypes))
                 resultAmount += out.getCount();
         }

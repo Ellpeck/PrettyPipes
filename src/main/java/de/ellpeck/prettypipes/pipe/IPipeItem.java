@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.pipe;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.network.NetworkEdge;
 import de.ellpeck.prettypipes.network.PipeItem;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -41,15 +42,11 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
     int getItemsOnTheWay(BlockPos goalInv);
 
     @OnlyIn(Dist.CLIENT)
-    void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay);
+    void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source);
 
     static IPipeItem load(CompoundTag nbt) {
-        // TODO legacy compat, remove eventually
-        if (!nbt.contains("type"))
-            nbt.putString("type", PipeItem.TYPE.toString());
-
-        ResourceLocation type = new ResourceLocation(nbt.getString("type"));
-        BiFunction<ResourceLocation, CompoundTag, IPipeItem> func = TYPES.get(type);
+        var type = new ResourceLocation(nbt.getString("type"));
+        var func = TYPES.get(type);
         return func != null ? func.apply(type, nbt) : null;
     }
 }

@@ -6,8 +6,8 @@ import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
@@ -71,7 +71,7 @@ public class StackSizeModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new StackSizeModuleContainer(Registry.stackSizeModuleContainer, windowId, player, tile.getPos(), moduleIndex);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new StackSizeModuleContainer(Registry.stackSizeModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 }

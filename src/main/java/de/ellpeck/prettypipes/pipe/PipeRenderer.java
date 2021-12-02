@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.pipe;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.pipeline.ForgeBlockModelRenderer;
@@ -13,6 +14,9 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
 
     private final Random random = new Random();
 
+    public PipeRenderer(BlockEntityRendererProvider.Context ctx) {
+    }
+
     @Override
     public void render(PipeBlockEntity tile, float partialTicks, PoseStack matrixStack, MultiBufferSource source, int light, int overlay) {
         if (!tile.getItems().isEmpty()) {
@@ -21,7 +25,7 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
             matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
             for (IPipeItem item : tile.getItems()) {
                 matrixStack.pushPose();
-                item.render(tile, matrixStack, this.random, partialTicks, light, overlay);
+                item.render(tile, matrixStack, this.random, partialTicks, light, overlay, source);
                 matrixStack.popPose();
             }
             matrixStack.popPose();

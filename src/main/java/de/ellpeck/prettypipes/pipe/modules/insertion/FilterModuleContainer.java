@@ -3,10 +3,10 @@ package de.ellpeck.prettypipes.pipe.modules.insertion;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
 
@@ -14,7 +14,7 @@ public class FilterModuleContainer extends AbstractPipeContainer<FilterModuleIte
 
     public ItemFilter filter;
 
-    public FilterModuleContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
+    public FilterModuleContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
         super(type, id, player, pos, moduleIndex);
     }
 
@@ -26,8 +26,8 @@ public class FilterModuleContainer extends AbstractPipeContainer<FilterModuleIte
     }
 
     @Override
-    public void onContainerClosed(PlayerEntity playerIn) {
-        super.onContainerClosed(playerIn);
+    public void removed(Player playerIn) {
+        super.removed(playerIn);
         this.filter.save();
     }
 

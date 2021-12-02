@@ -8,8 +8,8 @@ import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
-import de.ellpeck.prettypipes.pipe.PipeRenderer;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import de.ellpeck.prettypipes.pipe.PipeRenderer;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeGui;
@@ -36,9 +36,9 @@ import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleGui;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlock;
+import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import de.ellpeck.prettypipes.pressurizer.PressurizerContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerGui;
-import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
@@ -47,36 +47,26 @@ import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
-import net.minecraft.block.Block;
-import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.entity.EntityClassification;
-import net.minecraft.entity.EntityType;
-import net.minecraft.inventory.container.MenuType;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.INBT;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -84,7 +74,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.IForgeRegistry;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -94,7 +83,7 @@ import java.util.function.BiFunction;
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
 
-    public static final CreativeModeTab GROUP = new CreativeModeTab(PrettyPipes.ID) {
+    public static final CreativeModeTab TAB = new CreativeModeTab(PrettyPipes.ID) {
         @Override
         public ItemStack makeIcon() {
             return new ItemStack(wrenchItem);
@@ -110,21 +99,21 @@ public final class Registry {
     public static Item pipeFrameItem;
 
     public static Block pipeBlock;
-    public static BlockEntityType<PipeBlockEntity> pipeTileEntity;
+    public static BlockEntityType<PipeBlockEntity> pipeBlockEntity;
     public static MenuType<MainPipeContainer> pipeContainer;
 
     public static Block itemTerminalBlock;
-    public static BlockEntityType<ItemTerminalBlockEntity> itemTerminalTileEntity;
+    public static BlockEntityType<ItemTerminalBlockEntity> itemTerminalBlockEntity;
     public static MenuType<ItemTerminalContainer> itemTerminalContainer;
 
     public static Block craftingTerminalBlock;
-    public static BlockEntityType<CraftingTerminalBlockEntity> craftingTerminalTileEntity;
+    public static BlockEntityType<CraftingTerminalBlockEntity> craftingTerminalBlockEntity;
     public static MenuType<CraftingTerminalContainer> craftingTerminalContainer;
 
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
     public static Block pressurizerBlock;
-    public static BlockEntityType<PressurizerBlockEntity> pressurizerTileEntity;
+    public static BlockEntityType<PressurizerBlockEntity> pressurizerBlockEntity;
     public static MenuType<PressurizerContainer> pressurizerContainer;
 
     public static MenuType<ExtractionModuleContainer> extractionModuleContainer;
@@ -147,10 +136,10 @@ public final class Registry {
 
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event) {
-        IForgeRegistry<Item> registry = event.getRegistry();
+        var registry = event.getRegistry();
         registry.registerAll(
                 wrenchItem = new WrenchItem().setRegistryName("wrench"),
-                new Item(new Item.Properties().group(GROUP)).setRegistryName("blank_module"),
+                new Item(new Item.Properties().tab(TAB)).setRegistryName("blank_module"),
                 pipeFrameItem = new PipeFrameItem().setRegistryName("pipe_frame")
         );
         registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
@@ -168,23 +157,23 @@ public final class Registry {
 
         ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
-                .forEach(b -> registry.register(new BlockItem(b, new Item.Properties().group(GROUP)).setRegistryName(b.getRegistryName())));
+                .forEach(b -> registry.register(new BlockItem(b, new Item.Properties().tab(TAB)).setRegistryName(b.getRegistryName())));
     }
 
     @SubscribeEvent
-    public static void registerTiles(RegistryEvent.Register<TileEntityType<?>> event) {
+    public static void registerBlockEntities(RegistryEvent.Register<BlockEntityType<?>> event) {
         event.getRegistry().registerAll(
-                pipeTileEntity = (TileEntityType<PipeBlockEntity>) TileEntityType.Builder.create(PipeBlockEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
-                itemTerminalTileEntity = (TileEntityType<ItemTerminalBlockEntity>) TileEntityType.Builder.create(ItemTerminalBlockEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
-                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalBlockEntity>) TileEntityType.Builder.create(CraftingTerminalBlockEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
-                pressurizerTileEntity = (TileEntityType<PressurizerBlockEntity>) TileEntityType.Builder.create(PressurizerBlockEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
+                pipeBlockEntity = (BlockEntityType<PipeBlockEntity>) BlockEntityType.Builder.of(PipeBlockEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
+                itemTerminalBlockEntity = (BlockEntityType<ItemTerminalBlockEntity>) BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
+                craftingTerminalBlockEntity = (BlockEntityType<CraftingTerminalBlockEntity>) BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
+                pressurizerBlockEntity = (BlockEntityType<PressurizerBlockEntity>) BlockEntityType.Builder.of(PressurizerBlockEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
         );
     }
 
     @SubscribeEvent
     public static void registerEntities(RegistryEvent.Register<EntityType<?>> event) {
         event.getRegistry().registerAll(
-                pipeFrameEntity = (EntityType<PipeFrameEntity>) EntityType.Builder.<PipeFrameEntity>create(PipeFrameEntity::new, EntityClassification.MISC).build("pipe_frame").setRegistryName("pipe_frame")
+                pipeFrameEntity = (EntityType<PipeFrameEntity>) EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame").setRegistryName("pipe_frame")
         );
     }
 
@@ -207,32 +196,30 @@ public final class Registry {
 
     private static <T extends AbstractPipeContainer<?>> MenuType<T> createPipeContainer(String name) {
         return (MenuType<T>) IForgeMenuType.create((windowId, inv, data) -> {
-            PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.world, data.readBlockPos());
-            int moduleIndex = data.readInt();
-            ItemStack moduleStack = tile.modules.getStackInSlot(moduleIndex);
+            var tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.level, data.readBlockPos());
+            var moduleIndex = data.readInt();
+            var moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
         }).setRegistryName(name);
     }
 
     private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
         List<Item> items = new ArrayList<>();
-        for (ModuleTier tier : ModuleTier.values())
+        for (var tier : ModuleTier.values())
             items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
         return items.toArray(new Item[0]);
     }
 
     public static void setup(FMLCommonSetupEvent event) {
-        registerCap(PipeNetwork.class);
-        registerCap(IPipeConnectable.class);
         PacketHandler.setup();
     }
 
     public static final class Client {
 
         public static void setup(FMLClientSetupEvent event) {
-            RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.getCutout());
-            ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
-            RenderingRegistry.registerEntityRenderingHandler(pipeFrameEntity, PipeFrameRenderer::new);
+            ItemBlockRenderTypes.setRenderLayer(pipeBlock, RenderType.cutout());
+            BlockEntityRenderers.register(pipeBlockEntity, PipeRenderer::new);
+            EntityRenderers.register(pipeFrameEntity, PipeFrameRenderer::new);
 
             MenuScreens.register(pipeContainer, MainPipeGui::new);
             MenuScreens.register(itemTerminalContainer, ItemTerminalGui::new);
@@ -246,20 +233,5 @@ public final class Registry {
             MenuScreens.register(craftingModuleContainer, CraftingModuleGui::new);
             MenuScreens.register(filterModifierModuleContainer, FilterModifierModuleGui::new);
         }
-    }
-
-    private static <T> void registerCap(Class<T> capClass) {
-        CapabilityManager.INSTANCE.register(capClass, new Capability.IStorage<T>() {
-            @Nullable
-            @Override
-            public INBT writeNBT(Capability<T> capability, T instance, Direction side) {
-                return null;
-            }
-
-            @Override
-            public void readNBT(Capability<T> capability, T instance, Direction side, INBT nbt) {
-
-            }
-        }, () -> null);
     }
 }

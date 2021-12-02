@@ -1,57 +1,59 @@
 package de.ellpeck.prettypipes.pipe.modules.stacksize;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketButton.ButtonResult;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.entity.player.Inventory;
 
 import java.util.function.Supplier;
 
 public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer> {
-    public StackSizeModuleGui(StackSizeModuleContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+
+    public StackSizeModuleGui(StackSizeModuleContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
     }
 
     @Override
     protected void init() {
         super.init();
-        TextFieldWidget textField = this.addButton(new TextFieldWidget(this.font, this.guiLeft + 7, this.guiTop + 17 + 32 + 10, 40, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".max_stack_size")) {
+        EditBox textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".max_stack_size")) {
             @Override
-            public void writeText(String textToWrite) {
+            public void insertText(String textToWrite) {
                 StringBuilder ret = new StringBuilder();
                 for (char c : textToWrite.toCharArray()) {
                     if (Character.isDigit(c))
                         ret.append(c);
                 }
-                super.writeText(ret.toString());
+                super.insertText(ret.toString());
             }
+
         });
-        textField.setText(String.valueOf(StackSizeModuleItem.getMaxStackSize(this.container.moduleStack)));
-        textField.setMaxStringLength(4);
+        textField.setValue(String.valueOf(StackSizeModuleItem.getMaxStackSize(this.menu.moduleStack)));
+        textField.setMaxLength(4);
         textField.setResponder(s -> {
             if (s.isEmpty())
                 return;
             int amount = Integer.parseInt(s);
-            PacketButton.sendAndExecute(this.container.tile.getPos(), ButtonResult.STACK_SIZE_AMOUNT, amount);
+            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, amount);
         });
-        Supplier<TranslationTextComponent> buttonText = () -> new TranslationTextComponent("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.container.moduleStack) ? "on" : "off"));
-        this.addButton(new Button(this.guiLeft + 7, this.guiTop + 17 + 32 + 10 + 22, 120, 20, buttonText.get(), b -> {
-            PacketButton.sendAndExecute(this.container.tile.getPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON);
+        Supplier<TranslatableComponent> buttonText = () -> new TranslatableComponent("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
+        this.addRenderableWidget(new Button(this.leftPos + 7, this.topPos + 17 + 32 + 10 + 22, 120, 20, buttonText.get(), b -> {
+            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON);
             b.setMessage(buttonText.get());
         }));
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(MatrixStack matrix, int mouseX, int mouseY) {
-        super.drawGuiContainerForegroundLayer(matrix, mouseX, mouseY);
-        this.font.drawString(matrix, I18n.format("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752);
+    protected void renderLabels(PoseStack matrix, int mouseX, int mouseY) {
+        super.renderLabels(matrix, mouseX, mouseY);
+        this.font.draw(matrix, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752);
 
     }
 }

@@ -6,8 +6,8 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -16,7 +16,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -50,8 +49,8 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public List<Widget> getButtons(Screen gui, int x, int y) {
-        List<Widget> buttons = new ArrayList<>();
+    public List<AbstractWidget> getButtons(Screen gui, int x, int y) {
+        List<AbstractWidget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
             var whitelistText = (Supplier<TranslatableComponent>) () -> new TranslatableComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
             buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {

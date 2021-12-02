@@ -7,16 +7,10 @@ import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import joptsimple.internal.Strings;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.World;
-
-import javax.annotation.Nullable;
-import java.util.List;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 public class FilterModifierModuleItem extends ModuleItem {
 
@@ -39,13 +33,8 @@ public class FilterModifierModuleItem extends ModuleItem {
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
-        return new FilterModifierModuleContainer(Registry.filterModifierModuleContainer, windowId, player, tile.getPos(), moduleIndex);
-    }
-
-    @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
-        super.addInformation(stack, worldIn, tooltip, flagIn);
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
+        return new FilterModifierModuleContainer(Registry.filterModifierModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
 
     public ItemEquality getEqualityType(ItemStack stack) {

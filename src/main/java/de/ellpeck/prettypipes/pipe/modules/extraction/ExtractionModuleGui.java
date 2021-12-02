@@ -1,19 +1,19 @@
 package de.ellpeck.prettypipes.pipe.modules.extraction;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
 
 public class ExtractionModuleGui extends AbstractPipeGui<ExtractionModuleContainer> {
-    public ExtractionModuleGui(ExtractionModuleContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+
+    public ExtractionModuleGui(ExtractionModuleContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
     }
 
     @Override
     protected void init() {
         super.init();
-        for (Widget widget : this.container.filter.getButtons(this, this.guiLeft + 7, this.guiTop + 17 + 32 + 20))
-            this.addButton(widget);
+        for (var widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 20))
+            this.addRenderableWidget(widget);
     }
 }

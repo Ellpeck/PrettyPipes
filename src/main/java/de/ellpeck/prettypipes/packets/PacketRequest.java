@@ -3,13 +3,9 @@ package de.ellpeck.prettypipes.packets;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;

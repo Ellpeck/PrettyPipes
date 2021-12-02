@@ -1,14 +1,15 @@
 package de.ellpeck.prettypipes.pipe.modules.stacksize;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
 
 import javax.annotation.Nullable;
 
 public class StackSizeModuleContainer extends AbstractPipeContainer<StackSizeModuleItem> {
-    public StackSizeModuleContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos, int moduleIndex) {
+
+    public StackSizeModuleContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
         super(type, id, player, pos, moduleIndex);
     }
 

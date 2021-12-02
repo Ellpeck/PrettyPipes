@@ -4,9 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.ellpeck.prettypipes.PrettyPipes;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class PlayerPrefs {
 
@@ -45,7 +47,7 @@ public class PlayerPrefs {
     }
 
     private static File getFile() {
-        File location = Minecraft.getInstance().gameDir;
+        File location = Minecraft.getInstance().gameDirectory;
         return new File(location, PrettyPipes.ID + "prefs");
     }
 }

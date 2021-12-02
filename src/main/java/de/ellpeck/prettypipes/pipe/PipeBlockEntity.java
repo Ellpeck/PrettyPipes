@@ -30,7 +30,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
@@ -78,8 +77,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     private final LazyOptional<PipeBlockEntity> lazyThis = LazyOptional.of(() -> this);
     private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
-    public PipeBlockEntity(BlockEntityType<?> type, BlockPos p_155229_, BlockState p_155230_) {
-        super(type, p_155229_, p_155230_);
+    public PipeBlockEntity(BlockPos pos, BlockState state) {
+        super(Registry.pipeBlockEntity, pos, state);
     }
 
     @Override

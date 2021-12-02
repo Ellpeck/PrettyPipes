@@ -17,7 +17,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -34,8 +33,8 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
     private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
     private int lastEnergy;
 
-    public PressurizerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-        super(type, pos, state);
+    public PressurizerBlockEntity(BlockPos pos, BlockState state) {
+        super(Registry.pressurizerBlockEntity, pos, state);
     }
 
     public boolean pressurizeItem(ItemStack stack, boolean simulate) {
