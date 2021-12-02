@@ -33,7 +33,7 @@ public class SortingModuleItem extends ModuleItem {
         switch (this.type) {
             case ROUND_ROBIN:
                 // store an ever-increasing index and choose destinations based on that
-                int next = module.hasTag() ? module.getTag().getInt("last") + 1 : 0;
+                var next = module.hasTag() ? module.getTag().getInt("last") + 1 : 0;
                 module.getOrCreateTag().putInt("last", next);
                 return next % nodes.size();
             case RANDOM:

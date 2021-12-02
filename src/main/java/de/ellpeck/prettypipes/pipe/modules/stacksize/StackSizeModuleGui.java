@@ -23,11 +23,11 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     @Override
     protected void init() {
         super.init();
-        EditBox textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".max_stack_size")) {
+        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".max_stack_size")) {
             @Override
             public void insertText(String textToWrite) {
-                StringBuilder ret = new StringBuilder();
-                for (char c : textToWrite.toCharArray()) {
+                var ret = new StringBuilder();
+                for (var c : textToWrite.toCharArray()) {
                     if (Character.isDigit(c))
                         ret.append(c);
                 }
@@ -40,10 +40,10 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
         textField.setResponder(s -> {
             if (s.isEmpty())
                 return;
-            int amount = Integer.parseInt(s);
+            var amount = Integer.parseInt(s);
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, amount);
         });
-        Supplier<TranslatableComponent> buttonText = () -> new TranslatableComponent("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
+        var buttonText = (Supplier<TranslatableComponent>) () -> new TranslatableComponent("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
         this.addRenderableWidget(new Button(this.leftPos + 7, this.topPos + 17 + 32 + 10 + 22, 120, 20, buttonText.get(), b -> {
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON);
             b.setMessage(buttonText.get());

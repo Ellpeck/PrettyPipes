@@ -37,7 +37,7 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
     protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
         this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
         this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, 176, 137);
-        int energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
+        var energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
         this.blit(matrixStack, this.leftPos + 26, this.topPos + 22, 0, 137, energy, 12);
     }
 }

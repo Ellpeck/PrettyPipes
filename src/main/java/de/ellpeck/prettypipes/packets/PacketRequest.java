@@ -27,7 +27,7 @@ public class PacketRequest {
     }
 
     public static PacketRequest fromBytes(FriendlyByteBuf buf) {
-        PacketRequest packet = new PacketRequest();
+        var packet = new PacketRequest();
         packet.pos = buf.readBlockPos();
         packet.stack = buf.readItem();
         packet.amount = buf.readVarInt();
@@ -46,7 +46,7 @@ public class PacketRequest {
             @Override
             public void run() {
                 Player player = ctx.get().getSender();
-                ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, message.pos);
+                var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, message.pos);
                 message.stack.setCount(message.amount);
                 tile.requestItem(player, message.stack);
             }

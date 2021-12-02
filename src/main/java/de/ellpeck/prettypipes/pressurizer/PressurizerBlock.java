@@ -32,7 +32,7 @@ public class PressurizerBlock extends BaseEntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
-        PressurizerBlockEntity tile = Utility.getBlockEntity(PressurizerBlockEntity.class, worldIn, pos);
+        var tile = Utility.getBlockEntity(PressurizerBlockEntity.class, worldIn, pos);
         if (tile == null)
             return InteractionResult.PASS;
         if (!worldIn.isClientSide)

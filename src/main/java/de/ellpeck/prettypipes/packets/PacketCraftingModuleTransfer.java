@@ -27,22 +27,22 @@ public class PacketCraftingModuleTransfer {
     }
 
     public static PacketCraftingModuleTransfer fromBytes(FriendlyByteBuf buf) {
-        PacketCraftingModuleTransfer packet = new PacketCraftingModuleTransfer();
+        var packet = new PacketCraftingModuleTransfer();
         packet.inputs = new ArrayList<>();
-        for (int i = buf.readInt(); i > 0; i--)
+        for (var i = buf.readInt(); i > 0; i--)
             packet.inputs.add(buf.readItem());
         packet.outputs = new ArrayList<>();
-        for (int i = buf.readInt(); i > 0; i--)
+        for (var i = buf.readInt(); i > 0; i--)
             packet.outputs.add(buf.readItem());
         return packet;
     }
 
     public static void toBytes(PacketCraftingModuleTransfer packet, FriendlyByteBuf buf) {
         buf.writeInt(packet.inputs.size());
-        for (ItemStack stack : packet.inputs)
+        for (var stack : packet.inputs)
             buf.writeItem(stack);
         buf.writeInt(packet.outputs.size());
-        for (ItemStack stack : packet.outputs)
+        for (var stack : packet.outputs)
             buf.writeItem(stack);
     }
 
@@ -64,9 +64,9 @@ public class PacketCraftingModuleTransfer {
     }
 
     private static void copy(ItemStackHandler container, List<ItemStack> contents) {
-        for (int i = 0; i < container.getSlots(); i++)
+        for (var i = 0; i < container.getSlots(); i++)
             container.setStackInSlot(i, ItemStack.EMPTY);
-        for (ItemStack stack : contents)
+        for (var stack : contents)
             ItemHandlerHelper.insertItem(container, stack, false);
     }
 }

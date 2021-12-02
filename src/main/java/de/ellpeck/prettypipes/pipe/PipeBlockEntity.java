@@ -125,7 +125,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     @Override
     public CompoundTag getUpdateTag() {
         // sync pipe items on load
-        CompoundTag nbt = this.save(new CompoundTag());
+        var nbt = this.save(new CompoundTag());
         nbt.put("items", Utility.serializeAll(this.getItems()));
         return nbt;
     }
@@ -245,7 +245,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             var maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
             if (maxAmount < toInsert.getCount())
                 toInsert.setCount(maxAmount);
-            BlockPos offset = this.worldPosition.relative(dir);
+            var offset = this.worldPosition.relative(dir);
             if (preventOversending || maxAmount < Integer.MAX_VALUE) {
                 var network = PipeNetwork.get(this.level);
                 // these are the items that are currently in the pipes, going to this inventory
@@ -448,7 +448,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
-        BlockState state = this.level.getBlockState(pipePos.relative(direction));
+        var state = this.level.getBlockState(pipePos.relative(direction));
         if (state.getValue(PipeBlock.DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
             return ConnectionType.BLOCKED;
         return ConnectionType.CONNECTED;

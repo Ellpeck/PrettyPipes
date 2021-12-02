@@ -32,9 +32,9 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag nbt = new CompoundTag();
-        ListTag list = new ListTag();
-        for (BlockPos pos : this.pipes)
+        var nbt = new CompoundTag();
+        var list = new ListTag();
+        for (var pos : this.pipes)
             list.add(NbtUtils.writeBlockPos(pos));
         nbt.put("pipes", list);
         return nbt;
@@ -43,8 +43,8 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     @Override
     public void deserializeNBT(CompoundTag nbt) {
         this.pipes.clear();
-        ListTag list = nbt.getList("pipes", Tag.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++)
+        var list = nbt.getList("pipes", Tag.TAG_COMPOUND);
+        for (var i = 0; i < list.size(); i++)
             this.pipes.add(NbtUtils.readBlockPos(list.getCompound(i)));
     }
 }

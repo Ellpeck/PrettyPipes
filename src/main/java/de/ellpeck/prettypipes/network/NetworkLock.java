@@ -26,7 +26,7 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag nbt = new CompoundTag();
+        var nbt = new CompoundTag();
         nbt.putUUID("id", this.lockId);
         nbt.put("location", this.location.serializeNBT());
         nbt.put("stack", this.stack.save(new CompoundTag()));

@@ -26,7 +26,7 @@ public class PacketItemEnterPipe {
     }
 
     public static PacketItemEnterPipe fromBytes(FriendlyByteBuf buf) {
-        PacketItemEnterPipe client = new PacketItemEnterPipe();
+        var client = new PacketItemEnterPipe();
         client.tilePos = buf.readBlockPos();
         client.item = buf.readNbt();
         return client;
@@ -42,11 +42,11 @@ public class PacketItemEnterPipe {
         ctx.get().enqueueWork(new Runnable() {
             @Override
             public void run() {
-                Minecraft mc = Minecraft.getInstance();
+                var mc = Minecraft.getInstance();
                 if (mc.level == null)
                     return;
-                IPipeItem item = IPipeItem.load(message.item);
-                PipeBlockEntity pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
+                var item = IPipeItem.load(message.item);
+                var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
                 if (pipe != null)
                     pipe.getItems().add(item);
             }

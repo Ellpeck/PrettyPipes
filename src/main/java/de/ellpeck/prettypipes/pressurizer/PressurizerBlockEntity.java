@@ -38,7 +38,7 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
     }
 
     public boolean pressurizeItem(ItemStack stack, boolean simulate) {
-        int amount = 100 * stack.getCount();
+        var amount = 100 * stack.getCount();
         return this.storage.extractInternal(amount, simulate) >= amount;
     }
 
@@ -153,7 +153,7 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
         }
 
         private int extractInternal(int maxExtract, boolean simulate) {
-            int energyExtracted = Math.min(this.energy, maxExtract);
+            var energyExtracted = Math.min(this.energy, maxExtract);
             if (!simulate)
                 this.energy -= energyExtracted;
             return energyExtracted;

@@ -21,9 +21,9 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
     public void render(PipeBlockEntity tile, float partialTicks, PoseStack matrixStack, MultiBufferSource source, int light, int overlay) {
         if (!tile.getItems().isEmpty()) {
             matrixStack.pushPose();
-            BlockPos tilePos = tile.getBlockPos();
+            var tilePos = tile.getBlockPos();
             matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
-            for (IPipeItem item : tile.getItems()) {
+            for (var item : tile.getItems()) {
                 matrixStack.pushPose();
                 item.render(tile, matrixStack, this.random, partialTicks, light, overlay, source);
                 matrixStack.popPose();

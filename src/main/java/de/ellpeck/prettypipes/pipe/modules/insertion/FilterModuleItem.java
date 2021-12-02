@@ -24,7 +24,7 @@ public class FilterModuleItem extends ModuleItem {
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
-        ItemFilter filter = this.getItemFilter(module, tile);
+        var filter = this.getItemFilter(module, tile);
         return filter.isAllowed(stack);
     }
 
@@ -45,7 +45,7 @@ public class FilterModuleItem extends ModuleItem {
 
     @Override
     public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
-        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        var filter = new ItemFilter(this.filterSlots, module, tile);
         filter.canPopulateFromInventories = this.canPopulateFromInventories;
         return filter;
     }

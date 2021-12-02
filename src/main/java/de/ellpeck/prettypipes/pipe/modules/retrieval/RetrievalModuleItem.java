@@ -34,21 +34,21 @@ public class RetrievalModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        PipeNetwork network = PipeNetwork.get(tile.getLevel());
+        var network = PipeNetwork.get(tile.getLevel());
 
-        ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
+        var equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
-        for (ItemFilter subFilter : tile.getFilters()) {
-            for (int f = 0; f < subFilter.getSlots(); f++) {
-                ItemStack filtered = subFilter.getStackInSlot(f);
+        for (var subFilter : tile.getFilters()) {
+            for (var f = 0; f < subFilter.getSlots(); f++) {
+                var filtered = subFilter.getStackInSlot(f);
                 if (filtered.isEmpty())
                     continue;
-                ItemStack copy = filtered.copy();
+                var copy = filtered.copy();
                 copy.setCount(this.maxExtraction);
-                Pair<BlockPos, ItemStack> dest = tile.getAvailableDestination(copy, true, this.preventOversending);
+                var dest = tile.getAvailableDestination(copy, true, this.preventOversending);
                 if (dest == null)
                     continue;
-                ItemStack remain = dest.getRight().copy();
+                var remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
                 remain.shrink(network.getCurrentlyCraftingAmount(tile.getBlockPos(), copy, equalityTypes));
                 if (network.requestItem(tile.getBlockPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
@@ -84,7 +84,7 @@ public class RetrievalModuleItem extends ModuleItem {
 
     @Override
     public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
-        ItemFilter filter = new ItemFilter(this.filterSlots, module, tile);
+        var filter = new ItemFilter(this.filterSlots, module, tile);
         filter.canModifyWhitelist = false;
         filter.isWhitelist = true;
         return filter;

@@ -30,10 +30,10 @@ public class PacketGhostSlot {
     }
 
     public static PacketGhostSlot fromBytes(FriendlyByteBuf buf) {
-        PacketGhostSlot packet = new PacketGhostSlot();
+        var packet = new PacketGhostSlot();
         packet.pos = buf.readBlockPos();
         packet.stacks = ArrayListMultimap.create();
-        for (int i = buf.readInt(); i > 0; i--)
+        for (var i = buf.readInt(); i > 0; i--)
             packet.stacks.put(buf.readInt(), buf.readItem());
         return packet;
     }
@@ -41,7 +41,7 @@ public class PacketGhostSlot {
     public static void toBytes(PacketGhostSlot packet, FriendlyByteBuf buf) {
         buf.writeBlockPos(packet.pos);
         buf.writeInt(packet.stacks.size());
-        for (Map.Entry<Integer, ItemStack> entry : packet.stacks.entries()) {
+        for (var entry : packet.stacks.entries()) {
             buf.writeInt(entry.getKey());
             buf.writeItem(entry.getValue());
         }
@@ -49,8 +49,8 @@ public class PacketGhostSlot {
 
     @SuppressWarnings("Convert2Lambda")
     public static void onMessage(PacketGhostSlot message, Supplier<NetworkEvent.Context> ctx) {
-        Consumer<Player> doIt = p -> {
-            CraftingTerminalBlockEntity tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, p.level, message.pos);
+        var doIt = (Consumer<Player>) p -> {
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, p.level, message.pos);
             if (tile != null)
                 tile.setGhostItems(message.stacks);
         };

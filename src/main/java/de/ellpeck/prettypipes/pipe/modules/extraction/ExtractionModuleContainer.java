@@ -6,7 +6,6 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
 
@@ -21,7 +20,7 @@ public class ExtractionModuleContainer extends AbstractPipeContainer<ExtractionM
     @Override
     protected void addSlots() {
         this.filter = this.module.getItemFilter(this.moduleStack, this.tile);
-        for (Slot slot : this.filter.getSlots((176 - this.module.filterSlots * 18) / 2 + 1, 17 + 32))
+        for (var slot : this.filter.getSlots((176 - this.module.filterSlots * 18) / 2 + 1, 17 + 32))
             this.addSlot(slot);
     }
 

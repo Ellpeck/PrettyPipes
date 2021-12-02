@@ -21,7 +21,7 @@ public class FilterModuleContainer extends AbstractPipeContainer<FilterModuleIte
     @Override
     protected void addSlots() {
         this.filter = this.module.getItemFilter(this.moduleStack, this.tile);
-        for (Slot slot : this.filter.getSlots((176 - Math.min(this.module.filterSlots, 9) * 18) / 2 + 1, 17 + 32))
+        for (var slot : this.filter.getSlots((176 - Math.min(this.module.filterSlots, 9) * 18) / 2 + 1, 17 + 32))
             this.addSlot(slot);
     }
 

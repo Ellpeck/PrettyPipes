@@ -20,10 +20,10 @@ public class PlayerPrefs {
     public boolean syncJei = true;
 
     public void save() {
-        File file = getFile();
+        var file = getFile();
         if (file.exists())
             file.delete();
-        try (FileWriter writer = new FileWriter(file)) {
+        try (var writer = new FileWriter(file)) {
             GSON.toJson(this, writer);
         } catch (IOException e) {
             e.printStackTrace();
@@ -32,9 +32,9 @@ public class PlayerPrefs {
 
     public static PlayerPrefs get() {
         if (instance == null) {
-            File file = getFile();
+            var file = getFile();
             if (file.exists()) {
-                try (FileReader reader = new FileReader(file)) {
+                try (var reader = new FileReader(file)) {
                     instance = GSON.fromJson(reader, PlayerPrefs.class);
                     return instance;
                 } catch (IOException e) {
@@ -47,7 +47,7 @@ public class PlayerPrefs {
     }
 
     private static File getFile() {
-        File location = Minecraft.getInstance().gameDirectory;
+        var location = Minecraft.getInstance().gameDirectory;
         return new File(location, PrettyPipes.ID + "prefs");
     }
 }

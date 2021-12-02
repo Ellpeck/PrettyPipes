@@ -24,7 +24,7 @@ public class WrappedCraftingInventory extends CraftingContainer {
 
     @Override
     public boolean isEmpty() {
-        for (int i = 0; i < this.items.getSlots(); i++) {
+        for (var i = 0; i < this.items.getSlots(); i++) {
             if (!this.items.getStackInSlot(i).isEmpty())
                 return false;
         }
@@ -38,15 +38,15 @@ public class WrappedCraftingInventory extends CraftingContainer {
 
     @Override
     public ItemStack removeItemNoUpdate(int index) {
-        ItemStack before = this.items.getStackInSlot(index);
+        var before = this.items.getStackInSlot(index);
         this.items.setStackInSlot(index, ItemStack.EMPTY);
         return before;
     }
 
     @Override
     public ItemStack removeItem(int index, int count) {
-        ItemStack slotStack = this.items.getStackInSlot(index);
-        ItemStack ret = !slotStack.isEmpty() && count > 0 ? slotStack.split(count) : ItemStack.EMPTY;
+        var slotStack = this.items.getStackInSlot(index);
+        var ret = !slotStack.isEmpty() && count > 0 ? slotStack.split(count) : ItemStack.EMPTY;
         if (!ret.isEmpty())
             this.eventHandler.slotsChanged(this);
         return ret;
@@ -60,13 +60,13 @@ public class WrappedCraftingInventory extends CraftingContainer {
 
     @Override
     public void clearContent() {
-        for (int i = 0; i < this.items.getSlots(); i++)
+        for (var i = 0; i < this.items.getSlots(); i++)
             this.items.setStackInSlot(i, ItemStack.EMPTY);
     }
 
     @Override
     public void fillStackedContents(StackedContents helper) {
-        for (int i = 0; i < this.items.getSlots(); i++)
+        for (var i = 0; i < this.items.getSlots(); i++)
             helper.accountStack(this.items.getStackInSlot(i));
     }
 }

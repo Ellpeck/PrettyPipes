@@ -34,7 +34,7 @@ public class FilterIncreaseModuleItem extends ModuleItem {
 
     @Override
     public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
-        ItemFilter filter = new ItemFilter(18, module, tile);
+        var filter = new ItemFilter(18, module, tile);
         filter.canModifyWhitelist = false;
         return filter;
     }

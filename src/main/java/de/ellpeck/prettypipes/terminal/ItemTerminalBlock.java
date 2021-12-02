@@ -34,10 +34,10 @@ public class ItemTerminalBlock extends BaseEntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
-        ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
+        var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
         if (tile == null)
             return InteractionResult.PASS;
-        String reason = tile.getInvalidTerminalReason();
+        var reason = tile.getInvalidTerminalReason();
         if (reason != null) {
             if (!worldIn.isClientSide)
                 player.sendMessage(new TranslatableComponent(reason).withStyle(ChatFormatting.RED), UUID.randomUUID());
@@ -53,7 +53,7 @@ public class ItemTerminalBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
+            var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
             if (tile != null)
                 Utility.dropInventory(tile, tile.items);
             super.onRemove(state, worldIn, pos, newState, isMoving);

@@ -16,7 +16,7 @@ public class MainPipeContainer extends AbstractPipeContainer<IModule> {
 
     @Override
     protected void addSlots() {
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
             this.addSlot(new SlotItemHandler(this.tile.modules, i, 62 + i * 18, 17 + 32));
     }
 }

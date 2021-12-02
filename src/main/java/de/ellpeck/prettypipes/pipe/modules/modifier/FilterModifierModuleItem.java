@@ -48,7 +48,7 @@ public class FilterModifierModuleItem extends ModuleItem {
     public static ResourceLocation getFilterTag(ItemStack stack) {
         if (!stack.hasTag())
             return null;
-        String tag = stack.getTag().getString("filter_tag");
+        var tag = stack.getTag().getString("filter_tag");
         if (Strings.isNullOrEmpty(tag))
             return null;
         return new ResourceLocation(tag);
