@@ -76,6 +76,12 @@ minecraft {
                 }
             }
         }
+
+        all {
+            lazyToken('minecraft_classpath') {
+                configurations.embed.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
+        }
     }
 }
 
@@ -156,7 +162,7 @@ publishing {
             artifact deobfJar {
                 classifier 'deobf'
             }
-            
+
             artifact sourcesJar {
                 classifier 'sources'
             }

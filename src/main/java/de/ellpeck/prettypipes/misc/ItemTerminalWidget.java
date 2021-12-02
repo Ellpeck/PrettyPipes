@@ -46,10 +46,7 @@ public class ItemTerminalWidget extends AbstractWidget {
         renderer.renderGuiItem(this.stack, this.x, this.y);
         var amount = !this.craftable ? this.stack.getCount() : 0;
         var amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        matrix.pushPose();
-        matrix.scale(0.8F, 0.8F, 1);
-        renderer.renderGuiItemDecorations(mc.font, this.stack, (int) (this.x / 0.8F) + 4, (int) (this.y / 0.8F) + 4, amountStrg);
-        matrix.popPose();
+        renderer.renderGuiItemDecorations(mc.font, this.stack, this.x, this.y, amountStrg);
         renderer.blitOffset = 0;
         this.setBlitOffset(0);
 

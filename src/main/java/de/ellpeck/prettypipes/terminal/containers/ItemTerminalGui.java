@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
@@ -12,6 +13,7 @@ import joptsimple.internal.Strings;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
@@ -298,7 +300,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     @Override
     protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
-        this.getMinecraft().getTextureManager().bindForSetup(this.getTexture());
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, this.getTexture());
         this.blit(matrix, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
@@ -311,7 +314,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         // draw the items that are currently crafting
         this.hoveredCrafting = ItemStack.EMPTY;
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, TEXTURE);
             this.blit(matrix, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
 
             var x = 0;

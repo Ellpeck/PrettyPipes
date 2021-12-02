@@ -1,9 +1,11 @@
 package de.ellpeck.prettypipes.pipe.modules.modifier;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -123,7 +125,8 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             if (this.tag.equals(FilterModifierModuleItem.getFilterTag(FilterModifierModuleGui.this.menu.moduleStack)))
                 text = ChatFormatting.BOLD + text;
             FilterModifierModuleGui.this.font.draw(matrix, text, this.x, this.y, color);
-            FilterModifierModuleGui.this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, TEXTURE);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

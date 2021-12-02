@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe.containers;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
@@ -8,6 +9,7 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -76,7 +78,8 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     @Override
     protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
-        this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, TEXTURE);
         this.blit(matrix, this.leftPos, this.topPos + 32, 0, 0, 176, 171);
 
         for (var tab : this.tabs)
@@ -139,7 +142,8 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             AbstractPipeGui.this.blit(matrix, this.x, this.y + y, 176, v, 28, height);
 
             AbstractPipeGui.this.itemRenderer.renderGuiItem(this.moduleStack, this.x + 6, this.y + itemOffset);
-            AbstractPipeGui.this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, TEXTURE);
         }
 
         private void drawForeground(PoseStack matrix, int mouseX, int mouseY) {

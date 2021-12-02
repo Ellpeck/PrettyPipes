@@ -1,8 +1,10 @@
 package de.ellpeck.prettypipes.pressurizer;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -35,7 +37,8 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
 
     @Override
     protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
-        this.getMinecraft().getTextureManager().bindForSetup(TEXTURE);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, TEXTURE);
         this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, 176, 137);
         var energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
         this.blit(matrixStack, this.leftPos + 26, this.topPos + 22, 0, 137, energy, 12);
