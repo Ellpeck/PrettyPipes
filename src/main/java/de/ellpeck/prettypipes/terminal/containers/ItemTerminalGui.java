@@ -8,13 +8,19 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
 import joptsimple.internal.Strings;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
@@ -27,12 +33,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
+public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContainer> {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
 
     public List<ItemStack> currentlyCrafting;
-    public TextFieldWidget search;
+    public EditBox search;
 
     // craftables have the second parameter set to true
     private final List<Pair<ItemStack, Boolean>> sortedItems = new ArrayList<>();
@@ -50,23 +56,23 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     private ItemStack hoveredCrafting;
     private boolean isScrolling;
 
-    public ItemTerminalGui(ItemTerminalContainer screenContainer, PlayerInventory inv, ITextComponent titleIn) {
+    public ItemTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
-        this.xSize = 176 + 15;
-        this.ySize = 236;
+        this.imageWidth = 176 + 15;
+        this.imageHeight = 236;
     }
 
     @Override
     protected void init() {
         super.init();
 
-        this.search = this.addButton(new TextFieldWidget(this.font, this.guiLeft + this.getXOffset() + 97, this.guiTop + 6, 86, 8, new StringTextComponent("")));
-        this.search.setEnableBackgroundDrawing(false);
+        this.search = this.addWidget(new EditBox(this.font, this.leftPos + this.getXOffset() + 97, this.topPos + 6, 86, 8, new StringTextComponent("")));
+        this.search.setBordered(false);
         this.lastSearchText = "";
         if (this.items != null)
             this.updateWidgets();
 
-        this.plusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 + 12, this.guiTop + 103, 12, 12, new StringTextComponent("+"), button -> {
+        this.plusButton = this.addWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12, new StringTextComponent("+"), button -> {
             int modifier = requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
@@ -77,23 +83,23 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
-        this.minusButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 24, this.guiTop + 103, 12, 12, new StringTextComponent("-"), button -> {
+        this.minusButton = this.addWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12, new StringTextComponent("-"), button -> {
             this.requestAmount -= requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }));
         this.minusButton.active = false;
-        this.requestButton = this.addButton(new Button(this.guiLeft + this.getXOffset() + 95 - 7 - 25, this.guiTop + 115, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
             Optional<ItemTerminalWidget> widget = this.streamWidgets().filter(w -> w.selected).findFirst();
             if (!widget.isPresent())
                 return;
             ItemStack stack = widget.get().stack.copy();
             stack.setCount(1);
-            PacketHandler.sendToServer(new PacketRequest(this.container.tile.getPos(), stack, this.requestAmount));
+            PacketHandler.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
         }));
         this.requestButton.active = false;
-        this.orderButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop, 20, 20, new StringTextComponent(""), button -> {
+        this.orderButton = this.addWidget(new Button(this.leftPos - 22, this.topPos, 20, 20, new TextComponent(""), button -> {
             if (this.sortedItems == null)
                 return;
             PlayerPrefs prefs = PlayerPrefs.get();
@@ -101,7 +107,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
-        this.ascendingButton = this.addButton(new Button(this.guiLeft - 22, this.guiTop + 22, 20, 20, new StringTextComponent(""), button -> {
+        this.ascendingButton = this.addButton(new Button(this.leftPos - 22, this.topPos + 22, 20, 20, new StringTextComponent(""), button -> {
             if (this.sortedItems == null)
                 return;
             PlayerPrefs prefs = PlayerPrefs.get();
@@ -109,12 +115,12 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
             prefs.save();
             this.updateWidgets();
         }));
-        this.cancelCraftingButton = this.addButton(new Button(this.guiLeft + this.xSize + 4, this.guiTop + 4 + 64, 54, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".cancel_all"), b -> {
+        this.cancelCraftingButton = this.addButton(new Button(this.leftPos + this.xSize + 4, this.topPos + 4 + 64, 54, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".cancel_all"), b -> {
         }));
         this.cancelCraftingButton.visible = false;
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 9; x++)
-                this.addButton(new ItemTerminalWidget(this.guiLeft + this.getXOffset() + 8 + x * 18, this.guiTop + 18 + y * 18, x, y, this));
+                this.addButton(new ItemTerminalWidget(this.leftPos + this.getXOffset() + 8 + x * 18, this.topPos + 18 + y * 18, x, y, this));
         }
     }
 
@@ -141,7 +147,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && mouseX >= this.guiLeft + this.getXOffset() + 172 && this.guiTop + mouseY >= 18 && mouseX < this.guiLeft + this.getXOffset() + 172 + 12 && mouseY < this.guiTop + 18 + 70) {
+        if (button == 0 && mouseX >= this.leftPos + this.getXOffset() + 172 && this.topPos + mouseY >= 18 && mouseX < this.leftPos + this.getXOffset() + 172 + 12 && mouseY < this.topPos + 18 + 70) {
             this.isScrolling = true;
             return true;
         }
@@ -172,7 +178,7 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
         if (this.isScrolling) {
-            float percentage = MathHelper.clamp(((float) mouseY - (this.guiTop + 18) - 7.5F) / (70 - 15), 0, 1);
+            float percentage = MathHelper.clamp(((float) mouseY - (this.topPos + 18) - 7.5F) / (70 - 15), 0, 1);
             int offset = (int) (percentage * (float) (this.sortedItems.size() / 9 - 3));
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
@@ -300,26 +306,26 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
     @Override
     protected void drawGuiContainerBackgroundLayer(MatrixStack matrix, float partialTicks, int mouseX, int mouseY) {
         this.getMinecraft().getTextureManager().bindTexture(this.getTexture());
-        this.blit(matrix, this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize);
+        this.blit(matrix, this.leftPos, this.topPos, 0, 0, this.xSize, this.ySize);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
             float percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
-            this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
+            this.blit(matrix, this.leftPos + this.getXOffset() + 172, this.topPos + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
-            this.blit(matrix, this.guiLeft + this.getXOffset() + 172, this.guiTop + 18, 244, 241, 12, 15);
+            this.blit(matrix, this.leftPos + this.getXOffset() + 172, this.topPos + 18, 244, 241, 12, 15);
         }
 
         // draw the items that are currently crafting
         this.hoveredCrafting = ItemStack.EMPTY;
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
             this.getMinecraft().getTextureManager().bindTexture(TEXTURE);
-            this.blit(matrix, this.guiLeft + this.xSize, this.guiTop + 4, 191, 0, 65, 89);
+            this.blit(matrix, this.leftPos + this.xSize, this.topPos + 4, 191, 0, 65, 89);
 
             int x = 0;
             int y = 0;
             for (ItemStack stack : this.currentlyCrafting) {
-                int itemX = this.guiLeft + this.xSize + 4 + x * 18;
-                int itemY = this.guiTop + 4 + 16 + y * 18;
+                int itemX = this.leftPos + this.xSize + 4 + x * 18;
+                int itemY = this.topPos + 4 + 16 + y * 18;
                 this.itemRenderer.renderItemAndEffectIntoGUI(stack, itemX, itemY);
                 this.itemRenderer.renderItemOverlayIntoGUI(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
                 if (mouseX >= itemX && mouseY >= itemY && mouseX < itemX + 16 && mouseY < itemY + 18)

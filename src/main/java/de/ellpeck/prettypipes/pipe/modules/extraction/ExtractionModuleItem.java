@@ -6,7 +6,7 @@ import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -30,7 +30,7 @@ public class ExtractionModuleItem extends ModuleItem {
     }
 
     @Override
-    public void tick(ItemStack module, PipeTileEntity tile) {
+    public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         ItemFilter filter = this.getItemFilter(module, tile);
@@ -56,32 +56,32 @@ public class ExtractionModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeTileEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
         return false;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
         return false;
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return !(other instanceof ExtractionModuleItem);
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return true;
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new ExtractionModuleContainer(Registry.extractionModuleContainer, windowId, player, tile.getPos(), moduleIndex);
     }
 
     @Override
-    public ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile) {
+    public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
         return new ItemFilter(this.filterSlots, module, tile);
     }
 }

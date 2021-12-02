@@ -1,40 +1,37 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.ClickType;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.Slot;
+import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.items.SlotItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 
-public class ItemTerminalContainer extends Container {
+public class ItemTerminalContainer extends AbstractContainerMenu {
 
-    public final ItemTerminalTileEntity tile;
+    public final ItemTerminalBlockEntity tile;
 
-    public ItemTerminalContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos) {
+    public ItemTerminalContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos) {
         super(type, id);
-        this.tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, player.world, pos);
+        this.tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);
 
         this.addOwnSlots(player);
 
         int off = this.getSlotXOffset();
         for (int l = 0; l < 3; ++l)
             for (int j1 = 0; j1 < 9; ++j1)
-                this.addSlot(new Slot(player.inventory, j1 + l * 9 + 9, 8 + off + j1 * 18, 154 + l * 18));
+                this.addSlot(new Slot(player.getInventory(), j1 + l * 9 + 9, 8 + off + j1 * 18, 154 + l * 18));
         for (int i1 = 0; i1 < 9; ++i1)
-            this.addSlot(new Slot(player.inventory, i1, 8 + off + i1 * 18, 212));
+            this.addSlot(new Slot(player.getInventory(), i1, 8 + off + i1 * 18, 212));
     }
 
-    protected void addOwnSlots(PlayerEntity player) {
+    protected void addOwnSlots(Player player) {
         int off = this.getSlotXOffset();
         for (int i = 0; i < 6; i++)
             this.addSlot(new SlotItemHandler(this.tile.items, i, 8 + off + i % 3 * 18, 102 + i / 3 * 18));
@@ -47,12 +44,12 @@ public class ItemTerminalContainer extends Container {
     }
 
     @Override
-    public ItemStack transferStackInSlot(PlayerEntity player, int slotIndex) {
-        return Utility.transferStackInSlot(this, this::mergeItemStack, player, slotIndex, stack -> Pair.of(6, 12));
+    public ItemStack quickMoveStack(Player player, int slotIndex) {
+        return Utility.transferStackInSlot(this, this::moveItemStackTo, player, slotIndex, stack -> Pair.of(6, 12));
     }
 
     @Override
-    public boolean canInteractWith(PlayerEntity playerIn) {
+    public boolean stillValid(Player player) {
         return true;
     }
 }

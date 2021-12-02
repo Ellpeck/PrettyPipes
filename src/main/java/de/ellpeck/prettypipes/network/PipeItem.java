@@ -5,7 +5,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.model.ItemCameraTransforms;
@@ -95,7 +95,7 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public void updateInPipe(PipeTileEntity currPipe) {
+    public void updateInPipe(PipeBlockEntity currPipe) {
         // this prevents pipes being updated after one another
         // causing an item that just switched to tick twice
         long worldTick = currPipe.getWorld().getGameTime();
@@ -112,7 +112,7 @@ public class PipeItem implements IPipeItem {
             if (!myPos.equals(currPipe.getPos()) && (currPipe.getPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
                 // we're done with the current pipe, so switch to the next one
                 currPipe.getItems().remove(this);
-                PipeTileEntity next = this.getNextTile(currPipe, true);
+                PipeBlockEntity next = this.getNextTile(currPipe, true);
                 if (next == null) {
                     if (!currPipe.getWorld().isRemote) {
                         if (currPipe.getPos().equals(this.getDestPipe())) {
@@ -134,7 +134,7 @@ public class PipeItem implements IPipeItem {
                 if (dist < currSpeed * currSpeed) {
                     // we're past the start of the pipe, so move to the center of the next pipe
                     BlockPos nextPos;
-                    PipeTileEntity next = this.getNextTile(currPipe, false);
+                    PipeBlockEntity next = this.getNextTile(currPipe, false);
                     if (next == null || next == currPipe) {
                         if (currPipe.getPos().equals(this.getDestPipe())) {
                             nextPos = this.destInventory;
@@ -177,7 +177,7 @@ public class PipeItem implements IPipeItem {
         }
     }
 
-    protected void onPathObstructed(PipeTileEntity currPipe, boolean tryReturn) {
+    protected void onPathObstructed(PipeBlockEntity currPipe, boolean tryReturn) {
         if (currPipe.getWorld().isRemote)
             return;
         PipeNetwork network = PipeNetwork.get(currPipe.getWorld());
@@ -203,7 +203,7 @@ public class PipeItem implements IPipeItem {
         item.world.addEntity(item);
     }
 
-    protected ItemStack store(PipeTileEntity currPipe) {
+    protected ItemStack store(PipeBlockEntity currPipe) {
         Direction dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
         IPipeConnectable connectable = currPipe.getPipeConnectable(dir);
         if (connectable != null)
@@ -214,7 +214,7 @@ public class PipeItem implements IPipeItem {
         return this.stack;
     }
 
-    protected PipeTileEntity getNextTile(PipeTileEntity currPipe, boolean progress) {
+    protected PipeBlockEntity getNextTile(PipeBlockEntity currPipe, boolean progress) {
         if (this.path.size() <= this.currentTile + 1)
             return null;
         BlockPos pos = this.path.get(this.currentTile + 1);
@@ -289,7 +289,7 @@ public class PipeItem implements IPipeItem {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
+    public void render(PipeBlockEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer) {
         matrixStack.translate(
                 MathHelper.lerp(partialTicks, this.lastX, this.x),
                 MathHelper.lerp(partialTicks, this.lastY, this.y),

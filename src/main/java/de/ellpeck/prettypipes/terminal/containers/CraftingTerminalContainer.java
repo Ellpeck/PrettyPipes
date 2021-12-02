@@ -1,7 +1,7 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.CraftResultInventory;
@@ -76,7 +76,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
         return super.slotClick(slotId, dragType, clickTypeIn, player);
     }
 
-    public CraftingTerminalTileEntity getTile() {
-        return (CraftingTerminalTileEntity) this.tile;
+    public CraftingTerminalBlockEntity getTile() {
+        return (CraftingTerminalBlockEntity) this.tile;
     }
 }

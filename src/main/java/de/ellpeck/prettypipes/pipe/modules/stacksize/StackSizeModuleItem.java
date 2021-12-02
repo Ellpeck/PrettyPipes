@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -42,7 +42,7 @@ public class StackSizeModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getMaxInsertionAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination) {
+    public int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination) {
         int max = getMaxStackSize(module);
         if (getLimitToMaxStackSize(module))
             max = Math.min(max, stack.getMaxStackSize());
@@ -61,17 +61,17 @@ public class StackSizeModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return !(other instanceof StackSizeModuleItem);
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return true;
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new StackSizeModuleContainer(Registry.stackSizeModuleContainer, windowId, player, tile.getPos(), moduleIndex);
     }
 }

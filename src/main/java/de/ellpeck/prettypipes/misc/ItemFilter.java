@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.misc;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.Button;
@@ -25,14 +25,14 @@ import java.util.function.Supplier;
 public class ItemFilter extends ItemStackHandler {
 
     private final ItemStack stack;
-    private final PipeTileEntity pipe;
+    private final PipeBlockEntity pipe;
     public boolean isWhitelist;
 
     public boolean canPopulateFromInventories;
     public boolean canModifyWhitelist = true;
     private boolean modified;
 
-    public ItemFilter(int size, ItemStack stack, PipeTileEntity pipe) {
+    public ItemFilter(int size, ItemStack stack, PipeBlockEntity pipe) {
         super(size);
         this.stack = stack;
         this.pipe = pipe;
@@ -144,7 +144,7 @@ public class ItemFilter extends ItemStackHandler {
         this.modified = true;
     }
 
-    public static ItemEquality[] getEqualityTypes(PipeTileEntity pipe) {
+    public static ItemEquality[] getEqualityTypes(PipeBlockEntity pipe) {
         return pipe.streamModules()
                 .filter(m -> m.getRight() instanceof FilterModifierModuleItem)
                 .map(m -> ((FilterModifierModuleItem) m.getRight()).getEqualityType(m.getLeft()))

@@ -1,16 +1,13 @@
 package de.ellpeck.prettypipes.pipe;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.network.NetworkEdge;
 import de.ellpeck.prettypipes.network.PipeItem;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -31,9 +28,9 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
 
     void setDestination(BlockPos startInventory, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path);
 
-    void updateInPipe(PipeTileEntity currPipe);
+    void updateInPipe(PipeBlockEntity currPipe);
 
-    void drop(World world, ItemStack stack);
+    void drop(Level world, ItemStack stack);
 
     BlockPos getDestPipe();
 
@@ -44,7 +41,7 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
     int getItemsOnTheWay(BlockPos goalInv);
 
     @OnlyIn(Dist.CLIENT)
-    void render(PipeTileEntity tile, MatrixStack matrixStack, Random random, float partialTicks, int light, int overlay, IRenderTypeBuffer buffer);
+    void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay);
 
     static IPipeItem load(CompoundTag nbt) {
         // TODO legacy compat, remove eventually

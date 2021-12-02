@@ -1,11 +1,11 @@
 package de.ellpeck.prettypipes.misc;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.Slot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
+import org.jetbrains.annotations.NotNull;
 
 public class FilterSlot extends SlotItemHandler {
 
@@ -16,9 +16,9 @@ public class FilterSlot extends SlotItemHandler {
         this.onlyOneItem = onlyOneItem;
     }
 
-    public static boolean checkFilter(Container container, int slotId, PlayerEntity player) {
-        if (slotId >= 0 && slotId < container.inventorySlots.size()) {
-            Slot slot = container.getSlot(slotId);
+    public static boolean checkFilter(AbstractContainerMenu container, int slotId, Player player) {
+        if (slotId >= 0 && slotId < container.slots.size()) {
+            var slot = container.getSlot(slotId);
             if (slot instanceof FilterSlot) {
                 ((FilterSlot) slot).slotClick(player);
                 return true;
@@ -27,32 +27,33 @@ public class FilterSlot extends SlotItemHandler {
         return false;
     }
 
-    private void slotClick(PlayerEntity player) {
-        ItemStack heldStack = player.inventory.getItemStack();
-        ItemStack stackInSlot = this.getStack();
+    private void slotClick(Player player) {
+        var heldStack = player.inventoryMenu.getCarried();
+        var stackInSlot = this.getItem();
 
         if (!stackInSlot.isEmpty() && heldStack.isEmpty()) {
-            this.putStack(ItemStack.EMPTY);
+            this.safeInsert(ItemStack.EMPTY);
         } else if (!heldStack.isEmpty()) {
-            ItemStack s = heldStack.copy();
+            var s = heldStack.copy();
             if (this.onlyOneItem)
                 s.setCount(1);
-            this.putStack(s);
+            this.safeInsert(s);
         }
     }
 
     @Override
-    public boolean isItemValid(ItemStack stack) {
+    public boolean mayPlace(@NotNull ItemStack stack) {
         return false;
     }
 
     @Override
-    public void putStack(ItemStack stack) {
-        super.putStack(stack.copy());
+    public ItemStack safeInsert(ItemStack stack) {
+        return super.safeInsert(stack.copy());
     }
 
     @Override
-    public boolean canTakeStack(PlayerEntity playerIn) {
+    public boolean mayPickup(Player playerIn) {
         return false;
     }
+
 }

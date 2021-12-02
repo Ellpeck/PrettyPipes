@@ -12,12 +12,13 @@ import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
 import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Direction;
@@ -36,18 +37,18 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
+public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
 
     public final ItemStackHandler craftItems = new ItemStackHandler(9) {
         @Override
         protected void onContentsChanged(int slot) {
-            for (PlayerEntity playerEntity : CraftingTerminalTileEntity.this.getLookingPlayers())
-                playerEntity.openContainer.onCraftMatrixChanged(null);
+            for (Player playerEntity : CraftingTerminalBlockEntity.this.getLookingPlayers())
+                playerEntity.containerMenu.onCraftMatrixChanged(null);
         }
     };
     public final ItemStackHandler ghostItems = new ItemStackHandler(9);
 
-    public CraftingTerminalTileEntity() {
+    public CraftingTerminalBlockEntity() {
         super(Registry.craftingTerminalTileEntity);
     }
 
@@ -85,7 +86,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                     }
                     // check craftables
                     if (amount <= 0 && highestAmount <= 0) {
-                        PipeTileEntity pipe = this.getConnectedPipe();
+                        PipeBlockEntity pipe = this.getConnectedPipe();
                         if (pipe != null)
                             amount = PipeNetwork.get(this.world).getCraftableAmount(pipe.getPos(), null, stack, new Stack<>(), ItemEquality.NBT);
                     }
@@ -107,7 +108,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     }
 
     public void requestCraftingItems(PlayerEntity player, int maxAmount) {
-        PipeTileEntity pipe = this.getConnectedPipe();
+        PipeBlockEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
         PipeNetwork network = PipeNetwork.get(this.world);
@@ -161,7 +162,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
     @Override
     public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack remain, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
-        CraftingTerminalTileEntity tile = Utility.getBlockEntity(CraftingTerminalTileEntity.class, this.world, pos);
+        CraftingTerminalBlockEntity tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, this.world, pos);
         if (tile != null) {
             remain = remain.copy();
             int lowestSlot = -1;
@@ -194,7 +195,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         return remain;
     }
 
-    public static int getAvailableCrafts(PipeTileEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+    public static int getAvailableCrafts(PipeBlockEntity tile, int slots, Function<Integer, ItemStack> inputFunction, Predicate<Integer> isGhost, Function<EquatableItemStack, Collection<NetworkLocation>> locationsFunction, Consumer<ItemStack> unavailableConsumer, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         // the highest amount we can craft with the items we have
         int lowestAvailable = Integer.MAX_VALUE;

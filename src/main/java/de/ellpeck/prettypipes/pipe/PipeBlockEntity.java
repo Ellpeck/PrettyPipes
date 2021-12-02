@@ -13,6 +13,7 @@ import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
@@ -20,6 +21,10 @@ import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NBTUtil;
@@ -35,6 +40,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.server.ServerWorld;
@@ -57,7 +64,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PipeTileEntity extends BlockEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
+public class PipeBlockEntity extends BaseContainerBlockEntity implements IPipeConnectable {
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
@@ -65,7 +72,7 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
             var item = stack.getItem();
             if (!(item instanceof IModule module))
                 return false;
-            return PipeTileEntity.this.streamModules().allMatch(m -> module.isCompatible(stack, PipeTileEntity.this, m.getRight()) && m.getRight().isCompatible(m.getLeft(), PipeTileEntity.this, module));
+            return PipeBlockEntity.this.streamModules().allMatch(m -> module.isCompatible(stack, PipeBlockEntity.this, m.getRight()) && m.getRight().isCompatible(m.getLeft(), PipeBlockEntity.this, module));
         }
 
         @Override
@@ -81,7 +88,7 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
     protected List<IPipeItem> items;
     private int lastItemAmount;
     private int priority;
-    private final LazyOptional<PipeTileEntity> lazyThis = LazyOptional.of(() -> this);
+    private final LazyOptional<PipeBlockEntity> lazyThis = LazyOptional.of(() -> this);
     private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
     @Override
@@ -338,21 +345,21 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
         IItemHandler handler = this.getNeighborCap(dir, CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
         if (handler != null)
             return handler;
-        return Utility.getBlockItemHandler(this.world, this.pos.offset(dir), dir.getOpposite());
+        return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());
     }
 
     public <T> T getNeighborCap(Direction dir, Capability<T> cap) {
         if (!this.isConnected(dir))
             return null;
-        BlockPos pos = this.pos.offset(dir);
-        TileEntity tile = this.world.getTileEntity(pos);
+        BlockPos pos = this.worldPosition.relative(dir);
+        BlockEntity tile = this.level.getBlockEntity(pos);
         if (tile != null)
             return tile.getCapability(cap, dir.getOpposite()).orElse(null);
         return null;
     }
 
     public IPipeConnectable getPipeConnectable(Direction dir) {
-        TileEntity tile = this.world.getTileEntity(this.pos.offset(dir));
+        BlockEntity tile = this.level.getBlockEntity(this.worldPosition.relative(dir));
         if (tile != null)
             return tile.getCapability(Registry.pipeConnectableCapability, dir.getOpposite()).orElse(null);
         return null;
@@ -367,7 +374,7 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
             if (this.isConnectedInventory(dir))
                 return true;
             IPipeConnectable connectable = this.getPipeConnectable(dir);
-            if (connectable != null && connectable.allowsModules(this.pos, dir))
+            if (connectable != null && connectable.allowsModules(this.worldPosition, dir))
                 return true;
         }
         return false;
@@ -388,17 +395,17 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
         return builder.build();
     }
 
-    public void removeCover(PlayerEntity player, Hand hand) {
-        if (this.world.isRemote)
+    public void removeCover(Player player, InteractionHand hand) {
+        if (this.level.isRemote)
             return;
-        List<ItemStack> drops = Block.getDrops(this.cover, (ServerWorld) this.world, this.pos, null, player, player.getHeldItem(hand));
+        List<ItemStack> drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null, player, player.getItemInHand(hand));
         for (ItemStack drop : drops)
-            Block.spawnAsEntity(this.world, this.pos, drop);
+            Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ(), drop);
         this.cover = null;
     }
 
     public boolean shouldWorkNow(int speed) {
-        return (this.world.getGameTime() + this.workRandomizer.get()) % speed == 0;
+        return (this.level.getGameTime() + this.workRandomizer.get()) % speed == 0;
     }
 
     public int getNextNode(List<BlockPos> nodes, int index) {
@@ -414,10 +421,10 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
     }
 
     @Override
-    public void remove() {
-        super.remove();
+    public void setRemoved() {
+        super.setRemoved();
         this.getItems().clear();
-        PipeNetwork network = PipeNetwork.get(this.world);
+        PipeNetwork network = PipeNetwork.get(this.level);
         for (NetworkLock lock : this.craftIngredientRequests)
             network.resolveNetworkLock(lock);
         this.lazyThis.invalidate();
@@ -431,7 +438,7 @@ public class PipeTileEntity extends BlockEntity implements INamedContainerProvid
     @Nullable
     @Override
     public Container createMenu(int window, PlayerInventory inv, PlayerEntity player) {
-        return new MainPipeContainer(Registry.pipeContainer, window, player, PipeTileEntity.this.pos);
+        return new MainPipeContainer(Registry.pipeContainer, window, player, PipeBlockEntity.this.pos);
     }
 
     @Override

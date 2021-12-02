@@ -4,36 +4,34 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
-import net.minecraft.block.BlockState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.item.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.FilledMapItem;
+import net.minecraft.network.IPacket;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.decoration.ItemFrame;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.IPacket;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.storage.MapData;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.entity.IEntityAdditionalSpawnData;
-import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraftforge.network.ICustomPacket;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -83,8 +81,8 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     }
 
     @Override
-    public boolean onValidSurface() {
-        return super.onValidSurface() && canPlace(this.world, this.hangingPosition, this.facingDirection);
+    public boolean survives() {
+        return super.survives() && canPlace(this.level, this.pos, this.direction);
     }
 
     private static BlockPos getAttachedPipe(Level world, BlockPos pos, Direction direction) {
@@ -97,77 +95,77 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
         return null;
     }
 
-    public static boolean canPlace(World world, BlockPos pos, Direction direction) {
+    public static boolean canPlace(Level world, BlockPos pos, Direction direction) {
         return getAttachedPipe(world, pos, direction) != null;
     }
 
     public int getAmount() {
-        return this.dataManager.get(AMOUNT);
+        return this.entityData.get(AMOUNT);
     }
 
     @Override
-    public boolean attackEntityFrom(DamageSource source, float amount) {
+    public boolean hurt(DamageSource source, float amount) {
         if (this.isInvulnerableTo(source)) {
             return false;
-        } else if (!source.isExplosion() && !this.getDisplayedItem().isEmpty()) {
-            if (!this.world.isRemote) {
-                this.dropItemOrSelf(source.getTrueSource(), false);
-                this.playSound(SoundEvents.ENTITY_ITEM_FRAME_REMOVE_ITEM, 1.0F, 1.0F);
+        } else if (!source.isExplosion() && !this.getItem().isEmpty()) {
+            if (!this.level.isClientSide) {
+                this.dropItemOrSelf(source.getDirectEntity(), false);
+                this.playSound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 1.0F, 1.0F);
             }
 
             return true;
         } else {
-            return super.attackEntityFrom(source, amount);
+            return super.hurt(source, amount);
         }
     }
 
     @Override
-    public void onBroken(@Nullable Entity brokenEntity) {
-        this.playSound(SoundEvents.ENTITY_ITEM_FRAME_BREAK, 1.0F, 1.0F);
+    public void dropItem(@Nullable Entity brokenEntity) {
+        this.playSound(SoundEvents.ITEM_FRAME_BREAK, 1.0F, 1.0F);
         this.dropItemOrSelf(brokenEntity, true);
     }
 
     private void dropItemOrSelf(@Nullable Entity entityIn, boolean b) {
-        if (!this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+        if (!this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             if (entityIn == null)
-                this.getDisplayedItem().setAttachedEntity(null);
+                this.getItem().setEntityRepresentation(null);
         } else {
-            ItemStack itemstack = this.getDisplayedItem();
-            this.setDisplayedItem(ItemStack.EMPTY);
-            if (entityIn instanceof PlayerEntity) {
-                PlayerEntity playerentity = (PlayerEntity) entityIn;
-                if (playerentity.abilities.isCreativeMode) {
-                    itemstack.setAttachedEntity(null);
+            ItemStack itemstack = this.getItem();
+            this.setItem(ItemStack.EMPTY);
+            if (entityIn instanceof Player playerentity) {
+                if (playerentity.isCreative()) {
+                    itemstack.setEntityRepresentation(null);
                     return;
                 }
             }
 
             if (b)
-                this.entityDropItem(Registry.pipeFrameItem);
+                this.spawnAtLocation(Registry.pipeFrameItem);
 
             if (!itemstack.isEmpty()) {
                 itemstack = itemstack.copy();
-                itemstack.setAttachedEntity(null);
-                this.entityDropItem(itemstack);
+                itemstack.setEntityRepresentation(null);
+                this.spawnAtLocation(itemstack);
             }
 
         }
     }
 
     @Override
-    public ActionResultType processInitialInteract(PlayerEntity player, Hand hand) {
-        if (this.getDisplayedItem().isEmpty())
-            return super.processInitialInteract(player, hand);
-        return ActionResultType.FAIL;
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        if (this.getItem().isEmpty())
+            return super.interact(player, hand);
+        return InteractionResult.FAIL;
     }
 
+
     @Override
-    public ItemStack getPickedResult(RayTraceResult target) {
+    public ItemStack getPickedResult(HitResult target) {
         return new ItemStack(Registry.pipeFrameItem);
     }
 
     @Override
-    public IPacket<?> createSpawnPacket() {
+    public ICustomPacket<?> createSpawnPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 

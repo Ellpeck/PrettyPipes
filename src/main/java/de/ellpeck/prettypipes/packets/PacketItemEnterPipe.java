@@ -2,12 +2,12 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -25,16 +25,16 @@ public class PacketItemEnterPipe {
 
     }
 
-    public static PacketItemEnterPipe fromBytes(PacketBuffer buf) {
+    public static PacketItemEnterPipe fromBytes(FriendlyByteBuf buf) {
         PacketItemEnterPipe client = new PacketItemEnterPipe();
         client.tilePos = buf.readBlockPos();
-        client.item = buf.readCompoundTag();
+        client.item = buf.readNbt();
         return client;
     }
 
-    public static void toBytes(PacketItemEnterPipe packet, PacketBuffer buf) {
+    public static void toBytes(PacketItemEnterPipe packet, FriendlyByteBuf buf) {
         buf.writeBlockPos(packet.tilePos);
-        buf.writeCompoundTag(packet.item);
+        buf.writeNbt(packet.item);
     }
 
     @SuppressWarnings("Convert2Lambda")
@@ -43,10 +43,10 @@ public class PacketItemEnterPipe {
             @Override
             public void run() {
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.world == null)
+                if (mc.level == null)
                     return;
                 IPipeItem item = IPipeItem.load(message.item);
-                PipeTileEntity pipe = Utility.getBlockEntity(PipeTileEntity.class, mc.world, message.tilePos);
+                PipeBlockEntity pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
                 if (pipe != null)
                     pipe.getItems().add(item);
             }

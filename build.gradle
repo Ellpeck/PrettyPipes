@@ -95,7 +95,7 @@ repositories {
 
 configurations {
     embed
-    compile.extendsFrom(embed)
+    implementation.extendsFrom(embed)
 }
 
 dependencies {

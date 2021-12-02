@@ -1,13 +1,12 @@
 package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
 
@@ -33,7 +32,7 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
         this.deserializeNBT(nbt);
     }
 
-    public List<Integer> getStackSlots(World world, ItemStack stack, ItemEquality... equalityTypes) {
+    public List<Integer> getStackSlots(Level world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return Collections.emptyList();
         return this.getItems(world).entrySet().stream()
@@ -41,7 +40,7 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
                 .map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
-    public int getItemAmount(World world, ItemStack stack, ItemEquality... equalityTypes) {
+    public int getItemAmount(Level world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return 0;
         return this.getItems(world).entrySet().stream()
@@ -49,7 +48,7 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
                 .mapToInt(kv -> kv.getValue().getCount()).sum();
     }
 
-    public Map<Integer, ItemStack> getItems(World world) {
+    public Map<Integer, ItemStack> getItems(Level world) {
         if (this.itemCache == null) {
             IItemHandler handler = this.getItemHandler(world);
             if (handler != null) {
@@ -68,27 +67,27 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
         return this.itemCache;
     }
 
-    public boolean canExtract(World world, int slot) {
+    public boolean canExtract(Level world, int slot) {
         IItemHandler handler = this.getItemHandler(world);
         return handler != null && !handler.extractItem(slot, 1, true).isEmpty();
     }
 
-    public IItemHandler getItemHandler(World world) {
+    public IItemHandler getItemHandler(Level world) {
         if (this.handlerCache == null) {
             PipeNetwork network = PipeNetwork.get(world);
-            PipeTileEntity pipe = network.getPipe(this.pipePos);
+            PipeBlockEntity pipe = network.getPipe(this.pipePos);
             this.handlerCache = pipe.getItemHandler(this.direction);
         }
         return this.handlerCache;
     }
 
-    public boolean isEmpty(World world) {
+    public boolean isEmpty(Level world) {
         Map<Integer, ItemStack> items = this.getItems(world);
         return items == null || items.isEmpty();
     }
 
     public BlockPos getPos() {
-        return this.pipePos.offset(this.direction);
+        return this.pipePos.relative(this.direction);
     }
 
     @Override

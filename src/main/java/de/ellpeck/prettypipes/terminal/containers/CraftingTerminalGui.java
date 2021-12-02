@@ -1,13 +1,10 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.packets.PacketRequest;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
@@ -40,7 +37,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     public void tick() {
         super.tick();
-        CraftingTerminalTileEntity tile = this.getCraftingContainer().getTile();
+        CraftingTerminalBlockEntity tile = this.getCraftingContainer().getTile();
         this.requestButton.active = false;
         for (int i = 0; i < tile.craftItems.getSlots(); i++) {
             ItemStack stack = tile.getRequestedCraftItem(i);
@@ -56,7 +53,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         super.drawGuiContainerForegroundLayer(matrix, mouseX, mouseY);
 
         CraftingTerminalContainer container = this.getCraftingContainer();
-        CraftingTerminalTileEntity tile = container.getTile();
+        CraftingTerminalBlockEntity tile = container.getTile();
         for (int i = 0; i < tile.ghostItems.getSlots(); i++) {
             if (!tile.craftItems.getStackInSlot(i).isEmpty())
                 continue;

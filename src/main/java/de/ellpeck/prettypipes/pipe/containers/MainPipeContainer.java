@@ -1,15 +1,16 @@
 package de.ellpeck.prettypipes.pipe.containers;
 
 import de.ellpeck.prettypipes.items.IModule;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.items.SlotItemHandler;
 
 import javax.annotation.Nullable;
 
 public class MainPipeContainer extends AbstractPipeContainer<IModule> {
-    public MainPipeContainer(@Nullable ContainerType<?> type, int id, PlayerEntity player, BlockPos pos) {
+
+    public MainPipeContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos) {
         super(type, id, player, pos, -1);
     }
 

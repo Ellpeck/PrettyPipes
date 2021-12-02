@@ -2,13 +2,9 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Container;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,37 +26,37 @@ public class PacketNetworkItems {
 
     }
 
-    public static PacketNetworkItems fromBytes(PacketBuffer buf) {
+    public static PacketNetworkItems fromBytes(FriendlyByteBuf buf) {
         PacketNetworkItems client = new PacketNetworkItems();
         client.items = new ArrayList<>();
         for (int i = buf.readVarInt(); i > 0; i--) {
-            ItemStack stack = buf.readItemStack();
+            ItemStack stack = buf.readItem();
             stack.setCount(buf.readVarInt());
             client.items.add(stack);
         }
         client.craftables = new ArrayList<>();
         for (int i = buf.readVarInt(); i > 0; i--)
-            client.craftables.add(buf.readItemStack());
+            client.craftables.add(buf.readItem());
         client.currentlyCrafting = new ArrayList<>();
         for (int i = buf.readVarInt(); i > 0; i--)
-            client.currentlyCrafting.add(buf.readItemStack());
+            client.currentlyCrafting.add(buf.readItem());
         return client;
     }
 
-    public static void toBytes(PacketNetworkItems packet, PacketBuffer buf) {
+    public static void toBytes(PacketNetworkItems packet, FriendlyByteBuf buf) {
         buf.writeVarInt(packet.items.size());
         for (ItemStack stack : packet.items) {
             ItemStack copy = stack.copy();
             copy.setCount(1);
-            buf.writeItemStack(copy);
+            buf.writeItem(copy);
             buf.writeVarInt(stack.getCount());
         }
         buf.writeVarInt(packet.craftables.size());
         for (ItemStack stack : packet.craftables)
-            buf.writeItemStack(stack);
+            buf.writeItem(stack);
         buf.writeVarInt(packet.currentlyCrafting.size());
         for (ItemStack stack : packet.currentlyCrafting)
-            buf.writeItemStack(stack);
+            buf.writeItem(stack);
     }
 
     @SuppressWarnings("Convert2Lambda")
@@ -69,8 +65,8 @@ public class PacketNetworkItems {
             @Override
             public void run() {
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.currentScreen instanceof ItemTerminalGui)
-                    ((ItemTerminalGui) mc.currentScreen).updateItemList(message.items, message.craftables, message.currentlyCrafting);
+                if (mc.screen instanceof ItemTerminalGui terminal)
+                    terminal.updateItemList(message.items, message.craftables, message.currentlyCrafting);
             }
         });
         ctx.get().setPacketHandled(true);

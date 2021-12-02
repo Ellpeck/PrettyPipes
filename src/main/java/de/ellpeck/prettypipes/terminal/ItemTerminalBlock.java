@@ -35,7 +35,7 @@ public class ItemTerminalBlock extends ContainerBlock {
 
     @Override
     public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult result) {
-        ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, worldIn, pos);
+        ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
         if (tile == null)
             return ActionResultType.PASS;
         String reason = tile.getInvalidTerminalReason();
@@ -54,7 +54,7 @@ public class ItemTerminalBlock extends ContainerBlock {
     @Override
     public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, worldIn, pos);
+            ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
             if (tile != null)
                 Utility.dropInventory(tile, tile.items);
             super.onReplaced(state, worldIn, pos, newState, isMoving);
@@ -64,7 +64,7 @@ public class ItemTerminalBlock extends ContainerBlock {
     @Nullable
     @Override
     public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new ItemTerminalTileEntity();
+        return new ItemTerminalBlockEntity();
     }
 
     @Override

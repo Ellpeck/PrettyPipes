@@ -13,13 +13,18 @@ import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
+import net.minecraft.ChatFormatting;
 import net.minecraft.block.BlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.tileentity.ITickableTileEntity;
@@ -32,6 +37,7 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
@@ -45,7 +51,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ItemTerminalTileEntity extends TileEntity implements INamedContainerProvider, ITickableTileEntity, IPipeConnectable {
+public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnectable {
 
     public final ItemStackHandler items = new ItemStackHandler(12) {
         @Override
@@ -57,26 +63,19 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     private final Queue<NetworkLock> existingRequests = new LinkedList<>();
     private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
 
-    protected ItemTerminalTileEntity(TileEntityType<?> tileEntityTypeIn) {
-        super(tileEntityTypeIn);
-    }
-
-    public ItemTerminalTileEntity() {
-        this(Registry.itemTerminalTileEntity);
-    }
-
-    @Override
+    // TODO tick
+/*    @Override
     public void tick() {
-        if (this.world.isRemote)
+        if (this.level.isRemote)
             return;
-        PipeNetwork network = PipeNetwork.get(this.world);
-        PipeTileEntity pipe = this.getConnectedPipe();
+        PipeNetwork network = PipeNetwork.get(this.level);
+        PipeBlockEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
 
         boolean update = false;
         int interval = pipe.pressurizer != null ? 2 : 10;
-        if (this.world.getGameTime() % interval == 0) {
+        if (this.level.getGameTime() % interval == 0) {
             for (int i = 6; i < 12; i++) {
                 ItemStack extracted = this.items.extractItem(i, Integer.MAX_VALUE, true);
                 if (extracted.isEmpty())
@@ -96,26 +95,26 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             }
         }
 
-        if (this.world.getGameTime() % 100 == 0 || update) {
+        if (this.level.getGameTime() % 100 == 0 || update) {
             PlayerEntity[] lookingPlayers = this.getLookingPlayers();
             if (lookingPlayers.length > 0)
                 this.updateItems(lookingPlayers);
         }
-    }
+    }*/
 
     @Override
-    public void remove() {
-        super.remove();
-        PipeNetwork network = PipeNetwork.get(this.world);
+    public void setRemoved() {
+        super.setRemoved();
+        PipeNetwork network = PipeNetwork.get(this.level);
         for (NetworkLock lock : this.existingRequests)
             network.resolveNetworkLock(lock);
         this.lazyThis.invalidate();
     }
 
     public String getInvalidTerminalReason() {
-        PipeNetwork network = PipeNetwork.get(this.world);
+        PipeNetwork network = PipeNetwork.get(this.level);
         long pipes = Arrays.stream(Direction.values())
-                .map(d -> network.getPipe(this.pos.offset(d)))
+                .map(d -> network.getPipe(this.worldPosition.relative(d)))
                 .filter(Objects::nonNull).count();
         if (pipes <= 0)
             return "info." + PrettyPipes.ID + ".no_pipe_connected";
@@ -124,43 +123,42 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return null;
     }
 
-    public PipeTileEntity getConnectedPipe() {
-        PipeNetwork network = PipeNetwork.get(this.world);
+    public PipeBlockEntity getConnectedPipe() {
+        PipeNetwork network = PipeNetwork.get(this.level);
         for (Direction dir : Direction.values()) {
-            PipeTileEntity pipe = network.getPipe(this.pos.offset(dir));
+            PipeBlockEntity pipe = network.getPipe(this.worldPosition.relative(dir));
             if (pipe != null)
                 return pipe;
         }
         return null;
     }
 
-    public void updateItems(PlayerEntity... playersToSync) {
-        PipeTileEntity pipe = this.getConnectedPipe();
+    public void updateItems(Player... playersToSync) {
+        PipeBlockEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
         this.networkItems = this.collectItems(ItemEquality.NBT);
         if (playersToSync.length > 0) {
             List<ItemStack> clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
-            List<ItemStack> clientCraftables = PipeNetwork.get(this.world).getAllCraftables(pipe.getPos()).stream().map(Pair::getRight).collect(Collectors.toList());
+            List<ItemStack> clientCraftables = PipeNetwork.get(this.level).getAllCraftables(pipe.getPos()).stream().map(Pair::getRight).collect(Collectors.toList());
             List<ItemStack> currentlyCrafting = this.getCurrentlyCrafting().stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
-            for (PlayerEntity player : playersToSync) {
-                if (!(player.openContainer instanceof ItemTerminalContainer))
+            for (Player player : playersToSync) {
+                if (!(player.containerMenu instanceof ItemTerminalContainer container))
                     continue;
-                ItemTerminalTileEntity tile = ((ItemTerminalContainer) player.openContainer).tile;
-                if (tile != this)
+                if (container.tile != this)
                     continue;
                 PacketHandler.sendTo(player, new PacketNetworkItems(clientItems, clientCraftables, currentlyCrafting));
             }
         }
     }
 
-    public void requestItem(PlayerEntity player, ItemStack stack) {
-        PipeNetwork network = PipeNetwork.get(this.world);
+    public void requestItem(Player player, ItemStack stack) {
+        PipeNetwork network = PipeNetwork.get(this.level);
         network.startProfile("terminal_request_item");
         this.updateItems();
         int requested = this.requestItemImpl(stack, onItemUnavailable(player));
         if (requested > 0) {
-            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
+            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
         } else {
             onItemUnavailable(player).accept(stack);
         }
@@ -170,27 +168,27 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         NetworkItem item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.world, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
+        Pair<List<NetworkLock>, ItemStack> ret = requestItemLater(this.level, this.getConnectedPipe().getPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getRight().getCount();
     }
 
-    protected PlayerEntity[] getLookingPlayers() {
-        return this.world.getPlayers().stream()
+    protected Player[] getLookingPlayers() {
+        return this.level.getPlayers().stream()
                 .filter(p -> p.openContainer instanceof ItemTerminalContainer)
                 .filter(p -> ((ItemTerminalContainer) p.openContainer).tile == this)
                 .toArray(PlayerEntity[]::new);
     }
 
     private Map<EquatableItemStack, NetworkItem> collectItems(ItemEquality... equalityTypes) {
-        PipeNetwork network = PipeNetwork.get(this.world);
+        PipeNetwork network = PipeNetwork.get(this.level);
         network.startProfile("terminal_collect_items");
-        PipeTileEntity pipe = this.getConnectedPipe();
+        PipeBlockEntity pipe = this.getConnectedPipe();
         Map<EquatableItemStack, NetworkItem> items = new HashMap<>();
         for (NetworkLocation location : network.getOrderedNetworkItems(pipe.getPos())) {
-            for (Map.Entry<Integer, ItemStack> entry : location.getItems(this.world).entrySet()) {
+            for (Map.Entry<Integer, ItemStack> entry : location.getItems(this.level).entrySet()) {
                 // make sure we can extract from this slot to display it
-                if (!location.canExtract(this.world, entry.getKey()))
+                if (!location.canExtract(this.level, entry.getKey()))
                     continue;
                 EquatableItemStack equatable = new EquatableItemStack(entry.getValue(), equalityTypes);
                 NetworkItem item = items.computeIfAbsent(equatable, NetworkItem::new);
@@ -202,8 +200,8 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     private List<ItemStack> getCurrentlyCrafting() {
-        PipeNetwork network = PipeNetwork.get(this.world);
-        PipeTileEntity pipe = this.getConnectedPipe();
+        PipeNetwork network = PipeNetwork.get(this.level);
+        PipeBlockEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return Collections.emptyList();
         List<Pair<BlockPos, ItemStack>> crafting = network.getCurrentlyCrafting(pipe.getPos());
@@ -211,12 +209,12 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     }
 
     public void cancelCrafting() {
-        PipeNetwork network = PipeNetwork.get(this.world);
-        PipeTileEntity pipe = this.getConnectedPipe();
+        PipeNetwork network = PipeNetwork.get(this.level);
+        PipeBlockEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
         for (Pair<BlockPos, ItemStack> craftable : network.getAllCraftables(pipe.getPos())) {
-            PipeTileEntity otherPipe = network.getPipe(craftable.getLeft());
+            PipeBlockEntity otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null) {
                 for (NetworkLock lock : otherPipe.craftIngredientRequests)
                     network.resolveNetworkLock(lock);
@@ -270,7 +268,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
     @Override
     public ItemStack insertItem(BlockPos pipePos, Direction direction, ItemStack stack, boolean simulate) {
         BlockPos pos = pipePos.offset(direction);
-        ItemTerminalTileEntity tile = Utility.getBlockEntity(ItemTerminalTileEntity.class, world, pos);
+        ItemTerminalBlockEntity tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, world, pos);
         if (tile != null)
             return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
         return stack;
@@ -313,7 +311,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return Pair.of(requests, remain);
     }
 
-    public static Consumer<ItemStack> onItemUnavailable(PlayerEntity player) {
-        return s -> player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
+    public static Consumer<ItemStack> onItemUnavailable(Player player) {
+        return s -> player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
     }
 }

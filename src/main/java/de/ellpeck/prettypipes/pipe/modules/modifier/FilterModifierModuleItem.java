@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import joptsimple.internal.Strings;
 import net.minecraft.client.util.ITooltipFlag;
@@ -29,17 +29,17 @@ public class FilterModifierModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return other != this;
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return this.type == ItemEquality.Type.TAG;
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new FilterModifierModuleContainer(Registry.filterModifierModuleContainer, windowId, player, tile.getPos(), moduleIndex);
     }
 

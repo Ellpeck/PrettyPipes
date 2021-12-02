@@ -1,15 +1,22 @@
 package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.PrettyPipes;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class PacketHandler {
 
@@ -26,12 +33,12 @@ public final class PacketHandler {
         network.registerMessage(5, PacketCraftingModuleTransfer.class, PacketCraftingModuleTransfer::toBytes, PacketCraftingModuleTransfer::fromBytes, PacketCraftingModuleTransfer::onMessage);
     }
 
-    public static void sendToAllLoaded(World world, BlockPos pos, Object message) {
+    public static void sendToAllLoaded(Level world, BlockPos pos, Object message) {
         network.send(PacketDistributor.TRACKING_CHUNK.with(() -> world.getChunkAt(pos)), message);
     }
 
-    public static void sendTo(PlayerEntity player, Object message) {
-        network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), message);
+    public static void sendTo(Player player, Object message) {
+        network.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) player), message);
     }
 
     public static void sendToServer(Object message) {

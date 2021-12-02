@@ -6,7 +6,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -129,7 +129,7 @@ public class PressurizerBlockEntity extends BlockEntity implements INamedContain
                 for (BlockPos node : network.getOrderedNetworkNodes(offset)) {
                     if (!this.world.isBlockLoaded(node))
                         continue;
-                    PipeTileEntity pipe = network.getPipe(node);
+                    PipeBlockEntity pipe = network.getPipe(node);
                     if (pipe != null)
                         pipe.pressurizer = this;
                 }

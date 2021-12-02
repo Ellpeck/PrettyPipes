@@ -10,7 +10,7 @@ public class CraftingTerminalBlock extends ItemTerminalBlock {
     @Nullable
     @Override
     public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new CraftingTerminalTileEntity();
+        return new CraftingTerminalBlockEntity();
     }
 
 }

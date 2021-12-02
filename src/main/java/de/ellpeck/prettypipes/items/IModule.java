@@ -1,12 +1,12 @@
 package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
@@ -15,33 +15,33 @@ import java.util.function.Consumer;
 
 public interface IModule {
 
-    void tick(ItemStack module, PipeTileEntity tile);
+    void tick(ItemStack module, PipeBlockEntity tile);
 
-    boolean canNetworkSee(ItemStack module, PipeTileEntity tile);
+    boolean canNetworkSee(ItemStack module, PipeBlockEntity tile);
 
-    boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack);
+    boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack);
 
-    int getMaxInsertionAmount(ItemStack module, PipeTileEntity tile, ItemStack stack, IItemHandler destination);
+    int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination);
 
-    int getPriority(ItemStack module, PipeTileEntity tile);
+    int getPriority(ItemStack module, PipeBlockEntity tile);
 
-    boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other);
+    boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other);
 
-    boolean hasContainer(ItemStack module, PipeTileEntity tile);
+    boolean hasContainer(ItemStack module, PipeBlockEntity tile);
 
-    AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex);
+    AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex);
 
-    float getItemSpeedIncrease(ItemStack module, PipeTileEntity tile);
+    float getItemSpeedIncrease(ItemStack module, PipeBlockEntity tile);
 
-    boolean canPipeWork(ItemStack module, PipeTileEntity tile);
+    boolean canPipeWork(ItemStack module, PipeBlockEntity tile);
 
-    List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile);
+    List<ItemStack> getAllCraftables(ItemStack module, PipeBlockEntity tile);
 
-    int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
+    int getCraftableAmount(ItemStack module, PipeBlockEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
 
-    ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
+    ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain);
 
-    Integer getCustomNextNode(ItemStack module, PipeTileEntity tile, List<BlockPos> nodes, int index);
+    Integer getCustomNextNode(ItemStack module, PipeBlockEntity tile, List<BlockPos> nodes, int index);
 
-    ItemFilter getItemFilter(ItemStack module, PipeTileEntity tile);
+    ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile);
 }

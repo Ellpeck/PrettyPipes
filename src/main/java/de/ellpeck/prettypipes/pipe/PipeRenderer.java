@@ -1,54 +1,45 @@
 package de.ellpeck.prettypipes.pipe;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.vertex.IVertexBuilder;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockModelRenderer;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.model.data.EmptyModelData;
+import net.minecraftforge.client.model.pipeline.ForgeBlockModelRenderer;
 
 import java.util.Random;
 
-public class PipeRenderer extends TileEntityRenderer<PipeTileEntity> {
+public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
 
     private final Random random = new Random();
 
-    public PipeRenderer(TileEntityRendererDispatcher disp) {
-        super(disp);
-    }
-
     @Override
-    public void render(PipeTileEntity tile, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer buffer, int light, int overlay) {
+    public void render(PipeBlockEntity tile, float partialTicks, PoseStack matrixStack, MultiBufferSource source, int light, int overlay) {
         if (!tile.getItems().isEmpty()) {
-            matrixStack.push();
-            BlockPos tilePos = tile.getPos();
+            matrixStack.pushPose();
+            BlockPos tilePos = tile.getBlockPos();
             matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
             for (IPipeItem item : tile.getItems()) {
-                matrixStack.push();
-                item.render(tile, matrixStack, this.random, partialTicks, light, overlay, buffer);
-                matrixStack.pop();
+                matrixStack.pushPose();
+                item.render(tile, matrixStack, this.random, partialTicks, light, overlay);
+                matrixStack.popPose();
             }
-            matrixStack.pop();
+            matrixStack.popPose();
         }
         if (tile.cover != null) {
-            matrixStack.push();
-            BlockModelRenderer.enableCache();
-            for (RenderType layer : RenderType.getBlockRenderTypes()) {
+            matrixStack.pushPose();
+            ForgeBlockModelRenderer.enableCaching();
+            // TODO figure out how to render covers, maybe finally use baked models bleh
+            /*for (RenderType layer : RenderType.chunkBufferLayers()) {
                 if (!RenderTypeLookup.canRenderInLayer(tile.cover, layer))
                     continue;
-                ForgeHooksClient.setRenderLayer(layer);
-                Minecraft.getInstance().getBlockRendererDispatcher().renderBlock(tile.cover, matrixStack, buffer, light, overlay, EmptyModelData.INSTANCE);
-            }
-            ForgeHooksClient.setRenderLayer(null);
-            BlockModelRenderer.disableCache();
-            matrixStack.pop();
+                ForgeHooksClient.setRenderType(layer);
+                Minecraft.getInstance().getBlockRenderer().renderBatched(tile.cover,tile.getBlockPos(),null, matrixStack,null, light, overlay, EmptyModelData.INSTANCE);
+            }*/
+            ForgeHooksClient.setRenderType(null);
+            ForgeBlockModelRenderer.clearCache();
+            matrixStack.popPose();
         }
     }
+
 }

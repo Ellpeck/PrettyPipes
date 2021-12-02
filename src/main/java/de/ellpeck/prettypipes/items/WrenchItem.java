@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.ITooltipFlag;
@@ -40,7 +40,7 @@ public class WrenchItem extends Item {
         BlockState state = world.getBlockState(pos);
         if (!(state.getBlock() instanceof PipeBlock))
             return ActionResultType.PASS;
-        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, world, pos);
+        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
         if (tile == null)
             return ActionResultType.FAIL;
 

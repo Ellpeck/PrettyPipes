@@ -9,7 +9,7 @@ import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeRenderer;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeGui;
@@ -40,31 +40,39 @@ import de.ellpeck.prettypipes.pressurizer.PressurizerContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerGui;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlock;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlock;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
-import net.minecraft.inventory.container.ContainerType;
+import net.minecraft.inventory.container.MenuType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.INBT;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.extensions.IForgeContainerType;
+import net.minecraftforge.common.capabilities.CapabilityToken;
+import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -86,46 +94,46 @@ import java.util.function.BiFunction;
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
 
-    public static final ItemGroup GROUP = new ItemGroup(PrettyPipes.ID) {
+    public static final CreativeModeTab GROUP = new CreativeModeTab(PrettyPipes.ID) {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(wrenchItem);
         }
     };
 
-    @CapabilityInject(PipeNetwork.class)
-    public static Capability<PipeNetwork> pipeNetworkCapability;
-    @CapabilityInject(IPipeConnectable.class)
-    public static Capability<IPipeConnectable> pipeConnectableCapability;
+    public static Capability<PipeNetwork> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
+    });
+    public static Capability<IPipeConnectable> pipeConnectableCapability = CapabilityManager.get(new CapabilityToken<>() {
+    });
 
     public static Item wrenchItem;
     public static Item pipeFrameItem;
 
     public static Block pipeBlock;
-    public static TileEntityType<PipeTileEntity> pipeTileEntity;
-    public static ContainerType<MainPipeContainer> pipeContainer;
+    public static BlockEntityType<PipeBlockEntity> pipeTileEntity;
+    public static MenuType<MainPipeContainer> pipeContainer;
 
     public static Block itemTerminalBlock;
-    public static TileEntityType<ItemTerminalTileEntity> itemTerminalTileEntity;
-    public static ContainerType<ItemTerminalContainer> itemTerminalContainer;
+    public static BlockEntityType<ItemTerminalBlockEntity> itemTerminalTileEntity;
+    public static MenuType<ItemTerminalContainer> itemTerminalContainer;
 
     public static Block craftingTerminalBlock;
-    public static TileEntityType<CraftingTerminalTileEntity> craftingTerminalTileEntity;
-    public static ContainerType<CraftingTerminalContainer> craftingTerminalContainer;
+    public static BlockEntityType<CraftingTerminalBlockEntity> craftingTerminalTileEntity;
+    public static MenuType<CraftingTerminalContainer> craftingTerminalContainer;
 
     public static EntityType<PipeFrameEntity> pipeFrameEntity;
 
     public static Block pressurizerBlock;
-    public static TileEntityType<PressurizerBlockEntity> pressurizerTileEntity;
-    public static ContainerType<PressurizerContainer> pressurizerContainer;
+    public static BlockEntityType<PressurizerBlockEntity> pressurizerTileEntity;
+    public static MenuType<PressurizerContainer> pressurizerContainer;
 
-    public static ContainerType<ExtractionModuleContainer> extractionModuleContainer;
-    public static ContainerType<FilterModuleContainer> filterModuleContainer;
-    public static ContainerType<RetrievalModuleContainer> retrievalModuleContainer;
-    public static ContainerType<StackSizeModuleContainer> stackSizeModuleContainer;
-    public static ContainerType<FilterIncreaseModuleContainer> filterIncreaseModuleContainer;
-    public static ContainerType<CraftingModuleContainer> craftingModuleContainer;
-    public static ContainerType<FilterModifierModuleContainer> filterModifierModuleContainer;
+    public static MenuType<ExtractionModuleContainer> extractionModuleContainer;
+    public static MenuType<FilterModuleContainer> filterModuleContainer;
+    public static MenuType<RetrievalModuleContainer> retrievalModuleContainer;
+    public static MenuType<StackSizeModuleContainer> stackSizeModuleContainer;
+    public static MenuType<FilterIncreaseModuleContainer> filterIncreaseModuleContainer;
+    public static MenuType<CraftingModuleContainer> craftingModuleContainer;
+    public static MenuType<FilterModifierModuleContainer> filterModifierModuleContainer;
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
@@ -166,9 +174,9 @@ public final class Registry {
     @SubscribeEvent
     public static void registerTiles(RegistryEvent.Register<TileEntityType<?>> event) {
         event.getRegistry().registerAll(
-                pipeTileEntity = (TileEntityType<PipeTileEntity>) TileEntityType.Builder.create(PipeTileEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
-                itemTerminalTileEntity = (TileEntityType<ItemTerminalTileEntity>) TileEntityType.Builder.create(ItemTerminalTileEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
-                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalTileEntity>) TileEntityType.Builder.create(CraftingTerminalTileEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
+                pipeTileEntity = (TileEntityType<PipeBlockEntity>) TileEntityType.Builder.create(PipeBlockEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
+                itemTerminalTileEntity = (TileEntityType<ItemTerminalBlockEntity>) TileEntityType.Builder.create(ItemTerminalBlockEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
+                craftingTerminalTileEntity = (TileEntityType<CraftingTerminalBlockEntity>) TileEntityType.Builder.create(CraftingTerminalBlockEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
                 pressurizerTileEntity = (TileEntityType<PressurizerBlockEntity>) TileEntityType.Builder.create(PressurizerBlockEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
         );
     }
@@ -181,12 +189,12 @@ public final class Registry {
     }
 
     @SubscribeEvent
-    public static void registerContainers(RegistryEvent.Register<ContainerType<?>> event) {
+    public static void registerContainers(RegistryEvent.Register<MenuType<?>> event) {
         event.getRegistry().registerAll(
-                pipeContainer = (ContainerType<MainPipeContainer>) IForgeContainerType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
-                itemTerminalContainer = (ContainerType<ItemTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
-                craftingTerminalContainer = (ContainerType<CraftingTerminalContainer>) IForgeContainerType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
-                pressurizerContainer = (ContainerType<PressurizerContainer>) IForgeContainerType.create((windowId, inv, data) -> new PressurizerContainer(pressurizerContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pressurizer"),
+                pipeContainer = (MenuType<MainPipeContainer>) IForgeMenuType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
+                itemTerminalContainer = (MenuType<ItemTerminalContainer>) IForgeMenuType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
+                craftingTerminalContainer = (MenuType<CraftingTerminalContainer>) IForgeMenuType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
+                pressurizerContainer = (MenuType<PressurizerContainer>) IForgeMenuType.create((windowId, inv, data) -> new PressurizerContainer(pressurizerContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pressurizer"),
                 extractionModuleContainer = createPipeContainer("extraction_module"),
                 filterModuleContainer = createPipeContainer("filter_module"),
                 retrievalModuleContainer = createPipeContainer("retrieval_module"),
@@ -197,9 +205,9 @@ public final class Registry {
         );
     }
 
-    private static <T extends AbstractPipeContainer<?>> ContainerType<T> createPipeContainer(String name) {
-        return (ContainerType<T>) IForgeContainerType.create((windowId, inv, data) -> {
-            PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, inv.player.world, data.readBlockPos());
+    private static <T extends AbstractPipeContainer<?>> MenuType<T> createPipeContainer(String name) {
+        return (MenuType<T>) IForgeMenuType.create((windowId, inv, data) -> {
+            PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.world, data.readBlockPos());
             int moduleIndex = data.readInt();
             ItemStack moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
@@ -220,22 +228,23 @@ public final class Registry {
     }
 
     public static final class Client {
+
         public static void setup(FMLClientSetupEvent event) {
             RenderTypeLookup.setRenderLayer(pipeBlock, RenderType.getCutout());
             ClientRegistry.bindTileEntityRenderer(pipeTileEntity, PipeRenderer::new);
             RenderingRegistry.registerEntityRenderingHandler(pipeFrameEntity, PipeFrameRenderer::new);
 
-            ScreenManager.registerFactory(pipeContainer, MainPipeGui::new);
-            ScreenManager.registerFactory(itemTerminalContainer, ItemTerminalGui::new);
-            ScreenManager.registerFactory(pressurizerContainer, PressurizerGui::new);
-            ScreenManager.registerFactory(craftingTerminalContainer, CraftingTerminalGui::new);
-            ScreenManager.registerFactory(extractionModuleContainer, ExtractionModuleGui::new);
-            ScreenManager.registerFactory(filterModuleContainer, FilterModuleGui::new);
-            ScreenManager.registerFactory(retrievalModuleContainer, RetrievalModuleGui::new);
-            ScreenManager.registerFactory(stackSizeModuleContainer, StackSizeModuleGui::new);
-            ScreenManager.registerFactory(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
-            ScreenManager.registerFactory(craftingModuleContainer, CraftingModuleGui::new);
-            ScreenManager.registerFactory(filterModifierModuleContainer, FilterModifierModuleGui::new);
+            MenuScreens.register(pipeContainer, MainPipeGui::new);
+            MenuScreens.register(itemTerminalContainer, ItemTerminalGui::new);
+            MenuScreens.register(pressurizerContainer, PressurizerGui::new);
+            MenuScreens.register(craftingTerminalContainer, CraftingTerminalGui::new);
+            MenuScreens.register(extractionModuleContainer, ExtractionModuleGui::new);
+            MenuScreens.register(filterModuleContainer, FilterModuleGui::new);
+            MenuScreens.register(retrievalModuleContainer, RetrievalModuleGui::new);
+            MenuScreens.register(stackSizeModuleContainer, StackSizeModuleGui::new);
+            MenuScreens.register(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
+            MenuScreens.register(craftingModuleContainer, CraftingModuleGui::new);
+            MenuScreens.register(filterModifierModuleContainer, FilterModifierModuleGui::new);
         }
     }
 

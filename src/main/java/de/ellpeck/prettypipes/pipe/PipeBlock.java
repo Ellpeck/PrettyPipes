@@ -5,49 +5,33 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import net.minecraft.block.*;
-import net.minecraft.block.material.Material;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.state.EnumProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.IBooleanFunction;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.BooleanOp;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -91,7 +75,7 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
-        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
+        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile == null)
             return InteractionResult.PASS;
         if (!tile.canHaveModules())
@@ -114,62 +98,62 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(DIRECTIONS.values().toArray(new EnumProperty[0]));
         builder.add(BlockStateProperties.WATERLOGGED);
     }
 
     @Override
     public FluidState getFluidState(BlockState state) {
-        return state.get(BlockStateProperties.WATERLOGGED) ? Fluids.WATER.getStillFluidState(false) : super.getFluidState(state);
+        return state.getValue(BlockStateProperties.WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
     @Override
-    public void neighborChanged(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
         BlockState newState = this.createState(worldIn, pos, state);
         if (newState != state) {
-            worldIn.setBlockState(pos, newState);
+            worldIn.setBlockAndUpdate(pos, newState);
             onStateChanged(worldIn, pos, newState);
         }
     }
 
     @Nullable
     @Override
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
-        return this.createState(context.getWorld(), context.getPos(), this.getDefaultState());
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.createState(context.getLevel(), context.getClickedPos(), this.defaultBlockState());
     }
 
     @Override
-    public BlockState updatePostPlacement(BlockState stateIn, Direction facing, BlockState facingState, IWorld worldIn, BlockPos currentPos, BlockPos facingPos) {
-        if (stateIn.get(BlockStateProperties.WATERLOGGED))
-            worldIn.getPendingFluidTicks().scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickRate(worldIn));
-        return super.updatePostPlacement(stateIn, facing, facingState, worldIn, currentPos, facingPos);
+    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
+        if (stateIn.getValue(BlockStateProperties.WATERLOGGED))
+            worldIn.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
+        return super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
     }
 
     @Override
-    public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+    public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         onStateChanged(worldIn, pos, state);
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return this.cacheAndGetShape(state, worldIn, pos, s -> s.getShape(worldIn, pos, context), SHAPE_CACHE, null);
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), COLL_SHAPE_CACHE, s -> {
             // make the shape a bit higher so we can jump up onto a higher block
-            MutableObject<VoxelShape> newShape = new MutableObject<>(VoxelShapes.empty());
-            s.forEachBox((x1, y1, z1, x2, y2, z2) -> newShape.setValue(VoxelShapes.combine(VoxelShapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), IBooleanFunction.OR)));
-            return newShape.getValue().simplify();
+            MutableObject<VoxelShape> newShape = new MutableObject<>(Shapes.empty());
+            s.forAllBoxes((x1, y1, z1, x2, y2, z2) -> newShape.setValue(Shapes.join(Shapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), BooleanOp.OR)));
+            return newShape.getValue().optimize();
         });
     }
 
-    private VoxelShape cacheAndGetShape(BlockState state, IBlockReader worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
+    private VoxelShape cacheAndGetShape(BlockState state, BlockGetter worldIn, BlockPos pos, Function<BlockState, VoxelShape> coverShapeSelector, Map<Pair<BlockState, BlockState>, VoxelShape> cache, Function<VoxelShape, VoxelShape> shapeModifier) {
         VoxelShape coverShape = null;
         BlockState cover = null;
-        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
+        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile != null && tile.cover != null) {
             cover = tile.cover;
             // try catch since the block might expect to find itself at the position
@@ -183,41 +167,41 @@ public class PipeBlock extends BaseEntityBlock {
         if (shape == null) {
             shape = CENTER_SHAPE;
             for (Map.Entry<Direction, EnumProperty<ConnectionType>> entry : DIRECTIONS.entrySet()) {
-                if (state.get(entry.getValue()).isConnected())
-                    shape = VoxelShapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+                if (state.getValue(entry.getValue()).isConnected())
+                    shape = Shapes.or(shape, DIR_SHAPES.get(entry.getKey()));
             }
             if (shapeModifier != null)
                 shape = shapeModifier.apply(shape);
             if (coverShape != null)
-                shape = VoxelShapes.or(shape, coverShape);
+                shape = Shapes.or(shape, coverShape);
             cache.put(key, shape);
         }
         return shape;
     }
 
-    private BlockState createState(World world, BlockPos pos, BlockState curr) {
-        BlockState state = this.getDefaultState();
+    private BlockState createState(Level world, BlockPos pos, BlockState curr) {
+        BlockState state = this.defaultBlockState();
         FluidState fluid = world.getFluidState(pos);
-        if (fluid.isTagged(FluidTags.WATER) && fluid.getLevel() == 8)
-            state = state.with(BlockStateProperties.WATERLOGGED, true);
+        if (fluid.is(FluidTags.WATER) && fluid.getAmount() == 8)
+            state = state.setValue(BlockStateProperties.WATERLOGGED, true);
 
         for (Direction dir : Direction.values()) {
             EnumProperty<ConnectionType> prop = DIRECTIONS.get(dir);
             ConnectionType type = this.getConnectionType(world, pos, dir, state);
             // don't reconnect on blocked faces
-            if (type.isConnected() && curr.get(prop) == ConnectionType.BLOCKED)
+            if (type.isConnected() && curr.getValue(prop) == ConnectionType.BLOCKED)
                 type = ConnectionType.BLOCKED;
-            state = state.with(prop, type);
+            state = state.setValue(prop, type);
         }
         return state;
     }
 
-    protected ConnectionType getConnectionType(World world, BlockPos pos, Direction direction, BlockState state) {
-        BlockPos offset = pos.offset(direction);
-        if (!world.isBlockLoaded(offset))
+    protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState state) {
+        BlockPos offset = pos.relative(direction);
+        if (!world.isLoaded(offset))
             return ConnectionType.DISCONNECTED;
         Direction opposite = direction.getOpposite();
-        TileEntity tile = world.getTileEntity(offset);
+        BlockEntity tile = world.getBlockEntity(offset);
         if (tile != null) {
             IPipeConnectable connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
             if (connectable != null)
@@ -231,23 +215,23 @@ public class PipeBlock extends BaseEntityBlock {
             return ConnectionType.CONNECTED;
         BlockState offState = world.getBlockState(offset);
         if (hasLegsTo(world, offState, offset, direction)) {
-            if (DIRECTIONS.values().stream().noneMatch(d -> state.get(d) == ConnectionType.LEGS))
+            if (DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
         }
         return ConnectionType.DISCONNECTED;
     }
 
-    protected static boolean hasLegsTo(World world, BlockState state, BlockPos pos, Direction direction) {
+    protected static boolean hasLegsTo(Level world, BlockState state, BlockPos pos, Direction direction) {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
-        if (state.getMaterial() == Material.ROCK || state.getMaterial() == Material.IRON)
-            return hasEnoughSolidSide(world, pos, direction.getOpposite());
+        if (state.getMaterial() == Material.STONE || state.getMaterial() == Material.METAL)
+            return canSupportCenter(world, pos, direction.getOpposite());
         return false;
     }
 
-    public static void onStateChanged(World world, BlockPos pos, BlockState newState) {
+    public static void onStateChanged(Level world, BlockPos pos, BlockState newState) {
         // wait a few ticks before checking if we have to drop our modules, so that things like iron -> gold chest work
-        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, world, pos);
+        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
         if (tile != null)
             tile.moduleDropCheck = 5;
 
@@ -255,11 +239,11 @@ public class PipeBlock extends BaseEntityBlock {
         int connections = 0;
         boolean force = false;
         for (Direction dir : Direction.values()) {
-            ConnectionType value = newState.get(DIRECTIONS.get(dir));
+            ConnectionType value = newState.getValue(DIRECTIONS.get(dir));
             if (!value.isConnected())
                 continue;
             connections++;
-            BlockState otherState = world.getBlockState(pos.offset(dir));
+            BlockState otherState = world.getBlockState(pos.relative(dir));
             // force a node if we're connecting to a different block (inventory etc.)
             if (otherState.getBlock() != newState.getBlock()) {
                 force = true;
@@ -275,53 +259,53 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
             PipeNetwork network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
-            super.onReplaced(state, worldIn, pos, newState, isMoving);
+            super.onRemove(state, worldIn, pos, newState, isMoving);
         }
     }
 
     @Override
-    public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
+    public void playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
         dropItems(worldIn, pos, player);
-        super.onBlockHarvested(worldIn, pos, state, player);
+        super.playerWillDestroy(worldIn, pos, state, player);
     }
 
     @Override
-    public boolean hasComparatorInputOverride(BlockState state) {
+    public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 
     @Override
-    public int getComparatorInputOverride(BlockState blockState, World worldIn, BlockPos pos) {
-        PipeTileEntity pipe = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
+    public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos) {
+        PipeBlockEntity pipe = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
         if (pipe == null)
             return 0;
         return Math.min(15, pipe.getItems().size());
     }
 
-    @Nullable
+    @org.jetbrains.annotations.Nullable
     @Override
-    public TileEntity createNewTileEntity(IBlockReader worldIn) {
-        return new PipeTileEntity();
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new PipeBlockEntity();
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
-    public static void dropItems(World worldIn, BlockPos pos, PlayerEntity player) {
-        PipeTileEntity tile = Utility.getBlockEntity(PipeTileEntity.class, worldIn, pos);
+    public static void dropItems(Level worldIn, BlockPos pos, Player player) {
+        PipeBlockEntity tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile != null) {
             Utility.dropInventory(tile, tile.modules);
             for (IPipeItem item : tile.getItems())
                 item.drop(worldIn, item.getContent());
             if (tile.cover != null)
-                tile.removeCover(player, Hand.MAIN_HAND);
+                tile.removeCover(player, InteractionHand.MAIN_HAND);
         }
     }
 }

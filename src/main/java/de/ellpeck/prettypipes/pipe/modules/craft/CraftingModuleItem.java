@@ -9,10 +9,10 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
+import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
+import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.world.item.ItemStack;
@@ -41,32 +41,32 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return true;
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return true;
     }
 
     @Override
-    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeTileEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
+    public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, PlayerInventory inv, PlayerEntity player, int moduleIndex) {
         return new CraftingModuleContainer(Registry.craftingModuleContainer, windowId, player, tile.getPos(), moduleIndex);
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeTileEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
         return false;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeTileEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
         return false;
     }
 
     @Override
-    public void tick(ItemStack module, PipeTileEntity tile) {
+    public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
@@ -99,7 +99,7 @@ public class CraftingModuleItem extends ModuleItem {
             ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
             for (Pair<BlockPos, ItemStack> request : tile.craftResultRequests) {
                 ItemStack remain = request.getRight().copy();
-                PipeTileEntity destPipe = network.getPipe(request.getLeft());
+                PipeBlockEntity destPipe = network.getPipe(request.getLeft());
                 if (destPipe != null) {
                     Pair<BlockPos, ItemStack> dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
                     if (dest == null)
@@ -125,7 +125,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public List<ItemStack> getAllCraftables(ItemStack module, PipeTileEntity tile) {
+    public List<ItemStack> getAllCraftables(ItemStack module, PipeBlockEntity tile) {
         List<ItemStack> ret = new ArrayList<>();
         ItemStackHandler output = this.getOutput(module);
         for (int i = 0; i < output.getSlots(); i++) {
@@ -137,7 +137,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getCraftableAmount(ItemStack module, PipeTileEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+    public int getCraftableAmount(ItemStack module, PipeBlockEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         PipeNetwork network = PipeNetwork.get(tile.getWorld());
         List<NetworkLocation> items = network.getOrderedNetworkItems(tile.getPos());
         ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
@@ -149,7 +149,7 @@ public class CraftingModuleItem extends ModuleItem {
             ItemStack out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                int availableCrafts = CraftingTerminalTileEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
+                int availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -158,7 +158,7 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeTileEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+    public ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         // check if we can craft the required amount of items
         int craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
@@ -179,7 +179,7 @@ public class CraftingModuleItem extends ModuleItem {
                 continue;
             ItemStack copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
-            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalTileEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
+            Pair<List<NetworkLock>, ItemStack> ret = ItemTerminalBlockEntity.requestItemLater(tile.getWorld(), tile.getPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 

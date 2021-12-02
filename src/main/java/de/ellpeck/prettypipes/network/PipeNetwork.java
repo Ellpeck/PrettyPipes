@@ -11,29 +11,21 @@ import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketItemEnterPipe;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import net.minecraft.block.BlockState;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.*;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jgrapht.GraphPath;
 import org.jgrapht.ListenableGraph;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.event.GraphEdgeChangeEvent;
 import org.jgrapht.event.GraphListener;
@@ -56,7 +48,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public final ListenableGraph<BlockPos, NetworkEdge> graph;
     private final DijkstraShortestPath<BlockPos, NetworkEdge> dijkstra;
     private final Map<BlockPos, List<BlockPos>> nodeToConnectedNodes = new HashMap<>();
-    private final Map<BlockPos, PipeTileEntity> tileCache = new HashMap<>();
+    private final Map<BlockPos, PipeBlockEntity> tileCache = new HashMap<>();
     private final ListMultimap<BlockPos, IPipeItem> pipeItems = ArrayListMultimap.create();
     private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
     private final Level world;
@@ -77,13 +69,13 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
 
     @Override
     public CompoundTag serializeNBT() {
-        CompoundTag nbt = new CompoundTag();
-        ListTag nodes = new ListTag();
-        for (BlockPos node : this.graph.vertexSet())
+        var nbt = new CompoundTag();
+        var nodes = new ListTag();
+        for (var node : this.graph.vertexSet())
             nodes.add(NbtUtils.writeBlockPos(node));
         nbt.put("nodes", nodes);
-        ListTag edges = new ListTag();
-        for (NetworkEdge edge : this.graph.edgeSet())
+        var edges = new ListTag();
+        for (var edge : this.graph.edgeSet())
             edges.add(edge.serializeNBT());
         nbt.put("edges", edges);
         nbt.put("items", Utility.serializeAll(this.pipeItems.values()));
@@ -97,15 +89,15 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
         this.pipeItems.clear();
         this.networkLocks.clear();
 
-        ListTag nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
-        for (int i = 0; i < nodes.size(); i++)
-            this.graph.addVertex(NBTUtil.readBlockPos(nodes.getCompound(i)));
-        ListTag edges = nbt.getList("edges", Tag.TAG_COMPOUND);
-        for (int i = 0; i < edges.size(); i++)
+        var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
+        for (var i = 0; i < nodes.size(); i++)
+            this.graph.addVertex(NbtUtils.readBlockPos(nodes.getCompound(i)));
+        var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
+        for (var i = 0; i < edges.size(); i++)
             this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (IPipeItem item : Utility.deserializeAll(nbt.getList("items", NBT.TAG_COMPOUND), IPipeItem::load))
+        for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load))
             this.pipeItems.put(item.getCurrentPipe(), item);
-        for (NetworkLock lock : Utility.deserializeAll(nbt.getList("locks", NBT.TAG_COMPOUND), NetworkLock::new))
+        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), NetworkLock::new))
             this.createNetworkLock(lock);
     }
 
@@ -126,12 +118,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     }
 
     public void onPipeChanged(BlockPos pos, BlockState state) {
-        List<NetworkEdge> neighbors = this.createAllEdges(pos, state, true);
+        var neighbors = this.createAllEdges(pos, state, true);
         // if we only have one neighbor, then there can't be any new connections
         if (neighbors.size() <= 1 && !this.isNode(pos))
             return;
-        for (NetworkEdge edge : neighbors) {
-            BlockPos end = edge.getEndPipe();
+        for (var edge : neighbors) {
+            var end = edge.getEndPipe();
             this.refreshNode(end, this.world.getBlockState(end));
         }
     }
@@ -143,24 +135,24 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public ItemStack routeItem(BlockPos startPipePos, BlockPos startInventory, ItemStack stack, BiFunction<ItemStack, Float, IPipeItem> itemSupplier, boolean preventOversending) {
         if (!this.isNode(startPipePos))
             return stack;
-        if (!this.world.isBlockLoaded(startPipePos))
+        if (!this.world.isLoaded(startPipePos))
             return stack;
-        PipeTileEntity startPipe = this.getPipe(startPipePos);
+        var startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return stack;
         this.startProfile("find_destination");
-        List<BlockPos> nodes = this.getOrderedNetworkNodes(startPipePos);
-        for (int i = 0; i < nodes.size(); i++) {
-            BlockPos pipePos = nodes.get(startPipe.getNextNode(nodes, i));
-            if (!this.world.isBlockLoaded(pipePos))
+        var nodes = this.getOrderedNetworkNodes(startPipePos);
+        for (var i = 0; i < nodes.size(); i++) {
+            var pipePos = nodes.get(startPipe.getNextNode(nodes, i));
+            if (!this.world.isLoaded(pipePos))
                 continue;
-            PipeTileEntity pipe = this.getPipe(pipePos);
-            Pair<BlockPos, ItemStack> dest = pipe.getAvailableDestination(stack, false, preventOversending);
+            var pipe = this.getPipe(pipePos);
+            var dest = pipe.getAvailableDestination(stack, false, preventOversending);
             if (dest == null || dest.getLeft().equals(startInventory))
                 continue;
-            Function<Float, IPipeItem> sup = speed -> itemSupplier.apply(dest.getRight(), speed);
-            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getPos(), dest.getLeft(), dest.getRight(), sup)) {
-                ItemStack remain = stack.copy();
+            var sup = (Function<Float, IPipeItem>) speed -> itemSupplier.apply(dest.getRight(), speed);
+            if (this.routeItemToLocation(startPipePos, startInventory, pipe.getBlockPos(), dest.getLeft(), dest.getRight(), sup)) {
+                var remain = stack.copy();
                 remain.shrink(dest.getRight().getCount());
                 this.endProfile();
                 return remain;
@@ -173,17 +165,17 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public boolean routeItemToLocation(BlockPos startPipePos, BlockPos startInventory, BlockPos destPipePos, BlockPos destInventory, ItemStack stack, Function<Float, IPipeItem> itemSupplier) {
         if (!this.isNode(startPipePos) || !this.isNode(destPipePos))
             return false;
-        if (!this.world.isBlockLoaded(startPipePos) || !this.world.isBlockLoaded(destPipePos))
+        if (!this.world.isLoaded(startPipePos) || !this.world.isLoaded(destPipePos))
             return false;
-        PipeTileEntity startPipe = this.getPipe(startPipePos);
+        var startPipe = this.getPipe(startPipePos);
         if (startPipe == null)
             return false;
         this.startProfile("get_path");
-        GraphPath<BlockPos, NetworkEdge> path = this.dijkstra.getPath(startPipePos, destPipePos);
+        var path = this.dijkstra.getPath(startPipePos, destPipePos);
         this.endProfile();
         if (path == null)
             return false;
-        IPipeItem item = itemSupplier.apply(startPipe.getItemSpeed(stack));
+        var item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
         startPipe.addNewItem(item);
         PacketHandler.sendToAllLoaded(this.world, startPipePos, new PacketItemEnterPipe(startPipePos, item));
@@ -191,9 +183,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     }
 
     public ItemStack requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEquality... equalityTypes) {
-        ItemStack remain = stack.copy();
+        var remain = stack.copy();
         // check existing items
-        for (NetworkLocation location : this.getOrderedNetworkItems(destPipe)) {
+        for (var location : this.getOrderedNetworkItems(destPipe)) {
             remain = this.requestExistingItem(location, destPipe, destInventory, null, remain, equalityTypes);
             if (remain.isEmpty())
                 return remain;
@@ -203,10 +195,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     }
 
     public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
-        for (Pair<BlockPos, ItemStack> craftable : this.getAllCraftables(destPipe)) {
+        for (var craftable : this.getAllCraftables(destPipe)) {
             if (!ItemEquality.compareItems(stack, craftable.getRight(), equalityTypes))
                 continue;
-            PipeTileEntity pipe = this.getPipe(craftable.getLeft());
+            var pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
                 continue;
             stack = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
@@ -224,21 +216,21 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
         if (location.getPos().equals(destInventory))
             return stack;
         // make sure we don't pull any locked items
-        int amount = location.getItemAmount(this.world, stack, equalityTypes);
+        var amount = location.getItemAmount(this.world, stack, equalityTypes);
         if (amount <= 0)
             return stack;
         amount -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
         if (amount <= 0)
             return stack;
-        ItemStack remain = stack.copy();
+        var remain = stack.copy();
         // make sure we only extract less than or equal to the requested amount
         if (remain.getCount() < amount)
             amount = remain.getCount();
         remain.shrink(amount);
         for (int slot : location.getStackSlots(this.world, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
-            IItemHandler handler = location.getItemHandler(this.world);
-            ItemStack extracted = handler.extractItem(slot, amount, true);
+            var handler = location.getItemHandler(this.world);
+            var extracted = handler.extractItem(slot, amount, true);
             if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> itemSupplier.apply(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
                 amount -= extracted.getCount();
@@ -249,10 +241,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
         return remain;
     }
 
-    public PipeTileEntity getPipe(BlockPos pos) {
-        PipeTileEntity tile = this.tileCache.get(pos);
+    public PipeBlockEntity getPipe(BlockPos pos) {
+        var tile = this.tileCache.get(pos);
         if (tile == null || tile.isRemoved()) {
-            tile = Utility.getBlockEntity(PipeTileEntity.class, this.world, pos);
+            tile = Utility.getBlockEntity(PipeBlockEntity.class, this.world, pos);
             this.tileCache.put(pos, tile);
         }
         return tile;
@@ -265,14 +257,14 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, ItemEquality... equalityTypes) {
         this.startProfile("get_currently_crafting");
         List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
-        Iterator<PipeTileEntity> craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
+        var craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
         while (craftingPipes.hasNext()) {
-            PipeTileEntity pipe = craftingPipes.next();
-            for (Pair<BlockPos, ItemStack> request : pipe.craftResultRequests) {
-                BlockPos dest = request.getLeft();
-                ItemStack stack = request.getRight();
+            var pipe = craftingPipes.next();
+            for (var request : pipe.craftResultRequests) {
+                var dest = request.getLeft();
+                var stack = request.getRight();
                 // add up all the items that should go to the same location
-                Optional<Pair<BlockPos, ItemStack>> existing = items.stream()
+                var existing = items.stream()
                         .filter(s -> s.getLeft().equals(dest) && ItemEquality.compareItems(s.getRight(), stack, equalityTypes))
                         .findFirst();
                 if (existing.isPresent()) {
@@ -297,25 +289,25 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
             return Collections.emptyList();
         this.startProfile("get_all_craftables");
         List<Pair<BlockPos, ItemStack>> craftables = new ArrayList<>();
-        for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
-            if (!this.world.isBlockLoaded(dest))
+        for (var dest : this.getOrderedNetworkNodes(node)) {
+            if (!this.world.isLoaded(dest))
                 continue;
-            PipeTileEntity pipe = this.getPipe(dest);
-            for (ItemStack stack : pipe.getAllCraftables())
-                craftables.add(Pair.of(pipe.getPos(), stack));
+            var pipe = this.getPipe(dest);
+            for (var stack : pipe.getAllCraftables())
+                craftables.add(Pair.of(pipe.getBlockPos(), stack));
         }
         this.endProfile();
         return craftables;
     }
 
     public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
-        int total = 0;
-        for (Pair<BlockPos, ItemStack> pair : this.getAllCraftables(node)) {
+        var total = 0;
+        for (var pair : this.getAllCraftables(node)) {
             if (!ItemEquality.compareItems(pair.getRight(), stack, equalityTypes))
                 continue;
-            if (!this.world.isBlockLoaded(pair.getLeft()))
+            if (!this.world.isLoaded(pair.getLeft()))
                 continue;
-            PipeTileEntity pipe = this.getPipe(pair.getLeft());
+            var pipe = this.getPipe(pair.getLeft());
             if (pipe != null)
                 total += pipe.getCraftableAmount(unavailableConsumer, stack, dependencyChain);
         }
@@ -327,20 +319,20 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
             return Collections.emptyList();
         this.startProfile("get_network_items");
         List<NetworkLocation> info = new ArrayList<>();
-        for (BlockPos dest : this.getOrderedNetworkNodes(node)) {
-            if (!this.world.isBlockLoaded(dest))
+        for (var dest : this.getOrderedNetworkNodes(node)) {
+            if (!this.world.isLoaded(dest))
                 continue;
-            PipeTileEntity pipe = this.getPipe(dest);
+            var pipe = this.getPipe(dest);
             if (!pipe.canNetworkSee())
                 continue;
-            for (Direction dir : Direction.values()) {
-                IItemHandler handler = pipe.getItemHandler(dir);
+            for (var dir : Direction.values()) {
+                var handler = pipe.getItemHandler(dir);
                 if (handler == null)
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
                 if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.world))))
                     continue;
-                NetworkLocation location = new NetworkLocation(dest, dir);
+                var location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.world))
                     info.add(location);
             }
@@ -370,7 +362,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     private void refreshNode(BlockPos pos, BlockState state) {
         this.startProfile("refresh_node");
         this.graph.removeAllEdges(new ArrayList<>(this.graph.edgesOf(pos)));
-        for (NetworkEdge edge : this.createAllEdges(pos, state, false))
+        for (var edge : this.createAllEdges(pos, state, false))
             this.addEdge(edge);
         this.endProfile();
     }
@@ -384,11 +376,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public BlockPos getNodeFromPipe(BlockPos pos) {
         if (this.isNode(pos))
             return pos;
-        BlockState state = this.world.getBlockState(pos);
+        var state = this.world.getBlockState(pos);
         if (!(state.getBlock() instanceof PipeBlock))
             return null;
-        for (Direction dir : Direction.values()) {
-            NetworkEdge edge = this.createEdge(pos, state, dir, false);
+        for (var dir : Direction.values()) {
+            var edge = this.createEdge(pos, state, dir, false);
             if (edge != null)
                 return edge.getEndPipe();
         }
@@ -398,8 +390,8 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {
         this.startProfile("create_all_edges");
         List<NetworkEdge> edges = new ArrayList<>();
-        for (Direction dir : Direction.values()) {
-            NetworkEdge edge = this.createEdge(pos, state, dir, ignoreCurrBlocked);
+        for (var dir : Direction.values()) {
+            var edge = this.createEdge(pos, state, dir, ignoreCurrBlocked);
             if (edge != null)
                 edges.add(edge);
         }
@@ -408,14 +400,14 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     }
 
     private NetworkEdge createEdge(BlockPos pos, BlockState state, Direction dir, boolean ignoreCurrBlocked) {
-        if (!ignoreCurrBlocked && !state.get(PipeBlock.DIRECTIONS.get(dir)).isConnected())
+        if (!ignoreCurrBlocked && !state.getValue(PipeBlock.DIRECTIONS.get(dir)).isConnected())
             return null;
-        BlockPos currPos = pos.offset(dir);
-        BlockState currState = this.world.getBlockState(currPos);
+        var currPos = pos.relative(dir);
+        var currState = this.world.getBlockState(currPos);
         if (!(currState.getBlock() instanceof PipeBlock))
             return null;
         this.startProfile("create_edge");
-        NetworkEdge edge = new NetworkEdge();
+        var edge = new NetworkEdge();
         edge.pipes.add(pos);
         edge.pipes.add(currPos);
 
@@ -427,12 +419,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
                 return edge;
             }
 
-            boolean found = false;
-            for (Direction nextDir : Direction.values()) {
-                if (!currState.get(PipeBlock.DIRECTIONS.get(nextDir)).isConnected())
+            var found = false;
+            for (var nextDir : Direction.values()) {
+                if (!currState.getValue(PipeBlock.DIRECTIONS.get(nextDir)).isConnected())
                     continue;
-                BlockPos offset = currPos.offset(nextDir);
-                BlockState offState = this.world.getBlockState(offset);
+                var offset = currPos.relative(nextDir);
+                var offState = this.world.getBlockState(offset);
                 if (!(offState.getBlock() instanceof PipeBlock))
                     continue;
                 if (edge.pipes.contains(offset))
@@ -453,10 +445,10 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public List<BlockPos> getOrderedNetworkNodes(BlockPos node) {
         if (!this.isNode(node))
             return Collections.emptyList();
-        List<BlockPos> ret = this.nodeToConnectedNodes.get(node);
+        var ret = this.nodeToConnectedNodes.get(node);
         if (ret == null) {
             this.startProfile("compile_connected_nodes");
-            ShortestPathAlgorithm.SingleSourcePaths<BlockPos, NetworkEdge> paths = this.dijkstra.getPaths(node);
+            var paths = this.dijkstra.getPaths(node);
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
@@ -472,7 +464,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     public void clearDestinationCache(BlockPos... nodes) {
         this.startProfile("clear_node_cache");
         // remove caches for the nodes
-        for (BlockPos node : nodes)
+        for (var node : nodes)
             this.nodeToConnectedNodes.keySet().remove(node);
         // remove caches that contain the nodes as a destination
         this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
@@ -485,7 +477,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
 
     public Stream<IPipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
         this.startProfile("get_pipe_items_on_the_way");
-        Stream<IPipeItem> ret = this.pipeItems.values().stream().filter(i -> i.getDestInventory().equals(goalInv));
+        var ret = this.pipeItems.values().stream().filter(i -> i.getDestInventory().equals(goalInv));
         this.endProfile();
         return ret;
     }
@@ -515,11 +507,11 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
     }
 
     public void startProfile(String name) {
-        this.world.getProfiler().startSection(() -> PrettyPipes.ID + ":pipe_network_" + name);
+        this.world.getProfiler().push(() -> PrettyPipes.ID + ":pipe_network_" + name);
     }
 
     public void endProfile() {
-        this.world.getProfiler().endSection();
+        this.world.getProfiler().pop();
     }
 
     public static PipeNetwork get(Level world) {

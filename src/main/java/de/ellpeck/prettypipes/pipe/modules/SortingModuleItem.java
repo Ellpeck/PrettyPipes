@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.pipe.modules;
 
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
@@ -19,17 +19,17 @@ public class SortingModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return !(other instanceof SortingModuleItem);
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return false;
     }
 
     @Override
-    public Integer getCustomNextNode(ItemStack module, PipeTileEntity tile, List<BlockPos> nodes, int index) {
+    public Integer getCustomNextNode(ItemStack module, PipeBlockEntity tile, List<BlockPos> nodes, int index) {
         switch (this.type) {
             case ROUND_ROBIN:
                 // store an ever-increasing index and choose destinations based on that

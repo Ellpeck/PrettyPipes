@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.pipe.modules;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
+import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.world.item.ItemStack;
 
 public class HighPriorityModuleItem extends ModuleItem {
@@ -15,17 +15,17 @@ public class HighPriorityModuleItem extends ModuleItem {
     }
 
     @Override
-    public int getPriority(ItemStack module, PipeTileEntity tile) {
+    public int getPriority(ItemStack module, PipeBlockEntity tile) {
         return this.priority;
     }
 
     @Override
-    public boolean isCompatible(ItemStack module, PipeTileEntity tile, IModule other) {
+    public boolean isCompatible(ItemStack module, PipeBlockEntity tile, IModule other) {
         return !(other instanceof HighPriorityModuleItem) && !(other instanceof LowPriorityModuleItem);
     }
 
     @Override
-    public boolean hasContainer(ItemStack module, PipeTileEntity tile) {
+    public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return false;
     }
 }
