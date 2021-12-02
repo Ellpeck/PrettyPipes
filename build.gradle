@@ -1,11 +1,11 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
+        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
+        maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
@@ -20,10 +20,11 @@ archivesBaseName = 'PrettyPipes'
 if (System.getenv('BUILD_NUMBER') != null) {
     version += "." + System.getenv('BUILD_NUMBER')
 }
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
-    mappings channel: 'snapshot', version: '20200723-1.16.1'
+    mappings channel: 'official', version: '1.18'
 
     runs {
         client {
@@ -98,18 +99,19 @@ configurations {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.16.3-34.0.9'
-    embed "org.jgrapht:jgrapht-core:1.4.0"
+    minecraft 'net.minecraftforge:forge:1.18-38.0.8'
+    embed "org.jgrapht:jgrapht-core:1.5.1"
 
-    compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")
-    runtimeOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25")
+    // TODO JEI?
+/*    compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")
+    runtimeOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25")*/
 
     // to test the rf requiring and crafting stuff
-    runtimeOnly fg.deobf("curse.maven:powah-352656:3057732")
+/*    runtimeOnly fg.deobf("curse.maven:powah-352656:3057732")
     runtimeOnly fg.deobf("curse.maven:lollipop-347954:3057731")
     runtimeOnly fg.deobf("curse.maven:mcjtylib-233105:3131241")
     runtimeOnly fg.deobf("curse.maven:rftools-base-326041:3140147")
-    runtimeOnly fg.deobf("curse.maven:rftools-utility-342466:3152948")
+    runtimeOnly fg.deobf("curse.maven:rftools-utility-342466:3152948")*/
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..

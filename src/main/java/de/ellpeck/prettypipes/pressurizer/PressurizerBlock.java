@@ -1,9 +1,6 @@
 package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.ConnectionType;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ContainerBlock;

@@ -20,7 +20,6 @@ import net.minecraftforge.items.IItemHandler;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Stack;
 import java.util.function.Consumer;
 

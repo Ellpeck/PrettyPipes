@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
-import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -25,15 +24,11 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.DrawScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.event.world.PistonEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 @JeiPlugin
 public class JEIPrettyPipesPlugin implements IModPlugin {

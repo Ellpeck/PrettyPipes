@@ -3,7 +3,6 @@ package de.ellpeck.prettypipes.packets;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;

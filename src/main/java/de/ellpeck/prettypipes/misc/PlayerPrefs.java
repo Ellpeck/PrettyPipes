@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.misc;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonWriter;
 import de.ellpeck.prettypipes.PrettyPipes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;

@@ -1,14 +1,12 @@
 package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 

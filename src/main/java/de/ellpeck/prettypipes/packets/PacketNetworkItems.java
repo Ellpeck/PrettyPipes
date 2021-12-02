@@ -1,10 +1,5 @@
 package de.ellpeck.prettypipes.packets;
 
-import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.misc.ItemOrder;
-import de.ellpeck.prettypipes.network.PipeItem;
-import de.ellpeck.prettypipes.pipe.PipeTileEntity;
-import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;

@@ -1,11 +1,7 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
-import de.ellpeck.prettypipes.Registry;
-import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelRenderer;
 import net.minecraft.client.renderer.IRenderTypeBuffer;

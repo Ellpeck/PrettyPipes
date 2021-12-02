@@ -3,7 +3,6 @@ package de.ellpeck.prettypipes.items;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
-import de.ellpeck.prettypipes.pipe.PipeBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.EntityType;
