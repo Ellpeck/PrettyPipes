@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.9.5'
+version = '1.10.0'
 group = 'de.ellpeck.prettypipes' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'PrettyPipes'
 
@@ -108,7 +108,7 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.18-38.0.8'
     embed 'org.jgrapht:jgrapht-core:1.5.1'
 
-    // TODO JEI?
+    // TODO JEI? it's not updated to 1.18 yet :(
 /*    compileOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25:api")
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.2:7.3.2.25")*/
 
