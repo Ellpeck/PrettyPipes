@@ -22,6 +22,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -229,7 +230,14 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 var search = searchText;
                 String toCompare;
                 if (search.startsWith("@")) {
+                    // search mod id
                     toCompare = s.getLeft().getItem().getCreatorModId(s.getLeft());
+                    search = search.substring(1);
+                } else if (search.startsWith("#")) {
+                    // search item description
+                    var hoverText = s.getLeft().getTooltipLines(this.minecraft.player,
+                            this.minecraft.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+                    toCompare = hoverText.stream().map(Component::getString).collect(Collectors.joining("\n"));
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name
