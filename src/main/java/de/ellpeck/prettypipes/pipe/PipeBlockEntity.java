@@ -88,7 +88,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.put("modules", this.modules.serializeNBT());
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
@@ -102,7 +103,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             results.add(nbt);
         }
         compound.put("craft_results", results);
-        return super.save(compound);
     }
 
     @Override
@@ -126,7 +126,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     @Override
     public CompoundTag getUpdateTag() {
         // sync pipe items on load
-        var nbt = this.save(new CompoundTag());
+        var nbt = this.saveWithoutMetadata();
         nbt.put("items", Utility.serializeAll(this.getItems()));
         return nbt;
     }

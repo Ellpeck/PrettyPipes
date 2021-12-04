@@ -58,9 +58,9 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.putInt("energy", this.getEnergy());
-        return super.save(compound);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
 
     @Override
     public CompoundTag getUpdateTag() {
-        return this.save(new CompoundTag());
+        return this.saveWithoutMetadata();
     }
 
     @Override

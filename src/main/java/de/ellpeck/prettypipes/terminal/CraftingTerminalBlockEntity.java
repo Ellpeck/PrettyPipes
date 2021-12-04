@@ -135,9 +135,9 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.put("craft_items", this.craftItems.serializeNBT());
-        return super.save(compound);
     }
 
     @Override

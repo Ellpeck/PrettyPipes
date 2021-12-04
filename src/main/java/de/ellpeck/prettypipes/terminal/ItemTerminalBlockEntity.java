@@ -224,10 +224,10 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
+    public void saveAdditional(CompoundTag compound) {
+        super.saveAdditional(compound);
         compound.put("items", this.items.serializeNBT());
         compound.put("requests", Utility.serializeAll(this.existingRequests));
-        return super.save(compound);
     }
 
     @Override

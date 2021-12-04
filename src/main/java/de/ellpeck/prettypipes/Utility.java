@@ -113,7 +113,7 @@ public final class Utility {
     public static void sendBlockEntityToClients(BlockEntity tile) {
         var world = (ServerLevel) tile.getLevel();
         var entities = world.getChunkSource().chunkMap.getPlayers(new ChunkPos(tile.getBlockPos()), false);
-        var packet = ClientboundBlockEntityDataPacket.create(tile, t -> t.save(new CompoundTag()));
+        var packet = ClientboundBlockEntityDataPacket.create(tile, BlockEntity::saveWithoutMetadata);
         for (var e : entities)
             e.connection.send(packet);
     }
