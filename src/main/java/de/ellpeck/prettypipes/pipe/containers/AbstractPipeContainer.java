@@ -52,7 +52,7 @@ public abstract class AbstractPipeContainer<T extends IModule> extends AbstractC
 
     @Override
     public void clicked(int slotId, int dragType, ClickType clickTypeIn, Player player) {
-        if (FilterSlot.checkFilter(this, slotId, player))
+        if (FilterSlot.checkFilter(this, slotId))
             return;
         super.clicked(slotId, dragType, clickTypeIn, player);
     }

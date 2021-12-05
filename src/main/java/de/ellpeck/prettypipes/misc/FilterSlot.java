@@ -16,39 +16,34 @@ public class FilterSlot extends SlotItemHandler {
         this.onlyOneItem = onlyOneItem;
     }
 
-    public static boolean checkFilter(AbstractContainerMenu container, int slotId, Player player) {
-        if (slotId >= 0 && slotId < container.slots.size()) {
-            var slot = container.getSlot(slotId);
+    public static boolean checkFilter(AbstractContainerMenu menu, int slotId) {
+        if (slotId >= 0 && slotId < menu.slots.size()) {
+            var slot = menu.getSlot(slotId);
             if (slot instanceof FilterSlot) {
-                ((FilterSlot) slot).slotClick(player);
+                ((FilterSlot) slot).slotClick(menu);
                 return true;
             }
         }
         return false;
     }
 
-    private void slotClick(Player player) {
-        var heldStack = player.inventoryMenu.getCarried();
+    private void slotClick(AbstractContainerMenu menu) {
+        var heldStack = menu.getCarried();
         var stackInSlot = this.getItem();
 
         if (!stackInSlot.isEmpty() && heldStack.isEmpty()) {
-            this.safeInsert(ItemStack.EMPTY);
+            this.set(ItemStack.EMPTY);
         } else if (!heldStack.isEmpty()) {
             var s = heldStack.copy();
             if (this.onlyOneItem)
                 s.setCount(1);
-            this.safeInsert(s);
+            this.set(s);
         }
     }
 
     @Override
     public boolean mayPlace(@NotNull ItemStack stack) {
         return false;
-    }
-
-    @Override
-    public ItemStack safeInsert(ItemStack stack) {
-        return super.safeInsert(stack.copy());
     }
 
     @Override
