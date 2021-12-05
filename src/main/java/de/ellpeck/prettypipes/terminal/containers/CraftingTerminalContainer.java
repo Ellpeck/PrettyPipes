@@ -27,14 +27,14 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     }
 
     @Override
-    protected void addDataSlots(ContainerData data) {
+    protected void addOwnSlots(Player player) {
         this.craftInventory = new WrappedCraftingInventory(this.getTile().craftItems, this, 3, 3);
         this.craftResult = new ResultContainer();
-        this.addSlot(new ResultSlot(this.player, this.craftInventory, this.craftResult, 0, 25, 77));
+        this.addSlot(new ResultSlot(player, this.craftInventory, this.craftResult, 0, 25, 77));
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 3; j++)
                 this.addSlot(new Slot(this.craftInventory, j + i * 3, 7 + j * 18, 18 + i * 18));
-        super.addDataSlots(data);
+        super.addOwnSlots(player);
     }
 
     @Override
