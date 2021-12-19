@@ -12,6 +12,9 @@ import de.ellpeck.prettypipes.packets.PacketRequest;
 import joptsimple.internal.Strings;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Widget;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.language.I18n;
@@ -360,6 +363,12 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             }
         }
         return true;
+    }
+
+    @Override
+    public <T extends GuiEventListener & Widget & NarratableEntry> T addRenderableWidget(T p_169406_) {
+        // overriding to public for JEIPrettyPipesPlugin
+        return super.addRenderableWidget(p_169406_);
     }
 
     public Stream<ItemTerminalWidget> streamWidgets() {

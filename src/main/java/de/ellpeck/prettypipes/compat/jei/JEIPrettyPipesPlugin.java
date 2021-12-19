@@ -1,4 +1,3 @@
-/*
 package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
@@ -10,20 +9,15 @@ import mezz.jei.api.constants.VanillaRecipeCategoryUid;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
-import mezz.jei.api.runtime.IIngredientFilter;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.renderer.Rectangle2d;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent.DrawScreenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -61,48 +55,46 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<ItemTerminalGui>() {
+        registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<>() {
             @Override
-            public List<Rectangle2d> getGuiExtraAreas(ItemTerminalGui containerScreen) {
-                List<Rectangle2d> ret = new ArrayList<>();
+            public List<Rect2i> getGuiExtraAreas(ItemTerminalGui containerScreen) {
+                List<Rect2i> ret = new ArrayList<>();
                 // sorting buttons
-                ret.add(new Rectangle2d(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
+                ret.add(new Rect2i(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
                 // crafting hud
                 if (containerScreen.currentlyCrafting != null && !containerScreen.currentlyCrafting.isEmpty())
-                    ret.add(new Rectangle2d(containerScreen.getGuiLeft() + containerScreen.getXSize(), containerScreen.getGuiTop() + 4, 65, 89));
+                    ret.add(new Rect2i(containerScreen.getGuiLeft() + containerScreen.getXSize(), containerScreen.getGuiTop() + 4, 65, 89));
                 return ret;
             }
         });
     }
 
     @SubscribeEvent
-    public void onInitGui(InitGuiEvent.Post event) {
-        Screen screen = event.getGui();
-        if (!(screen instanceof ItemTerminalGui))
+    public void onInitGui(ScreenEvent.InitScreenEvent.Post event) {
+        var screen = event.getScreen();
+        if (!(screen instanceof ItemTerminalGui terminal))
             return;
-        ItemTerminalGui terminal = (ItemTerminalGui) screen;
-        event.addWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, new StringTextComponent(""), button -> {
-            PlayerPrefs prefs = PlayerPrefs.get();
-            prefs.syncJei = !prefs.syncJei;
-            prefs.save();
+        terminal.addRenderableWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, new TextComponent(""), button -> {
+            var preferences = PlayerPrefs.get();
+            preferences.syncJei = !preferences.syncJei;
+            preferences.save();
             terminal.updateWidgets();
         }));
         if (PlayerPrefs.get().syncJei)
-            terminal.search.setText(this.runtime.getIngredientFilter().getFilterText());
+            terminal.search.setValue(this.runtime.getIngredientFilter().getFilterText());
     }
 
     @SubscribeEvent
-    public void onRenderGui(DrawScreenEvent event) {
-        Screen screen = event.getGui();
-        if (!(screen instanceof ItemTerminalGui))
+    public void onRenderGui(ScreenEvent.DrawScreenEvent event) {
+        var screen = event.getScreen();
+        if (!(screen instanceof ItemTerminalGui terminal))
             return;
-        ItemTerminalGui terminal = (ItemTerminalGui) screen;
-        boolean sync = PlayerPrefs.get().syncJei;
-        if (event instanceof DrawScreenEvent.Post) {
-            if (this.jeiSyncButton.isHovered())
-                terminal.renderTooltip(event.getMatrixStack(), new TranslationTextComponent("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
-        } else if (event instanceof DrawScreenEvent.Pre) {
-            this.jeiSyncButton.setMessage(new StringTextComponent((sync ? TextFormatting.GREEN : TextFormatting.RED) + "J"));
+        var sync = PlayerPrefs.get().syncJei;
+        if (event instanceof ScreenEvent.DrawScreenEvent.Post) {
+            if (this.jeiSyncButton.isHoveredOrFocused())
+                terminal.renderTooltip(event.getPoseStack(), new TranslatableComponent("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
+        } else if (event instanceof ScreenEvent.DrawScreenEvent.Pre) {
+            this.jeiSyncButton.setMessage(new TextComponent((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
         }
     }
 
@@ -111,21 +103,20 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         if (!PlayerPrefs.get().syncJei)
             return;
 
-        Screen screen = Minecraft.getInstance().currentScreen;
-        if (!(screen instanceof ItemTerminalGui)) {
+        var screen = Minecraft.getInstance().screen;
+        if (!(screen instanceof ItemTerminalGui terminal)) {
             this.lastTerminalText = null;
             this.lastJeiText = null;
             return;
         }
-        ItemTerminalGui terminal = (ItemTerminalGui) screen;
-        IIngredientFilter filter = this.runtime.getIngredientFilter();
-        String terminalText = terminal.search.getText();
-        String jeiText = filter.getFilterText();
+        var filter = this.runtime.getIngredientFilter();
+        var terminalText = terminal.search.getValue();
+        var jeiText = filter.getFilterText();
 
         if (!jeiText.equals(this.lastJeiText)) {
             this.lastTerminalText = jeiText;
             this.lastJeiText = jeiText;
-            terminal.search.setText(jeiText);
+            terminal.search.setValue(jeiText);
         } else if (!terminalText.equals(this.lastTerminalText)) {
             this.lastTerminalText = terminalText;
             this.lastJeiText = terminalText;
@@ -133,4 +124,3 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         }
     }
 }
-*/
