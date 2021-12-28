@@ -37,8 +37,7 @@ public class ItemFilter extends ItemStackHandler {
         super(size);
         this.stack = stack;
         this.pipe = pipe;
-        if (stack.hasTag())
-            this.deserializeNBT(stack.getTag().getCompound("filter"));
+        this.load();
     }
 
     public List<Slot> getSlots(int x, int y) {
@@ -69,12 +68,13 @@ public class ItemFilter extends ItemStackHandler {
         return buttons;
     }
 
-    public void onButtonPacket(int id) {
+    public void onButtonPacket(IFilteredContainer menu, int id) {
         if (id == 0 && this.canModifyWhitelist) {
             this.isWhitelist = !this.isWhitelist;
             this.modified = true;
             this.save();
         } else if (id == 1 && this.canPopulateFromInventories) {
+            var changed = false;
             // populate filter from inventories
             var filters = this.pipe.getFilters();
             for (var direction : Direction.values()) {
@@ -90,12 +90,15 @@ public class ItemFilter extends ItemStackHandler {
                     // try inserting into ourselves and any filter increase modifiers
                     for (var filter : filters) {
                         if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty()) {
+                            changed = true;
                             filter.save();
                             break;
                         }
                     }
                 }
             }
+            if (changed)
+                menu.onFilterPopulated();
         }
     }
 
@@ -123,6 +126,11 @@ public class ItemFilter extends ItemStackHandler {
             this.stack.getOrCreateTag().put("filter", this.serializeNBT());
             this.modified = false;
         }
+    }
+
+    public void load() {
+        if (this.stack.hasTag())
+            this.deserializeNBT(this.stack.getTag().getCompound("filter"));
     }
 
     @Override
@@ -155,5 +163,7 @@ public class ItemFilter extends ItemStackHandler {
     public interface IFilteredContainer {
 
         ItemFilter getFilter();
+
+        default void onFilterPopulated() {}
     }
 }

@@ -99,9 +99,8 @@ public class PacketButton {
             }
         }),
         FILTER_CHANGE((pos, data, player) -> {
-            var container = (IFilteredContainer) player.containerMenu;
-            var filter = container.getFilter();
-            filter.onButtonPacket(data[0]);
+            if (player.containerMenu instanceof IFilteredContainer filtered)
+                filtered.getFilter().onButtonPacket(filtered, data[0]);
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
