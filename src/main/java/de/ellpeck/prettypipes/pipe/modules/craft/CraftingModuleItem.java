@@ -169,8 +169,10 @@ public class CraftingModuleItem extends ModuleItem {
 
         ItemEquality[] equalityTypes = ItemFilter.getEqualityTypes(tile);
         int resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
+        // calculate how many crafting *operations* to do (as opposed to how many *items* to craft)
         int requiredCrafts = MathHelper.ceil(stack.getCount() / (float) resultAmount);
-        int toCraft = Math.min(craftableAmount, requiredCrafts);
+        int craftableCrafts = MathHelper.ceil(craftableAmount / (float) resultAmount);
+        int toCraft = Math.min(craftableCrafts, requiredCrafts);
 
         ItemStackHandler input = this.getInput(module);
         for (int i = 0; i < input.getSlots(); i++) {
