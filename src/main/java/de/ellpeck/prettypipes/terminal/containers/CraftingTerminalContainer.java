@@ -29,7 +29,12 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     @Override
     protected void addOwnSlots(Player player) {
         this.craftInventory = new WrappedCraftingInventory(this.getTile().craftItems, this, 3, 3);
-        this.craftResult = new ResultContainer();
+        this.craftResult = new ResultContainer() {
+            @Override
+            public void setChanged() {
+                CraftingTerminalContainer.this.slotsChanged(this);
+            }
+        };
         this.addSlot(new ResultSlot(player, this.craftInventory, this.craftResult, 0, 25, 77));
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 3; j++)
@@ -39,6 +44,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     @Override
     public void slotsChanged(Container inventoryIn) {
+        super.slotsChanged(inventoryIn);
         if (!this.player.level.isClientSide) {
             var ret = ItemStack.EMPTY;
             var optional = this.player.level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftInventory, this.player.level);
