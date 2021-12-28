@@ -83,7 +83,7 @@ public class PacketButton {
                 NetworkHooks.openGui((ServerPlayer) player, new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
-                        return stack.getDisplayName();
+                        return stack.getHoverName();
                     }
 
                     @Nullable

@@ -244,7 +244,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name
-                    toCompare = s.getLeft().getDisplayName().getString();
+                    toCompare = s.getLeft().getHoverName().getString();
                 }
                 return !toCompare.toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT));
             });

@@ -149,7 +149,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
         private void drawForeground(PoseStack matrix, int mouseX, int mouseY) {
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return;
-            AbstractPipeGui.this.renderTooltip(matrix, this.moduleStack.getDisplayName(), mouseX - AbstractPipeGui.this.leftPos, mouseY - AbstractPipeGui.this.topPos);
+            AbstractPipeGui.this.renderTooltip(matrix, this.moduleStack.getHoverName(), mouseX - AbstractPipeGui.this.leftPos, mouseY - AbstractPipeGui.this.topPos);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

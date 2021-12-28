@@ -157,7 +157,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         this.updateItems();
         var requested = this.requestItemImpl(stack, onItemUnavailable(player));
         if (requested > 0) {
-            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
+            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
         } else {
             onItemUnavailable(player).accept(stack);
         }
@@ -308,6 +308,6 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     public static Consumer<ItemStack> onItemUnavailable(Player player) {
-        return s -> player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
+        return s -> player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
     }
 }
