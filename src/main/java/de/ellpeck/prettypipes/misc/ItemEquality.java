@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.misc;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -10,7 +9,7 @@ import java.util.function.Supplier;
 public class ItemEquality {
 
     public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamageValue() == filter.getDamageValue(), false, Type.DAMAGE);
-    public static final ItemEquality NBT = new ItemEquality(ItemStack::isSameItemSameTags, false, Type.NBT);
+    public static final ItemEquality NBT = new ItemEquality(ItemStack::tagMatches, false, Type.NBT);
     public static final ItemEquality MOD = new ItemEquality((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true, Type.MOD);
 
     public final Type type;

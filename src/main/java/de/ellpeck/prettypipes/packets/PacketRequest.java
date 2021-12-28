@@ -36,7 +36,8 @@ public class PacketRequest {
 
     public static void toBytes(PacketRequest packet, FriendlyByteBuf buf) {
         buf.writeBlockPos(packet.pos);
-        buf.writeItem(packet.stack);
+        // if we limit the tag here, non-shared data will be omitted, making the requested item not match the stored one
+        buf.writeItemStack(packet.stack, false);
         buf.writeVarInt(packet.amount);
     }
 
