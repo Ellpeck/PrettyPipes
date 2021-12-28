@@ -167,8 +167,10 @@ public class CraftingModuleItem extends ModuleItem {
 
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
+        // calculate how many crafting *operations* to do (as opposed to how many *items* to craft)
         var requiredCrafts = Mth.ceil(stack.getCount() / (float) resultAmount);
-        var toCraft = Math.min(craftableAmount, requiredCrafts);
+        var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
+        var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
         var input = this.getInput(module);
         for (var i = 0; i < input.getSlots(); i++) {
