@@ -149,6 +149,9 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (button == 0 && mouseX >= this.leftPos + this.getXOffset() + 172 && this.topPos + mouseY >= 18 && mouseX < this.leftPos + this.getXOffset() + 172 + 12 && mouseY < this.topPos + 18 + 70) {
             this.isScrolling = true;
             return true;
+        } else if (button == 1 && mouseX >= this.search.x && mouseX <= this.search.x + this.search.getWidth() && mouseY >= this.search.y && mouseY <= this.search.y + 8) {
+            // allow typing in search field after pressing right mouse button within search field
+            return super.mouseClicked(mouseX, mouseY, 0);
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
