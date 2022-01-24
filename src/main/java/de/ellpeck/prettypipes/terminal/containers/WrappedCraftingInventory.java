@@ -1,7 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import net.minecraft.world.entity.player.StackedContents;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
@@ -9,9 +8,9 @@ import net.minecraftforge.items.ItemStackHandler;
 public class WrappedCraftingInventory extends CraftingContainer {
 
     private final ItemStackHandler items;
-    private final AbstractContainerMenu eventHandler;
+    private final CraftingTerminalContainer eventHandler;
 
-    public WrappedCraftingInventory(ItemStackHandler items, AbstractContainerMenu eventHandlerIn, int width, int height) {
+    public WrappedCraftingInventory(ItemStackHandler items, CraftingTerminalContainer eventHandlerIn, int width, int height) {
         super(eventHandlerIn, width, height);
         this.eventHandler = eventHandlerIn;
         this.items = items;
@@ -47,15 +46,18 @@ public class WrappedCraftingInventory extends CraftingContainer {
     public ItemStack removeItem(int index, int count) {
         var slotStack = this.items.getStackInSlot(index);
         var ret = !slotStack.isEmpty() && count > 0 ? slotStack.split(count) : ItemStack.EMPTY;
-        if (!ret.isEmpty())
-            this.eventHandler.slotsChanged(this);
+        if (!ret.isEmpty()) {
+            for (var player : this.eventHandler.getTile().getLookingPlayers())
+                player.containerMenu.slotsChanged(this);
+        }
         return ret;
     }
 
     @Override
     public void setItem(int index, ItemStack stack) {
         this.items.setStackInSlot(index, stack);
-        this.eventHandler.slotsChanged(this);
+        for (var player : this.eventHandler.getTile().getLookingPlayers())
+            player.containerMenu.slotsChanged(this);
     }
 
     @Override

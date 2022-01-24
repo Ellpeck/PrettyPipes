@@ -172,7 +172,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return stack.getCount() - ret.getRight().getCount();
     }
 
-    protected Player[] getLookingPlayers() {
+    public Player[] getLookingPlayers() {
         return this.level.players().stream().filter(p -> p.containerMenu instanceof ItemTerminalContainer container && container.tile == this).toArray(Player[]::new);
     }
 

@@ -32,7 +32,8 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
         this.craftResult = new ResultContainer() {
             @Override
             public void setChanged() {
-                CraftingTerminalContainer.this.slotsChanged(this);
+                for (var player : CraftingTerminalContainer.this.getTile().getLookingPlayers())
+                    player.containerMenu.slotsChanged(this);
             }
         };
         this.addSlot(new ResultSlot(player, this.craftInventory, this.craftResult, 0, 25, 77));
