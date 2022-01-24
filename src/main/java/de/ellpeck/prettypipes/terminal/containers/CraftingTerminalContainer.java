@@ -36,7 +36,12 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     @Override
     protected void addOwnSlots(PlayerEntity player) {
         this.craftInventory = new WrappedCraftingInventory(this.getTile().craftItems, this, 3, 3);
-        this.craftResult = new CraftResultInventory();
+        this.craftResult = new CraftResultInventory() {
+            @Override
+            public void markDirty() {
+                CraftingTerminalContainer.this.onCraftMatrixChanged(this);
+            }
+        };
         this.addSlot(new CraftingResultSlot(player, this.craftInventory, this.craftResult, 0, 25, 77));
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
@@ -46,6 +51,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     @Override
     public void onCraftMatrixChanged(IInventory inventoryIn) {
+        super.onCraftMatrixChanged(inventoryIn);
         if (!this.player.world.isRemote) {
             ItemStack ret = ItemStack.EMPTY;
             Optional<ICraftingRecipe> optional = this.player.world.getServer().getRecipeManager().getRecipe(IRecipeType.CRAFTING, this.craftInventory, this.player.world);
