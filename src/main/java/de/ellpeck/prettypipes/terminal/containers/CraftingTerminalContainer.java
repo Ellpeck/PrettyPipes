@@ -39,7 +39,8 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
         this.craftResult = new CraftResultInventory() {
             @Override
             public void markDirty() {
-                CraftingTerminalContainer.this.onCraftMatrixChanged(this);
+                for (PlayerEntity player : CraftingTerminalContainer.this.getTile().getLookingPlayers())
+                    player.openContainer.onCraftMatrixChanged(this);
             }
         };
         this.addSlot(new CraftingResultSlot(player, this.craftInventory, this.craftResult, 0, 25, 77));

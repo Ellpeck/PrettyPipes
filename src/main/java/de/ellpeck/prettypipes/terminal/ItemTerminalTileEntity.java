@@ -175,7 +175,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return stack.getCount() - ret.getRight().getCount();
     }
 
-    protected PlayerEntity[] getLookingPlayers() {
+    public PlayerEntity[] getLookingPlayers() {
         return this.world.getPlayers().stream()
                 .filter(p -> p.openContainer instanceof ItemTerminalContainer)
                 .filter(p -> ((ItemTerminalContainer) p.openContainer).tile == this)
