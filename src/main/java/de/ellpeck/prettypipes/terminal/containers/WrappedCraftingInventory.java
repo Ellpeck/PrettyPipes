@@ -2,8 +2,6 @@ package de.ellpeck.prettypipes.terminal.containers;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.RecipeItemHelper;
 import net.minecraftforge.items.ItemStackHandler;
@@ -11,9 +9,9 @@ import net.minecraftforge.items.ItemStackHandler;
 public class WrappedCraftingInventory extends CraftingInventory {
 
     private final ItemStackHandler items;
-    private final Container eventHandler;
+    private final CraftingTerminalContainer eventHandler;
 
-    public WrappedCraftingInventory(ItemStackHandler items, Container eventHandlerIn, int width, int height) {
+    public WrappedCraftingInventory(ItemStackHandler items, CraftingTerminalContainer eventHandlerIn, int width, int height) {
         super(eventHandlerIn, width, height);
         this.eventHandler = eventHandlerIn;
         this.items = items;
@@ -49,15 +47,18 @@ public class WrappedCraftingInventory extends CraftingInventory {
     public ItemStack decrStackSize(int index, int count) {
         ItemStack slotStack = this.items.getStackInSlot(index);
         ItemStack ret = !slotStack.isEmpty() && count > 0 ? slotStack.split(count) : ItemStack.EMPTY;
-        if (!ret.isEmpty())
-            this.eventHandler.onCraftMatrixChanged(this);
+        if (!ret.isEmpty()) {
+            for (PlayerEntity player : this.eventHandler.getTile().getLookingPlayers())
+                player.openContainer.onCraftMatrixChanged(this);
+        }
         return ret;
     }
 
     @Override
     public void setInventorySlotContents(int index, ItemStack stack) {
         this.items.setStackInSlot(index, stack);
-        this.eventHandler.onCraftMatrixChanged(this);
+        for (PlayerEntity player : this.eventHandler.getTile().getLookingPlayers())
+            player.openContainer.onCraftMatrixChanged(this);
     }
 
     @Override
