@@ -461,13 +461,13 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
         return ret;
     }
 
-    public void clearDestinationCache(BlockPos... nodes) {
+    public void clearDestinationCache(List<BlockPos> nodes) {
         this.startProfile("clear_node_cache");
         // remove caches for the nodes
         for (var node : nodes)
             this.nodeToConnectedNodes.keySet().remove(node);
         // remove caches that contain the nodes as a destination
-        this.nodeToConnectedNodes.values().removeIf(cached -> Arrays.stream(nodes).anyMatch(cached::contains));
+        this.nodeToConnectedNodes.values().removeIf(cached -> nodes.stream().anyMatch(cached::contains));
         this.endProfile();
     }
 
@@ -490,12 +490,12 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
 
     @Override
     public void edgeAdded(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
-        this.clearDestinationCache(e.getEdgeSource(), e.getEdgeTarget());
+        this.clearDestinationCache(e.getEdge().pipes);
     }
 
     @Override
     public void edgeRemoved(GraphEdgeChangeEvent<BlockPos, NetworkEdge> e) {
-        this.clearDestinationCache(e.getEdgeSource(), e.getEdgeTarget());
+        this.clearDestinationCache(e.getEdge().pipes);
     }
 
     @Override
