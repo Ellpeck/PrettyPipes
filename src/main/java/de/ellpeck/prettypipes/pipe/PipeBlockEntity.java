@@ -437,7 +437,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             if (prio != pipe.priority) {
                 pipe.priority = prio;
                 // clear the cache so that it's reevaluated based on priority
-                PipeNetwork.get(pipe.level).clearDestinationCache(pipe.worldPosition);
+                PipeNetwork.get(pipe.level).clearDestinationCache(Collections.singletonList(pipe.worldPosition));
             }
             profiler.pop();
         }

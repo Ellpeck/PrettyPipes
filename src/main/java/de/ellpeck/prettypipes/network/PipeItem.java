@@ -317,6 +317,11 @@ public class PipeItem implements IPipeItem {
         }
     }
 
+    @Override
+    public String toString() {
+        return "PipeItem{" + "stack=" + this.stack + ", x=" + this.x + ", y=" + this.y + ", z=" + this.z + ", startInventory=" + this.startInventory + ", destInventory=" + this.destInventory + '}';
+    }
+
     protected int getModelCount() {
         var i = 1;
         if (this.stack.getCount() > 48) {

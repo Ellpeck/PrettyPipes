@@ -51,4 +51,9 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
     public int hashCode() {
         return Objects.hash(this.lockId);
     }
+
+    @Override
+    public String toString() {
+        return "NetworkLock{" + "location=" + this.location.pipePos + ", stack=" + this.stack + '}';
+    }
 }
