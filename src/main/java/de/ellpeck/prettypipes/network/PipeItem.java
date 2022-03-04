@@ -126,7 +126,7 @@ public class PipeItem implements IPipeItem {
                     currPipe = next;
                 }
             } else {
-                var dist = (this.currGoalPos).distSqr(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F, false);
+                var dist = (this.currGoalPos).distToLowCornerSqr(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
                 if (dist < currSpeed * currSpeed) {
                     // we're past the start of the pipe, so move to the center of the next pipe
                     BlockPos nextPos;

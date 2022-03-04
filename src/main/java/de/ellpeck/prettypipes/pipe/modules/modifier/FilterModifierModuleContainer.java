@@ -1,12 +1,10 @@
 package de.ellpeck.prettypipes.pipe.modules.modifier;
 
-import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -25,7 +23,7 @@ public class FilterModifierModuleContainer extends AbstractPipeContainer<FilterM
         for (var filter : this.tile.getFilters()) {
             for (var i = 0; i < filter.getSlots(); i++) {
                 var stack = filter.getStackInSlot(i);
-                unsortedTags.addAll(stack.getItem().getTags());
+                stack.getTags().forEach(t -> unsortedTags.add(t.location()));
             }
         }
         return unsortedTags.stream().sorted().collect(Collectors.toList());

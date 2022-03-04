@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.misc;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -23,7 +24,7 @@ public class ItemEquality {
     }
 
     public static ItemEquality tag(ResourceLocation tag) {
-        return new ItemEquality((stack, filter) -> stack.getItem().getTags().contains(tag), true, Type.TAG);
+        return new ItemEquality((stack, filter) -> stack.getTags().anyMatch(t -> Objects.equals(tag, t.location())), true, Type.TAG);
     }
 
     public static boolean compareItems(ItemStack stack, ItemStack filter, ItemEquality... types) {
