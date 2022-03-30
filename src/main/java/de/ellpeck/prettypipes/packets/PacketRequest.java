@@ -20,7 +20,8 @@ public class PacketRequest {
     public PacketRequest(BlockPos pos, ItemStack stack, int amount) {
         this.pos = pos;
         this.stack = stack;
-        this.nbtHash = stack.getTag().hashCode();
+        if (stack.hasTag())
+            this.nbtHash = stack.getTag().hashCode();
         this.amount = amount;
     }
 
