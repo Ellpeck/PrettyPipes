@@ -108,8 +108,8 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.18.2-40.0.3'
     embed 'org.jgrapht:jgrapht-core:1.5.1'
 
-    compileOnly fg.deobf("mezz.jei:jei-1.18.2:9.4.1.117:api")
-    runtimeOnly fg.deobf("mezz.jei:jei-1.18.2:9.4.1.117")
+    compileOnly fg.deobf("mezz.jei:jei-1.18.2:9.5.5.174:api")
+    runtimeOnly fg.deobf("mezz.jei:jei-1.18.2:9.5.5.174")
 
     // to test the rf requiring and crafting stuff
 /*    runtimeOnly fg.deobf("curse.maven:powah-352656:3057732")
