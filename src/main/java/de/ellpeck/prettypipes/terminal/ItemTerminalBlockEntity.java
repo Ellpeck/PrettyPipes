@@ -163,11 +163,11 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
                     .filter(s -> ItemEquality.compareItems(s, filter) && s.getTag().hashCode() == nbtHash)
                     .findFirst().orElse(filter);
         }
-        var requested = this.requestItemImpl(stack, onItemUnavailable(player));
+        var requested = this.requestItemImpl(stack, onItemUnavailable(player, false));
         if (requested > 0) {
             player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
         } else {
-            onItemUnavailable(player).accept(stack);
+            onItemUnavailable(player, false).accept(stack);
         }
         network.endProfile();
     }
@@ -315,7 +315,11 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return Pair.of(requests, remain);
     }
 
-    public static Consumer<ItemStack> onItemUnavailable(Player player) {
-        return s -> player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
+    public static Consumer<ItemStack> onItemUnavailable(Player player, boolean ignore) {
+        return s -> {
+            if (ignore)
+                return;
+            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
+        };
     }
 }

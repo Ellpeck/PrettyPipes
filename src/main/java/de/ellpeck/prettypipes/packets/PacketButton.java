@@ -112,7 +112,7 @@ public class PacketButton {
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
             var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level, pos);
-            tile.requestCraftingItems(player, data[0]);
+            tile.requestCraftingItems(player, data[0], data[1] > 0);
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
             var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);

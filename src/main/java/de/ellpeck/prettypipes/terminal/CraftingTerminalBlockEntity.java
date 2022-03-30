@@ -105,7 +105,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         }
     }
 
-    public void requestCraftingItems(Player player, int maxAmount) {
+    public void requestCraftingItems(Player player, int maxAmount, boolean force) {
         var pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
@@ -116,7 +116,10 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         var lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             var item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, onItemUnavailable(player), new Stack<>(), ItemEquality.NBT);
+        }, onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
+        // if we're forcing, just pretend we have one available
+        if (lowestAvailable <= 0 && force)
+            lowestAvailable = maxAmount;
         if (lowestAvailable > 0) {
             // if we're limiting the amount, pretend we only have that amount available
             if (maxAmount < lowestAvailable)
@@ -127,9 +130,12 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                     continue;
                 requested = requested.copy();
                 requested.setCount(lowestAvailable);
-                this.requestItemImpl(requested, onItemUnavailable(player));
+                this.requestItemImpl(requested, onItemUnavailable(player, force));
             }
             player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
+        }
+        else{
+            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".hold_alt"), UUID.randomUUID());
         }
         network.endProfile();
     }
