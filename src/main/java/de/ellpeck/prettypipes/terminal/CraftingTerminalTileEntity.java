@@ -106,7 +106,7 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         }
     }
 
-    public void requestCraftingItems(PlayerEntity player, int maxAmount) {
+    public void requestCraftingItems(PlayerEntity player, int maxAmount, boolean force) {
         PipeTileEntity pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
@@ -117,7 +117,10 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
         int lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             NetworkItem item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, onItemUnavailable(player), new Stack<>(), ItemEquality.NBT);
+        }, onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
+        // if we're forcing, just pretend we have one available
+        if (lowestAvailable <= 0 && force)
+            lowestAvailable = maxAmount;
         if (lowestAvailable > 0) {
             // if we're limiting the amount, pretend we only have that amount available
             if (maxAmount < lowestAvailable)
@@ -128,9 +131,11 @@ public class CraftingTerminalTileEntity extends ItemTerminalTileEntity {
                     continue;
                 requested = requested.copy();
                 requested.setCount(lowestAvailable);
-                this.requestItemImpl(requested, onItemUnavailable(player));
+                this.requestItemImpl(requested, onItemUnavailable(player, force));
             }
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
+        } else {
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".hold_alt"), UUID.randomUUID());
         }
         network.endProfile();
     }

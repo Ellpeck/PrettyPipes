@@ -166,11 +166,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
                     .filter(s -> ItemEquality.compareItems(s, filter) && s.getTag().hashCode() == nbtHash)
                     .findFirst().orElse(filter);
         }
-        int requested = this.requestItemImpl(stack, onItemUnavailable(player));
+        int requested = this.requestItemImpl(stack, onItemUnavailable(player, false));
         if (requested > 0) {
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());
         } else {
-            onItemUnavailable(player).accept(stack);
+            onItemUnavailable(player, false).accept(stack);
         }
         network.endProfile();
     }
@@ -321,7 +321,11 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         return Pair.of(requests, remain);
     }
 
-    public static Consumer<ItemStack> onItemUnavailable(PlayerEntity player) {
-        return s -> player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
+    public static Consumer<ItemStack> onItemUnavailable(PlayerEntity player, boolean ignore) {
+        return s -> {
+            if (ignore)
+                return;
+            player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".not_found", s.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.RED)), UUID.randomUUID());
+        };
     }
 }

@@ -1,16 +1,11 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.packets.PacketRequest;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalTileEntity;
-import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
@@ -19,6 +14,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
+
     private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
     private Button requestButton;
 
@@ -32,7 +28,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         super.init();
         this.requestButton = this.addButton(new Button(this.guiLeft + 8, this.guiTop + 100, 50, 20, new TranslationTextComponent("info." + PrettyPipes.ID + ".request"), button -> {
             int amount = requestModifier();
-            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount));
+            int force = hasAltDown() ? 1 : 0;
+            PacketHandler.sendToServer(new PacketButton(this.container.tile.getPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
         }));
         this.tick();
     }
