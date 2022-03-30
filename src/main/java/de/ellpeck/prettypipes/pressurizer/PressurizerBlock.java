@@ -1,9 +1,6 @@
 package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.ConnectionType;
-import de.ellpeck.prettypipes.pipe.IPipeConnectable;
-import de.ellpeck.prettypipes.terminal.ItemTerminalTileEntity;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ContainerBlock;
@@ -15,7 +12,6 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -28,6 +24,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 public class PressurizerBlock extends ContainerBlock {
+
     public PressurizerBlock() {
         super(Properties.create(Material.ROCK).hardnessAndResistance(3).sound(SoundType.STONE));
     }
@@ -55,5 +52,18 @@ public class PressurizerBlock extends ContainerBlock {
     @Override
     public void addInformation(ItemStack stack, @Nullable IBlockReader worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
         Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
+    }
+
+    @Override
+    public boolean hasComparatorInputOverride(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getComparatorInputOverride(BlockState state, World world, BlockPos pos) {
+        PressurizerTileEntity pipe = Utility.getTileEntity(PressurizerTileEntity.class, world, pos);
+        if (pipe == null)
+            return 0;
+        return (int) (pipe.getEnergy() / (float) pipe.getMaxEnergy() * 15);
     }
 }
