@@ -154,10 +154,18 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
         }
     }
 
-    public void requestItem(PlayerEntity player, ItemStack stack) {
+    public void requestItem(PlayerEntity player, ItemStack stack, int nbtHash) {
         PipeNetwork network = PipeNetwork.get(this.world);
         network.startProfile("terminal_request_item");
         this.updateItems();
+        if (nbtHash != 0) {
+            ItemStack filter = stack;
+            stack = this.networkItems.values().stream()
+                    .map(NetworkItem::asStack)
+                    // don't compare with nbt equality here or the whole hashing thing is pointless
+                    .filter(s -> ItemEquality.compareItems(s, filter) && s.getTag().hashCode() == nbtHash)
+                    .findFirst().orElse(filter);
+        }
         int requested = this.requestItemImpl(stack, onItemUnavailable(player));
         if (requested > 0) {
             player.sendMessage(new TranslationTextComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getDisplayName()).setStyle(Style.EMPTY.setFormatting(TextFormatting.GREEN)), UUID.randomUUID());

@@ -14,11 +14,13 @@ public class PacketRequest {
 
     private BlockPos pos;
     private ItemStack stack;
+    private int nbtHash;
     private int amount;
 
     public PacketRequest(BlockPos pos, ItemStack stack, int amount) {
         this.pos = pos;
         this.stack = stack;
+        this.nbtHash = stack.getTag().hashCode();
         this.amount = amount;
     }
 
@@ -30,6 +32,7 @@ public class PacketRequest {
         PacketRequest packet = new PacketRequest();
         packet.pos = buf.readBlockPos();
         packet.stack = buf.readItemStack();
+        packet.nbtHash = buf.readVarInt();
         packet.amount = buf.readVarInt();
         return packet;
     }
@@ -37,6 +40,7 @@ public class PacketRequest {
     public static void toBytes(PacketRequest packet, PacketBuffer buf) {
         buf.writeBlockPos(packet.pos);
         buf.writeItemStack(packet.stack);
+        buf.writeVarInt(packet.nbtHash);
         buf.writeVarInt(packet.amount);
     }
 
@@ -48,7 +52,7 @@ public class PacketRequest {
                 PlayerEntity player = ctx.get().getSender();
                 ItemTerminalTileEntity tile = Utility.getTileEntity(ItemTerminalTileEntity.class, player.world, message.pos);
                 message.stack.setCount(message.amount);
-                tile.requestItem(player, message.stack);
+                tile.requestItem(player, message.stack, message.nbtHash);
             }
         });
         ctx.get().setPacketHandled(true);
