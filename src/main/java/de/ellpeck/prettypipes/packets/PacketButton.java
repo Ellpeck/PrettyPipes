@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeTileEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
@@ -100,9 +99,8 @@ public class PacketButton {
             }
         }),
         FILTER_CHANGE((pos, data, player) -> {
-            IFilteredContainer container = (IFilteredContainer) player.openContainer;
-            ItemFilter filter = container.getFilter();
-            filter.onButtonPacket(data[0]);
+            if (player.openContainer instanceof IFilteredContainer)
+                ((IFilteredContainer) player.openContainer).getFilter().onButtonPacket((IFilteredContainer) player.openContainer, data[0]);
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             AbstractPipeContainer<?> container = (AbstractPipeContainer<?>) player.openContainer;

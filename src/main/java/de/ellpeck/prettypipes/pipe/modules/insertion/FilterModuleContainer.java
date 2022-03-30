@@ -35,4 +35,11 @@ public class FilterModuleContainer extends AbstractPipeContainer<FilterModuleIte
     public ItemFilter getFilter() {
         return this.filter;
     }
+
+    @Override
+    public void onFilterPopulated() {
+        // reload the filter so that it displays correctly on the client
+        this.filter.load();
+    }
+
 }
