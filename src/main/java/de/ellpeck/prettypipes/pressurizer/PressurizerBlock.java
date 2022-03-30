@@ -65,4 +65,17 @@ public class PressurizerBlock extends BaseEntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return level.isClientSide ? null : createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
     }
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos) {
+        var pipe = Utility.getBlockEntity(PressurizerBlockEntity.class, world, pos);
+        if (pipe == null)
+            return 0;
+        return (int) (pipe.getEnergy() / (float) pipe.getMaxEnergy() * 15);
+    }
 }

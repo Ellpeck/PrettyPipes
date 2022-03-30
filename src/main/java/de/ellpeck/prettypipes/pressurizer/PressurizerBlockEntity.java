@@ -134,9 +134,10 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
             }
         }
 
-        // send energy update
+        // send energy update and comparator output
         if (pressurizer.lastEnergy != pressurizer.storage.getEnergyStored() && pressurizer.level.getGameTime() % 10 == 0) {
             pressurizer.lastEnergy = pressurizer.storage.getEnergyStored();
+            level.updateNeighbourForOutputSignal(pos, state.getBlock());
             Utility.sendBlockEntityToClients(pressurizer);
         }
     }
