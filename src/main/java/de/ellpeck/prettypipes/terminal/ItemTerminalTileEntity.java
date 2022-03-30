@@ -163,7 +163,7 @@ public class ItemTerminalTileEntity extends TileEntity implements INamedContaine
             stack = this.networkItems.values().stream()
                     .map(NetworkItem::asStack)
                     // don't compare with nbt equality here or the whole hashing thing is pointless
-                    .filter(s -> ItemEquality.compareItems(s, filter) && s.getTag().hashCode() == nbtHash)
+                    .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
                     .findFirst().orElse(filter);
         }
         int requested = this.requestItemImpl(stack, onItemUnavailable(player, false));
