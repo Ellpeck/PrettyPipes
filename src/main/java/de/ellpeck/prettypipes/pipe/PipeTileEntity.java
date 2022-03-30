@@ -180,7 +180,7 @@ public class PipeTileEntity extends TileEntity implements INamedContainerProvide
             if (prio != this.priority) {
                 this.priority = prio;
                 // clear the cache so that it's reevaluated based on priority
-                PipeNetwork.get(this.world).clearDestinationCache(this.pos);
+                PipeNetwork.get(this.world).clearDestinationCache(Collections.singletonList(this.pos));
             }
             profiler.endSection();
         }
