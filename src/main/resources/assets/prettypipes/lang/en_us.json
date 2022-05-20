@@ -72,7 +72,7 @@
     "info.prettypipes.limit_to_max_off": "Don't limit to one stack",
     "info.prettypipes.request": "Request",
     "info.prettypipes.not_found": "%s not found",
-    "info.prettypipes.hold_alt": "Hold Alt to request anyway",
+    "info.prettypipes.hold_alt": "Hold Alt or Backspace to request anyway",
     "info.prettypipes.sending": "Sending %s %s",
     "info.prettypipes.sending_ingredients": "Sending %s sets of ingredients",
     "info.prettypipes.order": "Order by %s",

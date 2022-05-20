@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
@@ -25,7 +26,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         super.init();
         this.requestButton = this.addRenderableWidget(new Button(this.leftPos + 8, this.topPos + 100, 50, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".request"), button -> {
             var amount = requestModifier();
-            var force = hasAltDown() ? 1 : 0;
+            // also allow holding backspace instead of alt for people whose alt key is inaccessible (linux?)
+            var force = hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;
             PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
         }));
         this.tick();
