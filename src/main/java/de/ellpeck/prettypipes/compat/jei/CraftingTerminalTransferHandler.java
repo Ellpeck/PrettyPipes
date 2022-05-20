@@ -1,7 +1,5 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
@@ -9,10 +7,11 @@ import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<CraftingTerminalContainer, CraftingRecipe> {
 
@@ -31,11 +30,11 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
     public IRecipeTransferError transferRecipe(CraftingTerminalContainer container, CraftingRecipe recipe, IRecipeLayout recipeLayout, Player player, boolean maxTransfer, boolean doTransfer) {
         if (!doTransfer)
             return null;
-        ListMultimap<Integer, ItemStack> stacks = ArrayListMultimap.create();
+        Map<Integer, PacketGhostSlot.Entry> stacks = new HashMap<>();
         var ingredients = recipeLayout.getItemStacks().getGuiIngredients();
         for (var entry : ingredients.entrySet()) {
             if (entry.getValue().isInput())
-                stacks.putAll(entry.getKey() - 1, entry.getValue().getAllIngredients());
+                stacks.put(entry.getKey() - 1, new PacketGhostSlot.Entry(entry.getValue().getAllIngredients()));
         }
         PacketHandler.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
         return null;

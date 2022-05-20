@@ -1,7 +1,5 @@
 package de.ellpeck.prettypipes.terminal;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
@@ -61,10 +59,10 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         return this.craftItems.getStackInSlot(slot).isEmpty() && !this.ghostItems.getStackInSlot(slot).isEmpty();
     }
 
-    public void setGhostItems(ListMultimap<Integer, ItemStack> stacks) {
+    public void setGhostItems(Map<Integer, PacketGhostSlot.Entry> stacks) {
         this.updateItems();
         for (var i = 0; i < this.ghostItems.getSlots(); i++) {
-            var items = stacks.get(i);
+            var items = stacks.get(i).getStacks();
             if (items.isEmpty()) {
                 this.ghostItems.setStackInSlot(i, ItemStack.EMPTY);
                 continue;
@@ -98,9 +96,9 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         }
 
         if (!this.level.isClientSide) {
-            ListMultimap<Integer, ItemStack> clients = ArrayListMultimap.create();
+            Map<Integer, PacketGhostSlot.Entry> clients = new HashMap<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
-                clients.put(i, this.ghostItems.getStackInSlot(i));
+                clients.put(i, new PacketGhostSlot.Entry(Collections.singletonList(this.ghostItems.getStackInSlot(i))));
             PacketHandler.sendToAllLoaded(this.level, this.getBlockPos(), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
@@ -133,8 +131,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 this.requestItemImpl(requested, onItemUnavailable(player, force));
             }
             player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
-        }
-        else{
+        } else {
             player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".hold_alt"), UUID.randomUUID());
         }
         network.endProfile();

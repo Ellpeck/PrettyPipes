@@ -1,26 +1,35 @@
 package de.ellpeck.prettypipes.packets;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Streams;
+import com.mojang.datafixers.util.Pair;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class PacketGhostSlot {
 
     private BlockPos pos;
-    private ListMultimap<Integer, ItemStack> stacks;
+    private Map<Integer, Entry> stacks;
 
-    public PacketGhostSlot(BlockPos pos, ListMultimap<Integer, ItemStack> stacks) {
+    public PacketGhostSlot(BlockPos pos, Map<Integer, Entry> stacks) {
         this.pos = pos;
         this.stacks = stacks;
     }
@@ -32,18 +41,18 @@ public class PacketGhostSlot {
     public static PacketGhostSlot fromBytes(FriendlyByteBuf buf) {
         var packet = new PacketGhostSlot();
         packet.pos = buf.readBlockPos();
-        packet.stacks = ArrayListMultimap.create();
+        packet.stacks = new HashMap<>();
         for (var i = buf.readInt(); i > 0; i--)
-            packet.stacks.put(buf.readInt(), buf.readItem());
+            packet.stacks.put(buf.readInt(), new Entry(buf));
         return packet;
     }
 
     public static void toBytes(PacketGhostSlot packet, FriendlyByteBuf buf) {
         buf.writeBlockPos(packet.pos);
         buf.writeInt(packet.stacks.size());
-        for (var entry : packet.stacks.entries()) {
+        for (var entry : packet.stacks.entrySet()) {
             buf.writeInt(entry.getKey());
-            buf.writeItem(entry.getValue());
+            entry.getValue().write(buf);
         }
     }
 
@@ -76,5 +85,68 @@ public class PacketGhostSlot {
         }
 
         ctx.get().setPacketHandled(true);
+    }
+
+    public static class Entry {
+
+        private final List<ItemStack> stacks;
+        private final TagKey<Item> tag;
+
+        public Entry(List<ItemStack> stacks) {
+            var tag = getTagForStacks(stacks);
+            if (tag != null) {
+                this.stacks = null;
+                this.tag = tag;
+            } else {
+                this.stacks = stacks;
+                this.tag = null;
+            }
+        }
+
+        public Entry(FriendlyByteBuf buf) {
+            if (buf.readBoolean()) {
+                this.tag = null;
+                this.stacks = new ArrayList<>();
+                for (var i = buf.readInt(); i > 0; i--)
+                    this.stacks.add(buf.readItem());
+            } else {
+                this.stacks = null;
+                this.tag = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation(buf.readUtf()));
+            }
+        }
+
+        public List<ItemStack> getStacks() {
+            if (this.stacks != null)
+                return this.stacks;
+            return Streams.stream(Registry.ITEM.getTagOrEmpty(this.tag).iterator())
+                    .filter(h -> h.value() != null & h.value() != Items.AIR)
+                    .map(h -> new ItemStack(h.value())).collect(Collectors.toList());
+        }
+
+        public FriendlyByteBuf write(FriendlyByteBuf buf) {
+            if (this.stacks != null) {
+                buf.writeBoolean(true);
+                buf.writeInt(this.stacks.size());
+                for (var stack : this.stacks)
+                    buf.writeItem(stack);
+            } else {
+                buf.writeBoolean(false);
+                buf.writeUtf(this.tag.location().toString());
+            }
+            return buf;
+        }
+
+        private static TagKey<Item> getTagForStacks(List<ItemStack> stacks) {
+            return Registry.ITEM.getTags().filter(e -> {
+                var tag = e.getSecond();
+                if (tag.size() != stacks.size())
+                    return false;
+                for (var i = 0; i < tag.size(); i++) {
+                    if (stacks.get(i).getItem() != tag.get(i).value())
+                        return false;
+                }
+                return true;
+            }).map(Pair::getFirst).findFirst().orElse(null);
+        }
     }
 }
