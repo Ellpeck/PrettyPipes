@@ -4,7 +4,6 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -267,7 +266,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         while (modules.hasNext()) {
             var module = modules.next();
             // make sure we don't factor in recursive dependencies like ingot -> block -> ingot etc.
-            if (dependencyChain.stream().noneMatch(d -> ItemEquality.compareItems(module.getLeft(), d, ItemEquality.NBT))) {
+            if (!dependencyChain.contains(module.getLeft())) {
                 var amount = module.getRight().getCraftableAmount(module.getLeft(), this, unavailableConsumer, stack, dependencyChain);
                 if (amount > 0)
                     total += amount;
