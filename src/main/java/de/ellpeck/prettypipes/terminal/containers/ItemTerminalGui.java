@@ -150,8 +150,10 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             this.isScrolling = true;
             return true;
         } else if (button == 1 && mouseX >= this.search.x && mouseX <= this.search.x + this.search.getWidth() && mouseY >= this.search.y && mouseY <= this.search.y + 8) {
-            // allow typing in search field after pressing right mouse button within search field
-            return super.mouseClicked(mouseX, mouseY, 0);
+            this.search.setValue("");
+            this.search.setFocus(true);
+            this.setFocused(this.search);
+            return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -163,17 +165,11 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHoveredOrFocused()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
                 PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
-
                 return true;
             }
         }
         if (button == 0)
             this.isScrolling = false;
-        else if (button == 1 && mouseX >= this.search.x && mouseX <= this.search.x + this.search.getWidth() && mouseY >= this.search.y && mouseY <= this.search.y + 8) {
-            //clear text from search field when letting go of right mouse button within search field
-            this.search.setValue("");
-            return true;
-        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
