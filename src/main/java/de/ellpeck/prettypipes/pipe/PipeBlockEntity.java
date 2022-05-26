@@ -30,6 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
@@ -79,6 +80,10 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     public PipeBlockEntity(BlockPos pos, BlockState state) {
         super(Registry.pipeBlockEntity, pos, state);
+    }
+
+    public PipeBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
     }
 
     @Override
