@@ -20,6 +20,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.List;
 
@@ -108,7 +109,7 @@ public class WrenchItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
+        Utility.addTooltip(ForgeRegistries.ITEMS.getKey(this).getPath(), tooltip);
     }
 
     @Override

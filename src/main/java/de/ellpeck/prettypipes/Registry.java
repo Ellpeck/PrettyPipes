@@ -52,6 +52,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
@@ -65,18 +66,14 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.RegisterEvent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
@@ -86,7 +83,7 @@ public final class Registry {
     public static final CreativeModeTab TAB = new CreativeModeTab(PrettyPipes.ID) {
         @Override
         public ItemStack makeIcon() {
-            return new ItemStack(wrenchItem);
+            return new ItemStack(Registry.wrenchItem);
         }
     };
 
@@ -125,89 +122,84 @@ public final class Registry {
     public static MenuType<FilterModifierModuleContainer> filterModifierModuleContainer;
 
     @SubscribeEvent
-    public static void registerBlocks(RegistryEvent.Register<Block> event) {
-        event.getRegistry().registerAll(
-                pipeBlock = new PipeBlock().setRegistryName("pipe"),
-                itemTerminalBlock = new ItemTerminalBlock().setRegistryName("item_terminal"),
-                craftingTerminalBlock = new CraftingTerminalBlock().setRegistryName("crafting_terminal"),
-                pressurizerBlock = new PressurizerBlock().setRegistryName("pressurizer")
-        );
+    public static void register(RegisterEvent event) {
+        event.register(ForgeRegistries.Keys.BLOCKS, h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock());
+            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock());
+            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock());
+            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock());
+        });
+
+        event.register(ForgeRegistries.Keys.ITEMS, h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "wrench"), Registry.wrenchItem = new WrenchItem());
+            h.register(new ResourceLocation(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties().tab(Registry.TAB)));
+            h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameItem = new PipeFrameItem());
+            h.register(new ResourceLocation(PrettyPipes.ID, "stack_size_module"), new StackSizeModuleItem());
+            h.register(new ResourceLocation(PrettyPipes.ID, "redstone_module"), new RedstoneModuleItem());
+            h.register(new ResourceLocation(PrettyPipes.ID, "filter_increase_modifier"), new FilterIncreaseModuleItem());
+
+            Registry.registerTieredModule(h, "extraction_module", ExtractionModuleItem::new);
+            Registry.registerTieredModule(h, "filter_module", FilterModuleItem::new);
+            Registry.registerTieredModule(h, "speed_module", SpeedModuleItem::new);
+            Registry.registerTieredModule(h, "low_priority_module", LowPriorityModuleItem::new);
+            Registry.registerTieredModule(h, "high_priority_module", HighPriorityModuleItem::new);
+            Registry.registerTieredModule(h, "retrieval_module", RetrievalModuleItem::new);
+            Registry.registerTieredModule(h, "crafting_module", CraftingModuleItem::new);
+
+            for (var type : ItemEquality.Type.values()) {
+                var name = type.name().toLowerCase(Locale.ROOT) + "_filter_modifier";
+                h.register(new ResourceLocation(PrettyPipes.ID, name), new FilterModifierModuleItem(name, type));
+            }
+            for (var type : SortingModuleItem.Type.values()) {
+                var name = type.name().toLowerCase(Locale.ROOT) + "_sorting_modifier";
+                h.register(new ResourceLocation(PrettyPipes.ID, name), new SortingModuleItem(name, type));
+            }
+
+            ForgeRegistries.BLOCKS.getEntries().stream()
+                    .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
+                    .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties().tab(Registry.TAB))));
+        });
+
+        event.register(ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = BlockEntityType.Builder.of(PipeBlockEntity::new, Registry.pipeBlock).build(null));
+            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock).build(null));
+            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock).build(null));
+            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = BlockEntityType.Builder.of(PressurizerBlockEntity::new, Registry.pressurizerBlock).build(null));
+        });
+
+        event.register(ForgeRegistries.Keys.ENTITY_TYPES, h ->
+                h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
+
+        event.register(ForgeRegistries.Keys.CONTAINER_TYPES, h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IForgeMenuType.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalContainer = IForgeMenuType.create((windowId, inv, data) -> new ItemTerminalContainer(Registry.itemTerminalContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalContainer = IForgeMenuType.create((windowId, inv, data) -> new CraftingTerminalContainer(Registry.craftingTerminalContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerContainer = IForgeMenuType.create((windowId, inv, data) -> new PressurizerContainer(Registry.pressurizerContainer, windowId, inv.player, data.readBlockPos())));
+
+            Registry.extractionModuleContainer = Registry.registerPipeContainer(h, "extraction_module");
+            Registry.filterModuleContainer = Registry.registerPipeContainer(h, "filter_module");
+            Registry.retrievalModuleContainer = Registry.registerPipeContainer(h, "retrieval_module");
+            Registry.stackSizeModuleContainer = Registry.registerPipeContainer(h, "stack_size_module");
+            Registry.filterIncreaseModuleContainer = Registry.registerPipeContainer(h, "filter_increase_module");
+            Registry.craftingModuleContainer = Registry.registerPipeContainer(h, "crafting_module");
+            Registry.filterModifierModuleContainer = Registry.registerPipeContainer(h, "filter_modifier_module");
+        });
     }
 
-    @SubscribeEvent
-    public static void registerItems(RegistryEvent.Register<Item> event) {
-        var registry = event.getRegistry();
-        registry.registerAll(
-                wrenchItem = new WrenchItem().setRegistryName("wrench"),
-                new Item(new Item.Properties().tab(TAB)).setRegistryName("blank_module"),
-                pipeFrameItem = new PipeFrameItem().setRegistryName("pipe_frame")
-        );
-        registry.registerAll(createTieredModule("extraction_module", ExtractionModuleItem::new));
-        registry.registerAll(createTieredModule("filter_module", FilterModuleItem::new));
-        registry.registerAll(createTieredModule("speed_module", SpeedModuleItem::new));
-        registry.registerAll(createTieredModule("low_priority_module", LowPriorityModuleItem::new));
-        registry.registerAll(createTieredModule("high_priority_module", HighPriorityModuleItem::new));
-        registry.registerAll(createTieredModule("retrieval_module", RetrievalModuleItem::new));
-        registry.register(new StackSizeModuleItem("stack_size_module"));
-        registry.registerAll(Arrays.stream(ItemEquality.Type.values()).map(t -> new FilterModifierModuleItem(t.name().toLowerCase(Locale.ROOT) + "_filter_modifier", t)).toArray(Item[]::new));
-        registry.register(new RedstoneModuleItem("redstone_module"));
-        registry.register(new FilterIncreaseModuleItem("filter_increase_modifier"));
-        registry.registerAll(createTieredModule("crafting_module", CraftingModuleItem::new));
-        registry.registerAll(Arrays.stream(SortingModuleItem.Type.values()).map(t -> new SortingModuleItem(t.name().toLowerCase(Locale.ROOT) + "_sorting_modifier", t)).toArray(Item[]::new));
-
-        ForgeRegistries.BLOCKS.getValues().stream()
-                .filter(b -> b.getRegistryName().getNamespace().equals(PrettyPipes.ID))
-                .forEach(b -> registry.register(new BlockItem(b, new Item.Properties().tab(TAB)).setRegistryName(b.getRegistryName())));
-    }
-
-    @SubscribeEvent
-    public static void registerBlockEntities(RegistryEvent.Register<BlockEntityType<?>> event) {
-        event.getRegistry().registerAll(
-                pipeBlockEntity = (BlockEntityType<PipeBlockEntity>) BlockEntityType.Builder.of(PipeBlockEntity::new, pipeBlock).build(null).setRegistryName("pipe"),
-                itemTerminalBlockEntity = (BlockEntityType<ItemTerminalBlockEntity>) BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, itemTerminalBlock).build(null).setRegistryName("item_terminal"),
-                craftingTerminalBlockEntity = (BlockEntityType<CraftingTerminalBlockEntity>) BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, craftingTerminalBlock).build(null).setRegistryName("crafting_terminal"),
-                pressurizerBlockEntity = (BlockEntityType<PressurizerBlockEntity>) BlockEntityType.Builder.of(PressurizerBlockEntity::new, pressurizerBlock).build(null).setRegistryName("pressurizer")
-        );
-    }
-
-    @SubscribeEvent
-    public static void registerEntities(RegistryEvent.Register<EntityType<?>> event) {
-        event.getRegistry().registerAll(
-                pipeFrameEntity = (EntityType<PipeFrameEntity>) EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame").setRegistryName("pipe_frame")
-        );
-    }
-
-    @SubscribeEvent
-    public static void registerContainers(RegistryEvent.Register<MenuType<?>> event) {
-        event.getRegistry().registerAll(
-                pipeContainer = (MenuType<MainPipeContainer>) IForgeMenuType.create((windowId, inv, data) -> new MainPipeContainer(pipeContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pipe"),
-                itemTerminalContainer = (MenuType<ItemTerminalContainer>) IForgeMenuType.create((windowId, inv, data) -> new ItemTerminalContainer(itemTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("item_terminal"),
-                craftingTerminalContainer = (MenuType<CraftingTerminalContainer>) IForgeMenuType.create((windowId, inv, data) -> new CraftingTerminalContainer(craftingTerminalContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("crafting_terminal"),
-                pressurizerContainer = (MenuType<PressurizerContainer>) IForgeMenuType.create((windowId, inv, data) -> new PressurizerContainer(pressurizerContainer, windowId, inv.player, data.readBlockPos())).setRegistryName("pressurizer"),
-                extractionModuleContainer = createPipeContainer("extraction_module"),
-                filterModuleContainer = createPipeContainer("filter_module"),
-                retrievalModuleContainer = createPipeContainer("retrieval_module"),
-                stackSizeModuleContainer = createPipeContainer("stack_size_module"),
-                filterIncreaseModuleContainer = createPipeContainer("filter_increase_module"),
-                craftingModuleContainer = createPipeContainer("crafting_module"),
-                filterModifierModuleContainer = createPipeContainer("filter_modifier_module")
-        );
-    }
-
-    private static <T extends AbstractPipeContainer<?>> MenuType<T> createPipeContainer(String name) {
-        return (MenuType<T>) IForgeMenuType.create((windowId, inv, data) -> {
+    private static <T extends AbstractPipeContainer<?>> MenuType<T> registerPipeContainer(RegisterEvent.RegisterHelper<MenuType<?>> helper, String name) {
+        var type = (MenuType<T>) IForgeMenuType.create((windowId, inv, data) -> {
             var tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.level, data.readBlockPos());
             var moduleIndex = data.readInt();
             var moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
-        }).setRegistryName(name);
+        });
+        helper.register(new ResourceLocation(PrettyPipes.ID, name), type);
+        return type;
     }
 
-    private static Item[] createTieredModule(String name, BiFunction<String, ModuleTier, ModuleItem> item) {
-        List<Item> items = new ArrayList<>();
+    private static void registerTieredModule(RegisterEvent.RegisterHelper<Item> helper, String name, BiFunction<String, ModuleTier, ModuleItem> item) {
         for (var tier : ModuleTier.values())
-            items.add(item.apply(name, tier).setRegistryName(tier.name().toLowerCase(Locale.ROOT) + "_" + name));
-        return items.toArray(new Item[0]);
+            helper.register(new ResourceLocation(PrettyPipes.ID, tier.name().toLowerCase(Locale.ROOT) + "_" + name), item.apply(name, tier));
     }
 
     public static void setup(FMLCommonSetupEvent event) {
@@ -217,21 +209,21 @@ public final class Registry {
     public static final class Client {
 
         public static void setup(FMLClientSetupEvent event) {
-            ItemBlockRenderTypes.setRenderLayer(pipeBlock, RenderType.cutout());
-            BlockEntityRenderers.register(pipeBlockEntity, PipeRenderer::new);
-            EntityRenderers.register(pipeFrameEntity, PipeFrameRenderer::new);
+            ItemBlockRenderTypes.setRenderLayer(Registry.pipeBlock, RenderType.cutout());
+            BlockEntityRenderers.register(Registry.pipeBlockEntity, PipeRenderer::new);
+            EntityRenderers.register(Registry.pipeFrameEntity, PipeFrameRenderer::new);
 
-            MenuScreens.register(pipeContainer, MainPipeGui::new);
-            MenuScreens.register(itemTerminalContainer, ItemTerminalGui::new);
-            MenuScreens.register(pressurizerContainer, PressurizerGui::new);
-            MenuScreens.register(craftingTerminalContainer, CraftingTerminalGui::new);
-            MenuScreens.register(extractionModuleContainer, ExtractionModuleGui::new);
-            MenuScreens.register(filterModuleContainer, FilterModuleGui::new);
-            MenuScreens.register(retrievalModuleContainer, RetrievalModuleGui::new);
-            MenuScreens.register(stackSizeModuleContainer, StackSizeModuleGui::new);
-            MenuScreens.register(filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
-            MenuScreens.register(craftingModuleContainer, CraftingModuleGui::new);
-            MenuScreens.register(filterModifierModuleContainer, FilterModifierModuleGui::new);
+            MenuScreens.register(Registry.pipeContainer, MainPipeGui::new);
+            MenuScreens.register(Registry.itemTerminalContainer, ItemTerminalGui::new);
+            MenuScreens.register(Registry.pressurizerContainer, PressurizerGui::new);
+            MenuScreens.register(Registry.craftingTerminalContainer, CraftingTerminalGui::new);
+            MenuScreens.register(Registry.extractionModuleContainer, ExtractionModuleGui::new);
+            MenuScreens.register(Registry.filterModuleContainer, FilterModuleGui::new);
+            MenuScreens.register(Registry.retrievalModuleContainer, RetrievalModuleGui::new);
+            MenuScreens.register(Registry.stackSizeModuleContainer, StackSizeModuleGui::new);
+            MenuScreens.register(Registry.filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
+            MenuScreens.register(Registry.craftingModuleContainer, CraftingModuleGui::new);
+            MenuScreens.register(Registry.filterModifierModuleContainer, FilterModifierModuleGui::new);
         }
     }
 }

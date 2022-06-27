@@ -6,7 +6,6 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -26,7 +25,7 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
         super.render(matrix, mouseX, mouseY, partialTicks);
         this.renderTooltip(matrix, mouseX, mouseY);
         if (mouseX >= this.leftPos + 26 && mouseY >= this.topPos + 22 && mouseX < this.leftPos + 26 + 124 && mouseY < this.topPos + 22 + 12)
-            this.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".energy", this.menu.tile.getEnergy(), this.menu.tile.getMaxEnergy()), mouseX, mouseY);
+            this.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + ".energy", this.menu.tile.getEnergy(), this.menu.tile.getMaxEnergy()), mouseX, mouseY);
     }
 
     @Override
@@ -38,7 +37,7 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
     @Override
     protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
+        RenderSystem.setShaderTexture(0, PressurizerGui.TEXTURE);
         this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, 176, 137);
         var energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
         this.blit(matrixStack, this.leftPos + 26, this.topPos + 22, 0, 137, energy, 12);

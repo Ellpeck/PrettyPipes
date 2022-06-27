@@ -7,9 +7,8 @@ import net.minecraft.world.item.ItemStack;
 
 public class RedstoneModuleItem extends ModuleItem {
 
-    public RedstoneModuleItem(String name) {
-        super(name);
-        this.setRegistryName(name);
+    public RedstoneModuleItem() {
+        super("redstone_module");
     }
 
     @Override

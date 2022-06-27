@@ -42,7 +42,7 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(AMOUNT, -1);
+        this.entityData.define(PipeFrameEntity.AMOUNT, -1);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
         if (this.tickCount % 40 != 0)
             return;
         var network = PipeNetwork.get(this.level);
-        var attached = getAttachedPipe(this.level, this.pos, this.direction);
+        var attached = PipeFrameEntity.getAttachedPipe(this.level, this.pos, this.direction);
         if (attached != null) {
             var node = network.getNodeFromPipe(attached);
             if (node != null) {
@@ -61,17 +61,17 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
                 if (!stack.isEmpty()) {
                     var items = network.getOrderedNetworkItems(node);
                     var amount = items.stream().mapToInt(i -> i.getItemAmount(this.level, stack)).sum();
-                    this.entityData.set(AMOUNT, amount);
+                    this.entityData.set(PipeFrameEntity.AMOUNT, amount);
                     return;
                 }
             }
         }
-        this.entityData.set(AMOUNT, -1);
+        this.entityData.set(PipeFrameEntity.AMOUNT, -1);
     }
 
     @Override
     public boolean survives() {
-        return super.survives() && canPlace(this.level, this.pos, this.direction);
+        return super.survives() && PipeFrameEntity.canPlace(this.level, this.pos, this.direction);
     }
 
     private static BlockPos getAttachedPipe(Level world, BlockPos pos, Direction direction) {
@@ -85,11 +85,11 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     }
 
     public static boolean canPlace(Level world, BlockPos pos, Direction direction) {
-        return getAttachedPipe(world, pos, direction) != null;
+        return PipeFrameEntity.getAttachedPipe(world, pos, direction) != null;
     }
 
     public int getAmount() {
-        return this.entityData.get(AMOUNT);
+        return this.entityData.get(PipeFrameEntity.AMOUNT);
     }
 
     @Override

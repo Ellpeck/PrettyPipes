@@ -17,7 +17,6 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -382,7 +381,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent("container." + PrettyPipes.ID + ".pipe");
+        return Component.translatable("container." + PrettyPipes.ID + ".pipe");
     }
 
     @Nullable

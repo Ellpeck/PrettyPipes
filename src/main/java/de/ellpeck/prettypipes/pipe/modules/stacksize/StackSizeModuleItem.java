@@ -13,9 +13,8 @@ import net.minecraftforge.items.IItemHandler;
 
 public class StackSizeModuleItem extends ModuleItem {
 
-    public StackSizeModuleItem(String name) {
-        super(name);
-        this.setRegistryName(name);
+    public StackSizeModuleItem() {
+        super("stack_size_module");
     }
 
     public static int getMaxStackSize(ItemStack module) {
@@ -43,8 +42,8 @@ public class StackSizeModuleItem extends ModuleItem {
 
     @Override
     public int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination) {
-        var max = getMaxStackSize(module);
-        if (getLimitToMaxStackSize(module))
+        var max = StackSizeModuleItem.getMaxStackSize(module);
+        if (StackSizeModuleItem.getLimitToMaxStackSize(module))
             max = Math.min(max, stack.getMaxStackSize());
         var amount = 0;
         for (var i = 0; i < destination.getSlots(); i++) {

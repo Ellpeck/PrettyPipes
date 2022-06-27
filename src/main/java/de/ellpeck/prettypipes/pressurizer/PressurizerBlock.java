@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.pressurizer;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
-import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -57,13 +57,13 @@ public class PressurizerBlock extends BaseEntityBlock {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
+        Utility.addTooltip(ForgeRegistries.BLOCKS.getKey(this).getPath(), tooltip);
     }
 
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
+        return level.isClientSide ? null : BaseEntityBlock.createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
     }
 
     @Override

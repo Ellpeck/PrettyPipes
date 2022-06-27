@@ -5,7 +5,6 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
 
 public class FilterIncreaseModuleContainer extends AbstractPipeContainer<FilterIncreaseModuleItem> implements ItemFilter.IFilteredContainer {
 

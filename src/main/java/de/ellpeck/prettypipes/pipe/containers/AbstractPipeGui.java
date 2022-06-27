@@ -79,7 +79,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     @Override
     protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
+        RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
         this.blit(matrix, this.leftPos, this.topPos + 32, 0, 0, 176, 171);
 
         for (var tab : this.tabs)
@@ -143,7 +143,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
             AbstractPipeGui.this.itemRenderer.renderGuiItem(this.moduleStack, this.x + 6, this.y + itemOffset);
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, TEXTURE);
+            RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
         }
 
         private void drawForeground(PoseStack matrix, int mouseX, int mouseY) {

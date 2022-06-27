@@ -22,7 +22,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -163,11 +162,11 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
                     .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
                     .findFirst().orElse(filter);
         }
-        var requested = this.requestItemImpl(stack, onItemUnavailable(player, false));
+        var requested = this.requestItemImpl(stack, ItemTerminalBlockEntity.onItemUnavailable(player, false));
         if (requested > 0) {
-            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending", requested, stack.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
+            player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".sending", requested, stack.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)));
         } else {
-            onItemUnavailable(player, false).accept(stack);
+            ItemTerminalBlockEntity.onItemUnavailable(player, false).accept(stack);
         }
         network.endProfile();
     }
@@ -175,7 +174,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         var item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        var ret = requestItemLater(this.level, this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
+        var ret = ItemTerminalBlockEntity.requestItemLater(this.level, this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getRight().getCount();
     }
@@ -248,7 +247,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent("container." + PrettyPipes.ID + ".item_terminal");
+        return Component.translatable("container." + PrettyPipes.ID + ".item_terminal");
     }
 
     @Nullable
@@ -319,7 +318,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return s -> {
             if (ignore)
                 return;
-            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)), UUID.randomUUID());
+            player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)));
         };
     }
 }

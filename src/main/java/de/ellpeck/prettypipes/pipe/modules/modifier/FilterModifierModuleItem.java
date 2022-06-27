@@ -19,7 +19,6 @@ public class FilterModifierModuleItem extends ModuleItem {
     public FilterModifierModuleItem(String name, ItemEquality.Type type) {
         super(name);
         this.type = type;
-        this.setRegistryName(name);
     }
 
     @Override
@@ -39,7 +38,7 @@ public class FilterModifierModuleItem extends ModuleItem {
 
     public ItemEquality getEqualityType(ItemStack stack) {
         if (this.type == ItemEquality.Type.TAG) {
-            return ItemEquality.tag(getFilterTag(stack));
+            return ItemEquality.tag(FilterModifierModuleItem.getFilterTag(stack));
         } else {
             return this.type.getDefaultInstance();
         }

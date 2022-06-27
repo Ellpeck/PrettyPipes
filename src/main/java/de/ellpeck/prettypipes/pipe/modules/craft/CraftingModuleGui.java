@@ -17,7 +17,7 @@ public class CraftingModuleGui extends AbstractPipeGui<CraftingModuleContainer> 
     protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
         super.renderBg(matrix, partialTicks, mouseX, mouseY);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
+        RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
         this.blit(matrix, this.leftPos + 176 / 2 - 16 / 2, this.topPos + 32 + 18 * 2, 176, 80, 16, 16);
     }
 }

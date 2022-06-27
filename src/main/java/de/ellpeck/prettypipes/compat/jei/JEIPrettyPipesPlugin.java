@@ -1,31 +1,7 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-import de.ellpeck.prettypipes.PrettyPipes;
-import de.ellpeck.prettypipes.misc.PlayerPrefs;
-import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
-import mezz.jei.api.IModPlugin;
-import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.constants.VanillaRecipeCategoryUid;
-import mezz.jei.api.gui.handlers.IGuiContainerHandler;
-import mezz.jei.api.registration.IGuiHandlerRegistration;
-import mezz.jei.api.registration.IRecipeTransferRegistration;
-import mezz.jei.api.runtime.IJeiRuntime;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-
-import java.util.ArrayList;
-import java.util.List;
-
-@JeiPlugin
+// TODO JEI
+/*@JeiPlugin
 public class JEIPrettyPipesPlugin implements IModPlugin {
 
     private IJeiRuntime runtime;
@@ -123,4 +99,4 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             filter.setFilterText(terminalText);
         }
     }
-}
+}*/

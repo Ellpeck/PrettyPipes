@@ -1,12 +1,11 @@
 package de.ellpeck.prettypipes.network;
 
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.IItemHandler;
@@ -102,6 +101,6 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
     @Override
     public void deserializeNBT(CompoundTag nbt) {
         this.pipePos = NbtUtils.readBlockPos(nbt.getCompound("pipe_pos"));
-        this.direction = Direction.values()[(nbt.getInt("direction"))];
+        this.direction = Direction.values()[nbt.getInt("direction")];
     }
 }

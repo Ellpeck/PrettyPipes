@@ -7,6 +7,7 @@ import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.world.item.ItemStack;
 
 public class SpeedModuleItem extends ModuleItem {
+
     private final float speedIncrease;
 
     public SpeedModuleItem(String name, ModuleTier tier) {

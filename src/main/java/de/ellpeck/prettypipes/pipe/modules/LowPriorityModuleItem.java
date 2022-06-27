@@ -7,6 +7,7 @@ import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.world.item.ItemStack;
 
 public class LowPriorityModuleItem extends ModuleItem {
+
     private final int priority;
 
     public LowPriorityModuleItem(String name, ModuleTier tier) {

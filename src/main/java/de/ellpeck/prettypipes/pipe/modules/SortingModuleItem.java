@@ -15,7 +15,6 @@ public class SortingModuleItem extends ModuleItem {
     public SortingModuleItem(String name, Type type) {
         super(name);
         this.type = type;
-        this.setRegistryName(name);
     }
 
     @Override

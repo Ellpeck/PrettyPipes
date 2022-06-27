@@ -3,7 +3,9 @@ package de.ellpeck.prettypipes.network;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class NetworkItem {
 

@@ -5,9 +5,9 @@ import de.ellpeck.prettypipes.network.NetworkEdge;
 import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -46,7 +46,7 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
 
     static IPipeItem load(CompoundTag nbt) {
         var type = new ResourceLocation(nbt.getString("type"));
-        var func = TYPES.get(type);
+        var func = IPipeItem.TYPES.get(type);
         return func != null ? func.apply(type, nbt) : null;
     }
 }

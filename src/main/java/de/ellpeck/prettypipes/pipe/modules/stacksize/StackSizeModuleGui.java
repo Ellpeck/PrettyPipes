@@ -9,7 +9,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.player.Inventory;
 
 import java.util.function.Supplier;
@@ -23,7 +22,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     @Override
     protected void init() {
         super.init();
-        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".max_stack_size")) {
+        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, Component.translatable("info." + PrettyPipes.ID + ".max_stack_size")) {
             @Override
             public void insertText(String textToWrite) {
                 var ret = new StringBuilder();
@@ -43,7 +42,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
             var amount = Integer.parseInt(s);
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, amount);
         });
-        var buttonText = (Supplier<TranslatableComponent>) () -> new TranslatableComponent("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
+        Supplier<Component> buttonText = () -> Component.translatable("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
         this.addRenderableWidget(new Button(this.leftPos + 7, this.topPos + 17 + 32 + 10 + 22, 120, 20, buttonText.get(), b -> {
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON);
             b.setMessage(buttonText.get());

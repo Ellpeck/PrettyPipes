@@ -1,18 +1,7 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-import de.ellpeck.prettypipes.packets.PacketGhostSlot;
-import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
-import mezz.jei.api.gui.IRecipeLayout;
-import mezz.jei.api.recipe.transfer.IRecipeTransferError;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-
-import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-
+// TODO JEI
+/*
 public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<CraftingTerminalContainer, CraftingRecipe> {
 
     @Override
@@ -40,3 +29,4 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         return null;
     }
 }
+*/

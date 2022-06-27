@@ -4,9 +4,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Optional;
@@ -21,7 +23,7 @@ public class ItemTerminalWidget extends AbstractWidget {
     public boolean craftable;
 
     public ItemTerminalWidget(int xIn, int yIn, int gridX, int gridY, ItemTerminalGui screen) {
-        super(xIn, yIn, 16, 16, new TextComponent(""));
+        super(xIn, yIn, 16, 16, Component.literal(""));
         this.gridX = gridX;
         this.gridY = gridY;
         this.screen = screen;
@@ -41,7 +43,7 @@ public class ItemTerminalWidget extends AbstractWidget {
         this.setBlitOffset(100);
         renderer.blitOffset = 100;
         if (this.selected)
-            fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
+            GuiComponent.fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
         renderer.renderGuiItem(this.stack, this.x, this.y);
         var amount = !this.craftable ? this.stack.getCount() : 0;
@@ -65,8 +67,8 @@ public class ItemTerminalWidget extends AbstractWidget {
             var tooltip = this.screen.getTooltipFromItem(this.stack);
             if (this.stack.getCount() >= 1000) {
                 var comp = tooltip.get(0);
-                if (comp instanceof TextComponent text) {
-                    tooltip.set(0, text.append(new TextComponent(" (" + this.stack.getCount() + ')').withStyle(ChatFormatting.BOLD)));
+                if (comp instanceof MutableComponent m) {
+                    tooltip.set(0, m.append(Component.literal(" (" + this.stack.getCount() + ')').withStyle(ChatFormatting.BOLD)));
                 }
             }
             this.screen.renderTooltip(matrix, tooltip, Optional.empty(), mouseX, mouseY);

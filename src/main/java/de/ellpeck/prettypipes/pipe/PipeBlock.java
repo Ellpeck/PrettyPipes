@@ -50,26 +50,26 @@ public class PipeBlock extends BaseEntityBlock {
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
-    private static final VoxelShape CENTER_SHAPE = box(5, 5, 5, 11, 11, 11);
+    private static final VoxelShape CENTER_SHAPE = Block.box(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
-            .put(Direction.UP, box(5, 10, 5, 11, 16, 11))
-            .put(Direction.DOWN, box(5, 0, 5, 11, 6, 11))
-            .put(Direction.NORTH, box(5, 5, 0, 11, 11, 6))
-            .put(Direction.SOUTH, box(5, 5, 10, 11, 11, 16))
-            .put(Direction.EAST, box(10, 5, 5, 16, 11, 11))
-            .put(Direction.WEST, box(0, 5, 5, 6, 11, 11))
+            .put(Direction.UP, Block.box(5, 10, 5, 11, 16, 11))
+            .put(Direction.DOWN, Block.box(5, 0, 5, 11, 6, 11))
+            .put(Direction.NORTH, Block.box(5, 5, 0, 11, 11, 6))
+            .put(Direction.SOUTH, Block.box(5, 5, 10, 11, 11, 16))
+            .put(Direction.EAST, Block.box(10, 5, 5, 16, 11, 11))
+            .put(Direction.WEST, Block.box(0, 5, 5, 6, 11, 11))
             .build();
 
     static {
         for (var dir : Direction.values())
-            DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
+            PipeBlock.DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
     }
 
     public PipeBlock() {
         super(Block.Properties.of(Material.STONE).strength(2).sound(SoundType.STONE).noOcclusion());
 
         var state = this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false);
-        for (var prop : DIRECTIONS.values())
+        for (var prop : PipeBlock.DIRECTIONS.values())
             state = state.setValue(prop, ConnectionType.DISCONNECTED);
         this.registerDefaultState(state);
     }
@@ -100,7 +100,7 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(DIRECTIONS.values().toArray(new EnumProperty[0]));
+        builder.add(PipeBlock.DIRECTIONS.values().toArray(new EnumProperty[0]));
         builder.add(BlockStateProperties.WATERLOGGED);
     }
 
@@ -114,7 +114,7 @@ public class PipeBlock extends BaseEntityBlock {
         var newState = this.createState(worldIn, pos, state);
         if (newState != state) {
             worldIn.setBlockAndUpdate(pos, newState);
-            onStateChanged(worldIn, pos, newState);
+            PipeBlock.onStateChanged(worldIn, pos, newState);
         }
     }
 
@@ -133,17 +133,17 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        onStateChanged(worldIn, pos, state);
+        PipeBlock.onStateChanged(worldIn, pos, state);
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getShape(worldIn, pos, context), SHAPE_CACHE, null);
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getShape(worldIn, pos, context), PipeBlock.SHAPE_CACHE, null);
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
-        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), COLL_SHAPE_CACHE, s -> {
+        return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), PipeBlock.COLL_SHAPE_CACHE, s -> {
             // make the shape a bit higher so we can jump up onto a higher block
             var newShape = new MutableObject<VoxelShape>(Shapes.empty());
             s.forAllBoxes((x1, y1, z1, x2, y2, z2) -> newShape.setValue(Shapes.join(Shapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), BooleanOp.OR)));
@@ -166,10 +166,10 @@ public class PipeBlock extends BaseEntityBlock {
         var key = Pair.of(state, cover);
         var shape = cache.get(key);
         if (shape == null) {
-            shape = CENTER_SHAPE;
-            for (var entry : DIRECTIONS.entrySet()) {
+            shape = PipeBlock.CENTER_SHAPE;
+            for (var entry : PipeBlock.DIRECTIONS.entrySet()) {
                 if (state.getValue(entry.getValue()).isConnected())
-                    shape = Shapes.or(shape, DIR_SHAPES.get(entry.getKey()));
+                    shape = Shapes.or(shape, PipeBlock.DIR_SHAPES.get(entry.getKey()));
             }
             if (shapeModifier != null)
                 shape = shapeModifier.apply(shape);
@@ -187,7 +187,7 @@ public class PipeBlock extends BaseEntityBlock {
             state = state.setValue(BlockStateProperties.WATERLOGGED, true);
 
         for (var dir : Direction.values()) {
-            var prop = DIRECTIONS.get(dir);
+            var prop = PipeBlock.DIRECTIONS.get(dir);
             var type = this.getConnectionType(world, pos, dir, state);
             // don't reconnect on blocked faces
             if (type.isConnected() && curr.getValue(prop) == ConnectionType.BLOCKED)
@@ -215,8 +215,8 @@ public class PipeBlock extends BaseEntityBlock {
         if (blockHandler != null)
             return ConnectionType.CONNECTED;
         var offState = world.getBlockState(offset);
-        if (hasLegsTo(world, offState, offset, direction)) {
-            if (DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
+        if (PipeBlock.hasLegsTo(world, offState, offset, direction)) {
+            if (PipeBlock.DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
         }
         return ConnectionType.DISCONNECTED;
@@ -226,7 +226,7 @@ public class PipeBlock extends BaseEntityBlock {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
         if (state.getMaterial() == Material.STONE || state.getMaterial() == Material.METAL)
-            return canSupportCenter(world, pos, direction.getOpposite());
+            return Block.canSupportCenter(world, pos, direction.getOpposite());
         return false;
     }
 
@@ -240,7 +240,7 @@ public class PipeBlock extends BaseEntityBlock {
         var connections = 0;
         var force = false;
         for (var dir : Direction.values()) {
-            var value = newState.getValue(DIRECTIONS.get(dir));
+            var value = newState.getValue(PipeBlock.DIRECTIONS.get(dir));
             if (!value.isConnected())
                 continue;
             connections++;
@@ -271,7 +271,7 @@ public class PipeBlock extends BaseEntityBlock {
 
     @Override
     public void playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
-        dropItems(worldIn, pos, player);
+        PipeBlock.dropItems(worldIn, pos, player);
         super.playerWillDestroy(worldIn, pos, state, player);
     }
 
@@ -302,7 +302,7 @@ public class PipeBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createTickerHelper(type, Registry.pipeBlockEntity, PipeBlockEntity::tick);
+        return BaseEntityBlock.createTickerHelper(type, Registry.pipeBlockEntity, PipeBlockEntity::tick);
     }
 
     public static void dropItems(Level worldIn, BlockPos pos, Player player) {

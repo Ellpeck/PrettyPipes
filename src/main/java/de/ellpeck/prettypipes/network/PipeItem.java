@@ -60,7 +60,7 @@ public class PipeItem implements IPipeItem {
     }
 
     public PipeItem(ItemStack stack, float speed) {
-        this(TYPE, stack, speed);
+        this(PipeItem.TYPE, stack, speed);
     }
 
     public PipeItem(ResourceLocation type, CompoundTag nbt) {
@@ -78,7 +78,7 @@ public class PipeItem implements IPipeItem {
     public void setDestination(BlockPos startInventory, BlockPos destInventory, GraphPath<BlockPos, NetworkEdge> path) {
         this.startInventory = startInventory;
         this.destInventory = destInventory;
-        this.path = compilePath(path);
+        this.path = PipeItem.compilePath(path);
         this.currGoalPos = this.getStartPipe();
         this.currentTile = 0;
 
@@ -126,7 +126,7 @@ public class PipeItem implements IPipeItem {
                     currPipe = next;
                 }
             } else {
-                var dist = (this.currGoalPos).distToLowCornerSqr(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
+                var dist = this.currGoalPos.distToLowCornerSqr(this.x - 0.5F, this.y - 0.5F, this.z - 0.5F);
                 if (dist < currSpeed * currSpeed) {
                     // we're past the start of the pipe, so move to the center of the next pipe
                     BlockPos nextPos;

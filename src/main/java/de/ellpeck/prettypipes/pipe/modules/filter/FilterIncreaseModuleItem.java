@@ -12,9 +12,8 @@ import net.minecraft.world.item.ItemStack;
 
 public class FilterIncreaseModuleItem extends ModuleItem {
 
-    public FilterIncreaseModuleItem(String name) {
-        super(name);
-        this.setRegistryName(name);
+    public FilterIncreaseModuleItem() {
+        super("filter_increase_modifier");
     }
 
     @Override

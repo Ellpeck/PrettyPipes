@@ -5,7 +5,6 @@ import de.ellpeck.prettypipes.Utility;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -24,10 +23,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.UUID;
 
 public class ItemTerminalBlock extends BaseEntityBlock {
 
@@ -43,7 +42,7 @@ public class ItemTerminalBlock extends BaseEntityBlock {
         var reason = tile.getInvalidTerminalReason();
         if (reason != null) {
             if (!worldIn.isClientSide)
-                player.sendMessage(new TranslatableComponent(reason).withStyle(ChatFormatting.RED), UUID.randomUUID());
+                player.sendSystemMessage(Component.translatable(reason).withStyle(ChatFormatting.RED));
             return InteractionResult.SUCCESS;
         }
         if (!worldIn.isClientSide) {
@@ -76,13 +75,13 @@ public class ItemTerminalBlock extends BaseEntityBlock {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(this.getRegistryName().getPath(), tooltip);
+        Utility.addTooltip(ForgeRegistries.BLOCKS.getKey(this).getPath(), tooltip);
     }
 
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createTickerHelper(type, Registry.itemTerminalBlockEntity, ItemTerminalBlockEntity::tick);
+        return BaseEntityBlock.createTickerHelper(type, Registry.itemTerminalBlockEntity, ItemTerminalBlockEntity::tick);
     }
 
 }

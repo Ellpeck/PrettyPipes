@@ -93,7 +93,7 @@ public class PacketGhostSlot {
         private final TagKey<Item> tag;
 
         public Entry(List<ItemStack> stacks) {
-            var tag = getTagForStacks(stacks);
+            var tag = Entry.getTagForStacks(stacks);
             if (tag != null) {
                 this.stacks = null;
                 this.tag = tag;

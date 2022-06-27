@@ -1,18 +1,7 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.packets.PacketCraftingModuleTransfer;
-import de.ellpeck.prettypipes.packets.PacketHandler;
-import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
-import mezz.jei.api.gui.IRecipeLayout;
-import mezz.jei.api.recipe.transfer.IRecipeTransferError;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-
-import java.util.ArrayList;
-
+// TODO JEI
+/*
 public class CraftingModuleTransferHandler implements IRecipeTransferHandler<CraftingModuleContainer, CraftingRecipe> {
 
     @Override
@@ -54,3 +43,4 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
         return null;
     }
 }
+*/

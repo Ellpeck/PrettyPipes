@@ -17,7 +17,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -111,10 +110,10 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        var lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
+        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             var item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
+        }, ItemTerminalBlockEntity.onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
         // if we're forcing, just pretend we have one available
         if (lowestAvailable <= 0 && force)
             lowestAvailable = maxAmount;
@@ -128,11 +127,11 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                     continue;
                 requested = requested.copy();
                 requested.setCount(lowestAvailable);
-                this.requestItemImpl(requested, onItemUnavailable(player, force));
+                this.requestItemImpl(requested, ItemTerminalBlockEntity.onItemUnavailable(player, force));
             }
-            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
+            player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)));
         } else {
-            player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".hold_alt"), UUID.randomUUID());
+            player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".hold_alt"));
         }
         network.endProfile();
     }
@@ -151,7 +150,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent("container." + PrettyPipes.ID + ".crafting_terminal");
+        return Component.translatable("container." + PrettyPipes.ID + ".crafting_terminal");
     }
 
     @Nullable

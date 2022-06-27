@@ -20,30 +20,30 @@ public class PlayerPrefs {
     public boolean syncJei = true;
 
     public void save() {
-        var file = getFile();
+        var file = PlayerPrefs.getFile();
         if (file.exists())
             file.delete();
         try (var writer = new FileWriter(file)) {
-            GSON.toJson(this, writer);
+            PlayerPrefs.GSON.toJson(this, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static PlayerPrefs get() {
-        if (instance == null) {
-            var file = getFile();
+        if (PlayerPrefs.instance == null) {
+            var file = PlayerPrefs.getFile();
             if (file.exists()) {
                 try (var reader = new FileReader(file)) {
-                    instance = GSON.fromJson(reader, PlayerPrefs.class);
-                    return instance;
+                    PlayerPrefs.instance = PlayerPrefs.GSON.fromJson(reader, PlayerPrefs.class);
+                    return PlayerPrefs.instance;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            instance = new PlayerPrefs();
+            PlayerPrefs.instance = new PlayerPrefs();
         }
-        return instance;
+        return PlayerPrefs.instance;
     }
 
     private static File getFile() {

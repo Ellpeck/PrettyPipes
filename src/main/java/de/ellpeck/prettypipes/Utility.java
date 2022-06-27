@@ -7,7 +7,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.network.chat.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -54,9 +55,9 @@ public final class Utility {
         if (Screen.hasShiftDown()) {
             var content = I18n.get("info." + PrettyPipes.ID + "." + name).split("\n");
             for (var s : content)
-                tooltip.add(new TextComponent(s).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY)));
+                tooltip.add(Component.literal(s).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY)));
         } else {
-            tooltip.add(new TranslatableComponent("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.applyFormat(ChatFormatting.DARK_GRAY)));
+            tooltip.add(Component.translatable("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.applyFormat(ChatFormatting.DARK_GRAY)));
         }
     }
 
