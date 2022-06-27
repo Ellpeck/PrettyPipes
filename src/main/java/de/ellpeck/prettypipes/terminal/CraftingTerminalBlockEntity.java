@@ -58,7 +58,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         return this.craftItems.getStackInSlot(slot).isEmpty() && !this.ghostItems.getStackInSlot(slot).isEmpty();
     }
 
-    public void setGhostItems(Map<Integer, PacketGhostSlot.Entry> stacks) {
+    public void setGhostItems(List<PacketGhostSlot.Entry> stacks) {
         this.updateItems();
         for (var i = 0; i < this.ghostItems.getSlots(); i++) {
             var items = stacks.get(i).getStacks();
@@ -95,9 +95,9 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         }
 
         if (!this.level.isClientSide) {
-            Map<Integer, PacketGhostSlot.Entry> clients = new HashMap<>();
+            List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
-                clients.put(i, new PacketGhostSlot.Entry(Collections.singletonList(this.ghostItems.getStackInSlot(i))));
+                clients.add(new PacketGhostSlot.Entry(Collections.singletonList(this.ghostItems.getStackInSlot(i))));
             PacketHandler.sendToAllLoaded(this.level, this.getBlockPos(), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }

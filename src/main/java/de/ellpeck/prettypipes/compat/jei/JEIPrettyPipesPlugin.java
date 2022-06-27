@@ -1,7 +1,30 @@
 package de.ellpeck.prettypipes.compat.jei;
 
-// TODO JEI
-/*@JeiPlugin
+import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.misc.PlayerPrefs;
+import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
+import mezz.jei.api.IModPlugin;
+import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.gui.handlers.IGuiContainerHandler;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
+import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@JeiPlugin
 public class JEIPrettyPipesPlugin implements IModPlugin {
 
     private IJeiRuntime runtime;
@@ -25,7 +48,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        registration.addRecipeTransferHandler(new CraftingTerminalTransferHandler(), VanillaRecipeCategoryUid.CRAFTING);
+        registration.addRecipeTransferHandler(new CraftingTerminalTransferHandler(), RecipeTypes.CRAFTING);
         registration.addUniversalRecipeTransferHandler(new CraftingModuleTransferHandler());
     }
 
@@ -50,7 +73,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
-        terminal.addRenderableWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, new TextComponent(""), button -> {
+        terminal.addRenderableWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, Component.literal(""), button -> {
             var preferences = PlayerPrefs.get();
             preferences.syncJei = !preferences.syncJei;
             preferences.save();
@@ -68,14 +91,14 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         var sync = PlayerPrefs.get().syncJei;
         if (event instanceof ScreenEvent.DrawScreenEvent.Post) {
             if (this.jeiSyncButton.isHoveredOrFocused())
-                terminal.renderTooltip(event.getPoseStack(), new TranslatableComponent("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
+                terminal.renderTooltip(event.getPoseStack(), Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
         } else if (event instanceof ScreenEvent.DrawScreenEvent.Pre) {
-            this.jeiSyncButton.setMessage(new TextComponent((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
+            this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
         }
     }
 
     @SubscribeEvent
-    public void onClientTick(ClientTickEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
         if (!PlayerPrefs.get().syncJei)
             return;
 
@@ -99,4 +122,4 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             filter.setFilterText(terminalText);
         }
     }
-}*/
+}

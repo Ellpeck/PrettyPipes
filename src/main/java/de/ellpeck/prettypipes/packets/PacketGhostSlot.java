@@ -17,9 +17,7 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -27,9 +25,9 @@ import java.util.stream.Collectors;
 public class PacketGhostSlot {
 
     private BlockPos pos;
-    private Map<Integer, Entry> stacks;
+    private List<Entry> stacks;
 
-    public PacketGhostSlot(BlockPos pos, Map<Integer, Entry> stacks) {
+    public PacketGhostSlot(BlockPos pos, List<Entry> stacks) {
         this.pos = pos;
         this.stacks = stacks;
     }
@@ -41,19 +39,17 @@ public class PacketGhostSlot {
     public static PacketGhostSlot fromBytes(FriendlyByteBuf buf) {
         var packet = new PacketGhostSlot();
         packet.pos = buf.readBlockPos();
-        packet.stacks = new HashMap<>();
+        packet.stacks = new ArrayList<>();
         for (var i = buf.readInt(); i > 0; i--)
-            packet.stacks.put(buf.readInt(), new Entry(buf));
+            packet.stacks.add(new Entry(buf));
         return packet;
     }
 
     public static void toBytes(PacketGhostSlot packet, FriendlyByteBuf buf) {
         buf.writeBlockPos(packet.pos);
         buf.writeInt(packet.stacks.size());
-        for (var entry : packet.stacks.entrySet()) {
-            buf.writeInt(entry.getKey());
-            entry.getValue().write(buf);
-        }
+        for (var entry : packet.stacks)
+            entry.write(buf);
     }
 
     @SuppressWarnings("Convert2Lambda")
