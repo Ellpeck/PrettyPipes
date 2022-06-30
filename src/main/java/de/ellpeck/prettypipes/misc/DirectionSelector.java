@@ -13,9 +13,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.gui.widget.ExtendedButton;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class DirectionSelector {
 
+    private static final Direction[] ALL = ArrayUtils.addAll(Direction.values(), (Direction) null);
+
+    // null means old behavior, which is all directions
     private Direction direction;
     private boolean modified;
 
@@ -35,8 +39,8 @@ public class DirectionSelector {
             @Override
             public Component getMessage() {
                 var pipe = DirectionSelector.this.pipe;
-                var dir = DirectionSelector.this.getDirection();
-                MutableComponent msg = new TranslatableComponent("dir." + PrettyPipes.ID + "." + (dir != null ? dir.getName() : "none"));
+                var dir = DirectionSelector.this.direction;
+                MutableComponent msg = new TranslatableComponent("dir." + PrettyPipes.ID + "." + (dir != null ? dir.getName() : "all"));
                 if (dir != null) {
                     var blockName = pipe.getItemHandler(dir) != null ? pipe.getLevel().getBlockState(pipe.getBlockPos().relative(dir)).getBlock().getName() : null;
                     if (blockName != null)
@@ -48,7 +52,10 @@ public class DirectionSelector {
     }
 
     public void onButtonPacket() {
-        var dir = this.getValidDirection(this.getDirection());
+        var dir = this.direction;
+        do {
+            dir = DirectionSelector.ALL[(ArrayUtils.indexOf(DirectionSelector.ALL, dir) + 1) % DirectionSelector.ALL.length];
+        } while (!this.isDirectionValid(dir));
         if (this.direction != dir) {
             this.direction = dir;
             this.modified = true;
@@ -61,9 +68,8 @@ public class DirectionSelector {
         this.modified = false;
 
         var tag = new CompoundTag();
-        var dir = this.getDirection();
-        if (dir != null)
-            tag.putString("direction", dir.getName());
+        if (this.direction != null)
+            tag.putString("direction", this.direction.getName());
         this.stack.getOrCreateTag().put("direction_selector", tag);
     }
 
@@ -74,32 +80,23 @@ public class DirectionSelector {
         }
     }
 
-    public Direction getDirection() {
-        // default to the first direction with a container if ours is invalid or unset
-        if (this.direction == null || !this.isDirectionValid(this.direction))
-            return this.getValidDirection(this.direction);
-        return this.direction;
+    public Direction[] directions() {
+        return this.direction != null ? new Direction[]{this.direction} : Direction.values();
+    }
+
+    public boolean has(Direction dir) {
+        return this.direction == null || this.direction == dir;
     }
 
     private boolean isDirectionValid(Direction dir) {
+        if (dir == null)
+            return true;
         if (this.pipe.getItemHandler(dir) == null)
             return false;
         return this.pipe.streamModules()
                 .filter(p -> p.getLeft() != this.stack)
                 .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
-                // don't use getDirection here because we don't want a stack overflow
                 .noneMatch(p -> p != null && p.direction == dir);
-    }
-
-    private Direction getValidDirection(Direction dir) {
-        if (dir == null)
-            dir = Direction.UP;
-        for (var i = 0; i < 6; i++) {
-            dir = Direction.from3DDataValue(dir.get3DDataValue() + 1);
-            if (this.isDirectionValid(dir))
-                return dir;
-        }
-        return null;
     }
 
     public interface IDirectionContainer {

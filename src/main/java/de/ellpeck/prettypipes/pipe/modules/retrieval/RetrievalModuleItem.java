@@ -34,10 +34,7 @@ public class RetrievalModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
-        var dir = this.getDirectionSelector(module, tile).getDirection();
-        if (dir == null)
-            return;
-
+        var directions = this.getDirectionSelector(module, tile).directions();
         var network = PipeNetwork.get(tile.getLevel());
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
@@ -48,13 +45,13 @@ public class RetrievalModuleItem extends ModuleItem {
                     continue;
                 var copy = filtered.copy();
                 copy.setCount(this.maxExtraction);
-                var dest = tile.getAvailableDestination(dir, copy, true, this.preventOversending);
-                if (dest.isEmpty())
+                var dest = tile.getAvailableDestination(directions, copy, true, this.preventOversending);
+                if (dest.getRight().isEmpty())
                     continue;
-                var remain = dest.copy();
+                var remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
                 remain.shrink(network.getCurrentlyCraftingAmount(tile.getBlockPos(), copy, equalityTypes));
-                if (network.requestItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), remain, equalityTypes).isEmpty())
+                if (network.requestItem(tile.getBlockPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                     break;
             }
         }
@@ -62,12 +59,12 @@ public class RetrievalModuleItem extends ModuleItem {
 
     @Override
     public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
-        return direction != this.getDirectionSelector(module, tile).getDirection();
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
-        return direction != this.getDirectionSelector(module, tile).getDirection();
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override

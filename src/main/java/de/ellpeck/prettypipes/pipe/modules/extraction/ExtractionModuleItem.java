@@ -35,36 +35,35 @@ public class ExtractionModuleItem extends ModuleItem {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         var filter = this.getItemFilter(module, tile);
-        var dir = this.getDirectionSelector(module, tile).getDirection();
-        if (dir == null)
-            return;
-        var handler = tile.getItemHandler(dir);
-        if (handler == null)
-            return;
-
-        var network = PipeNetwork.get(tile.getLevel());
-        for (var j = 0; j < handler.getSlots(); j++) {
-            var stack = handler.extractItem(j, this.maxExtraction, true);
-            if (stack.isEmpty())
+        var dirSelector = this.getDirectionSelector(module, tile);
+        for (var dir : dirSelector.directions()) {
+            var handler = tile.getItemHandler(dir);
+            if (handler == null)
                 continue;
-            if (!filter.isAllowed(stack))
-                continue;
-            var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), stack, this.preventOversending);
-            if (remain.getCount() != stack.getCount()) {
-                handler.extractItem(j, stack.getCount() - remain.getCount(), false);
-                return;
+            var network = PipeNetwork.get(tile.getLevel());
+            for (var j = 0; j < handler.getSlots(); j++) {
+                var stack = handler.extractItem(j, this.maxExtraction, true);
+                if (stack.isEmpty())
+                    continue;
+                if (!filter.isAllowed(stack))
+                    continue;
+                var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), stack, this.preventOversending);
+                if (remain.getCount() != stack.getCount()) {
+                    handler.extractItem(j, stack.getCount() - remain.getCount(), false);
+                    return;
+                }
             }
         }
     }
 
     @Override
     public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
-        return direction != this.getDirectionSelector(module, tile).getDirection();
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
-        return direction != this.getDirectionSelector(module, tile).getDirection();
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override

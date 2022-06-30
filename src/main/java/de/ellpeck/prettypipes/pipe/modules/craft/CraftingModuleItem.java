@@ -75,7 +75,7 @@ public class CraftingModuleItem extends ModuleItem {
             network.startProfile("crafting_ingredients");
             var request = tile.craftIngredientRequests.peek();
             var equalityTypes = ItemFilter.getEqualityTypes(tile);
-            var dest = tile.getAvailableDestination(request.stack, true, true);
+            var dest = tile.getAvailableDestination(Direction.values(), request.stack, true, true);
             if (dest != null) {
                 var requestRemain = network.requestExistingItem(request.location, tile.getBlockPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
                 network.resolveNetworkLock(request);

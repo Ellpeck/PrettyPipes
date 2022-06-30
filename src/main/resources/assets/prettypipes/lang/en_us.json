@@ -97,5 +97,5 @@
     "dir.prettypipes.east": "East",
     "dir.prettypipes.south": "South",
     "dir.prettypipes.west": "West",
-    "dir.prettypipes.none": "No Side Valid"
+    "dir.prettypipes.all": "All Sides"
 }
