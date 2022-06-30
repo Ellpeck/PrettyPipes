@@ -63,7 +63,7 @@ public class PressurizerBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
+        return level.isClientSide ? null : BaseEntityBlock.createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
     }
 
     @Override

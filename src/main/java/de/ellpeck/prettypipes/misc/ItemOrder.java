@@ -16,6 +16,6 @@ public enum ItemOrder {
     }
 
     public ItemOrder next() {
-        return values()[(this.ordinal() + 1) % values().length];
+        return ItemOrder.values()[(this.ordinal() + 1) % ItemOrder.values().length];
     }
 }

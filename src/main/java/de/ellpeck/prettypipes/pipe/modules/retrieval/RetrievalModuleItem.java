@@ -4,16 +4,15 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
-import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import org.apache.commons.lang3.tuple.Pair;
+import net.minecraftforge.items.IItemHandler;
 
 public class RetrievalModuleItem extends ModuleItem {
 
@@ -58,12 +57,12 @@ public class RetrievalModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
         return false;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
         return false;
     }
 

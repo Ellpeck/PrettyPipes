@@ -126,7 +126,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
                 text = ChatFormatting.BOLD + text;
             FilterModifierModuleGui.this.font.draw(matrix, text, this.x, this.y, color);
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, TEXTURE);
+            RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

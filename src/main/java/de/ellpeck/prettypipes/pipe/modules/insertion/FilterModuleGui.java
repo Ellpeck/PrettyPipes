@@ -1,7 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.insertion;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +14,7 @@ public class FilterModuleGui extends AbstractPipeGui<FilterModuleContainer> {
     @Override
     protected void init() {
         super.init();
-        for (var widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 18 * Mth.ceil(this.menu.filter.getSlots() / 9F) + 2))
+        for (var widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 18 * Mth.ceil(this.menu.filter.getSlots() / 9F) + 2, false))
             this.addRenderableWidget(widget);
     }
 }

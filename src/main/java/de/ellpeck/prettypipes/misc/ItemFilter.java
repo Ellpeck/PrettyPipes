@@ -48,17 +48,22 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public List<AbstractWidget> getButtons(Screen gui, int x, int y) {
+    public List<AbstractWidget> getButtons(Screen gui, int x, int y, boolean rightAligned) {
         List<AbstractWidget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
-            var whitelistText = (Supplier<TranslatableComponent>) () -> new TranslatableComponent("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
-            buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
+            var whitelistText = (Supplier<String>) () -> "info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist");
+            buttons.add(new Button(x - 20 * (rightAligned ? 1 : 0), y, 20, 20, new TranslatableComponent(whitelistText.get()), button -> {
                 PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
-                button.setMessage(whitelistText.get());
-            }));
+                button.setMessage(new TranslatableComponent(whitelistText.get()));
+            }) {
+                @Override
+                public void renderToolTip(PoseStack matrix, int x, int y) {
+                    gui.renderTooltip(matrix, new TranslatableComponent(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY), x, y);
+                }
+            });
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+            buttons.add(new Button(x + 22 * (rightAligned ? -1 : 1), y, 20, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
                 @Override
                 public void renderToolTip(PoseStack matrix, int x, int y) {
                     gui.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
@@ -107,7 +112,7 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     private boolean isFiltered(ItemStack stack) {
-        var types = getEqualityTypes(this.pipe);
+        var types = ItemFilter.getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
         for (ItemStackHandler handler : this.pipe.getFilters()) {
             for (var i = 0; i < handler.getSlots(); i++) {
@@ -164,6 +169,7 @@ public class ItemFilter extends ItemStackHandler {
 
         ItemFilter getFilter();
 
-        default void onFilterPopulated() {}
+        default void onFilterPopulated() {
+        }
     }
 }

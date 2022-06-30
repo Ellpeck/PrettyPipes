@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.TextComponent;
@@ -41,7 +42,7 @@ public class ItemTerminalWidget extends AbstractWidget {
         this.setBlitOffset(100);
         renderer.blitOffset = 100;
         if (this.selected)
-            fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
+            GuiComponent.fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
         RenderSystem.enableDepthTest();
         renderer.renderGuiItem(this.stack, this.x, this.y);
         var amount = !this.craftable ? this.stack.getCount() : 0;

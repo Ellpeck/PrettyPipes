@@ -53,8 +53,8 @@ public class PacketCraftingModuleTransfer {
             public void run() {
                 Player player = ctx.get().getSender();
                 if (player.containerMenu instanceof CraftingModuleContainer container) {
-                    copy(container.input, message.inputs);
-                    copy(container.output, message.outputs);
+                    PacketCraftingModuleTransfer.copy(container.input, message.inputs);
+                    PacketCraftingModuleTransfer.copy(container.output, message.outputs);
                     container.modified = true;
                     container.broadcastChanges();
                 }

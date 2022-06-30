@@ -38,7 +38,7 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
     @Override
     protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
+        RenderSystem.setShaderTexture(0, PressurizerGui.TEXTURE);
         this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, 176, 137);
         var energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
         this.blit(matrixStack, this.leftPos + 26, this.topPos + 22, 0, 137, energy, 12);

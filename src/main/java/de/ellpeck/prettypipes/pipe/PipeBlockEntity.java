@@ -188,11 +188,9 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public Pair<BlockPos, ItemStack> getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {
         if (!this.canWork())
             return null;
-        if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack)))
-            return null;
         for (var dir : Direction.values()) {
             var handler = this.getItemHandler(dir);
-            if (handler == null)
+            if (handler == null || !force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack, dir, handler)))
                 continue;
             var remain = ItemHandlerHelper.insertItem(handler, stack, true);
             // did we insert anything?
@@ -315,13 +313,9 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return null;
     }
 
-    public boolean isConnectedInventory(Direction dir) {
-        return this.getItemHandler(dir) != null;
-    }
-
     public boolean canHaveModules() {
         for (var dir : Direction.values()) {
-            if (this.isConnectedInventory(dir))
+            if (this.getItemHandler(dir) != null)
                 return true;
             var connectable = this.getPipeConnectable(dir);
             if (connectable != null && connectable.allowsModules(this.worldPosition, dir))
@@ -330,8 +324,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return false;
     }
 
-    public boolean canNetworkSee() {
-        return this.streamModules().allMatch(m -> m.getRight().canNetworkSee(m.getLeft(), this));
+    public boolean canNetworkSee(Direction direction, IItemHandler handler) {
+        return this.streamModules().allMatch(m -> m.getRight().canNetworkSee(m.getLeft(), this, direction, handler));
     }
 
     public Stream<Pair<ItemStack, IModule>> streamModules() {

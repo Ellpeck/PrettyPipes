@@ -7,9 +7,11 @@ import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
 
 public class FilterModuleItem extends ModuleItem {
 
@@ -23,7 +25,7 @@ public class FilterModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
         var filter = this.getItemFilter(module, tile);
         return filter.isAllowed(stack);
     }

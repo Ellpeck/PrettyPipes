@@ -46,7 +46,7 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
 
     static IPipeItem load(CompoundTag nbt) {
         var type = new ResourceLocation(nbt.getString("type"));
-        var func = TYPES.get(type);
+        var func = IPipeItem.TYPES.get(type);
         return func != null ? func.apply(type, nbt) : null;
     }
 }

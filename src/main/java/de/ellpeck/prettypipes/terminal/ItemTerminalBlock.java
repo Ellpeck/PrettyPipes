@@ -82,7 +82,7 @@ public class ItemTerminalBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createTickerHelper(type, Registry.itemTerminalBlockEntity, ItemTerminalBlockEntity::tick);
+        return BaseEntityBlock.createTickerHelper(type, Registry.itemTerminalBlockEntity, ItemTerminalBlockEntity::tick);
     }
 
 }

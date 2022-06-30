@@ -39,7 +39,7 @@ public class FilterModifierModuleItem extends ModuleItem {
 
     public ItemEquality getEqualityType(ItemStack stack) {
         if (this.type == ItemEquality.Type.TAG) {
-            return ItemEquality.tag(getFilterTag(stack));
+            return ItemEquality.tag(FilterModifierModuleItem.getFilterTag(stack));
         } else {
             return this.type.getDefaultInstance();
         }

@@ -102,6 +102,6 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
     @Override
     public void deserializeNBT(CompoundTag nbt) {
         this.pipePos = NbtUtils.readBlockPos(nbt.getCompound("pipe_pos"));
-        this.direction = Direction.values()[(nbt.getInt("direction"))];
+        this.direction = Direction.values()[nbt.getInt("direction")];
     }
 }

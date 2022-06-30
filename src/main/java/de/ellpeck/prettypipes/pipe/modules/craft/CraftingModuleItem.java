@@ -13,10 +13,12 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -54,12 +56,12 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
         return false;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
         return false;
     }
 
@@ -147,7 +149,7 @@ public class CraftingModuleItem extends ModuleItem {
             var out = output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, addDependency(dependencyChain, module), equalityTypes);
+                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -179,7 +181,7 @@ public class CraftingModuleItem extends ModuleItem {
                 continue;
             var copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
-            var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, addDependency(dependencyChain, module), equalityTypes);
+            var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
             tile.craftIngredientRequests.addAll(ret.getLeft());
         }
 

@@ -26,6 +26,8 @@ import org.apache.logging.log4j.util.TriConsumer;
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
+import static de.ellpeck.prettypipes.misc.DirectionSelector.IDirectionContainer;
+
 public class PacketButton {
 
     private BlockPos pos;
@@ -121,6 +123,10 @@ public class PacketButton {
         TAG_FILTER((pos, data, player) -> {
             var container = (FilterModifierModuleContainer) player.containerMenu;
             FilterModifierModuleItem.setFilterTag(container.moduleStack, container.getTags().get(data[0]));
+        }),
+        DIRECTION_SELECTOR((pos, data, player) -> {
+            if (player.containerMenu instanceof IDirectionContainer filtered)
+                filtered.getSelector().onButtonPacket();
         });
 
         public final TriConsumer<BlockPos, int[], Player> action;

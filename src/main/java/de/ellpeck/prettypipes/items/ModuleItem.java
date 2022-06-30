@@ -2,10 +2,12 @@ package de.ellpeck.prettypipes.items;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
+import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -45,12 +47,12 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
         return true;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
         return true;
     }
 
@@ -101,6 +103,11 @@ public abstract class ModuleItem extends Item implements IModule {
 
     @Override
     public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
+        return null;
+    }
+
+    @Override
+    public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return null;
     }
 }

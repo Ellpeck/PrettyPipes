@@ -111,10 +111,10 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        var lowestAvailable = getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
+        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
             var item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
-        }, onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
+        }, ItemTerminalBlockEntity.onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
         // if we're forcing, just pretend we have one available
         if (lowestAvailable <= 0 && force)
             lowestAvailable = maxAmount;
@@ -128,7 +128,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                     continue;
                 requested = requested.copy();
                 requested.setCount(lowestAvailable);
-                this.requestItemImpl(requested, onItemUnavailable(player, force));
+                this.requestItemImpl(requested, ItemTerminalBlockEntity.onItemUnavailable(player, force));
             }
             player.sendMessage(new TranslatableComponent("info." + PrettyPipes.ID + ".sending_ingredients", lowestAvailable).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GREEN)), UUID.randomUUID());
         } else {

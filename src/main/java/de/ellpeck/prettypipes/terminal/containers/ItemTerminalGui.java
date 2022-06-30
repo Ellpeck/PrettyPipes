@@ -15,6 +15,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Widget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.language.I18n;
@@ -72,7 +73,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             this.updateWidgets();
 
         this.plusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12, new TextComponent("+"), button -> {
-            var modifier = requestModifier();
+            var modifier = ItemTerminalGui.requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
             } else {
@@ -83,7 +84,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 this.requestAmount = 384;
         }));
         this.minusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12, new TextComponent("-"), button -> {
-            this.requestAmount -= requestModifier();
+            this.requestAmount -= ItemTerminalGui.requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }));
@@ -325,7 +326,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         this.hoveredCrafting = ItemStack.EMPTY;
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, TEXTURE);
+            RenderSystem.setShaderTexture(0, ItemTerminalGui.TEXTURE);
             this.blit(matrix, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
 
             var x = 0;
@@ -349,7 +350,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     protected ResourceLocation getTexture() {
-        return TEXTURE;
+        return ItemTerminalGui.TEXTURE;
     }
 
     @Override
@@ -377,9 +378,9 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     public static int requestModifier() {
-        if (hasControlDown()) {
+        if (Screen.hasControlDown()) {
             return 10;
-        } else if (hasShiftDown()) {
+        } else if (Screen.hasShiftDown()) {
             return 64;
         } else {
             return 1;
