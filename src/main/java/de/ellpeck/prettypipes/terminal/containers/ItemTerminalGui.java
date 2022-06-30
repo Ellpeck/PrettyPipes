@@ -20,8 +20,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
@@ -66,13 +64,13 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     protected void init() {
         super.init();
 
-        this.search = this.addRenderableWidget(new EditBox(this.font, this.leftPos + this.getXOffset() + 97, this.topPos + 6, 86, 8, new TextComponent("")));
+        this.search = this.addRenderableWidget(new EditBox(this.font, this.leftPos + this.getXOffset() + 97, this.topPos + 6, 86, 8, Component.literal("")));
         this.search.setBordered(false);
         this.lastSearchText = "";
         if (this.items != null)
             this.updateWidgets();
 
-        this.plusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12, new TextComponent("+"), button -> {
+        this.plusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12, Component.literal("+"), button -> {
             var modifier = ItemTerminalGui.requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
@@ -83,13 +81,13 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
         }));
-        this.minusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12, new TextComponent("-"), button -> {
+        this.minusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12, Component.literal("-"), button -> {
             this.requestAmount -= ItemTerminalGui.requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }));
         this.minusButton.active = false;
-        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20, Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
             var widget = this.streamWidgets().filter(w -> w.selected).findFirst();
             if (!widget.isPresent())
                 return;
@@ -99,7 +97,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             this.requestAmount = 1;
         }));
         this.requestButton.active = false;
-        this.orderButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos, 20, 20, new TextComponent(""), button -> {
+        this.orderButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos, 20, 20, Component.literal(""), button -> {
             if (this.sortedItems == null)
                 return;
             var prefs = PlayerPrefs.get();
@@ -107,7 +105,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             prefs.save();
             this.updateWidgets();
         }));
-        this.ascendingButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos + 22, 20, 20, new TextComponent(""), button -> {
+        this.ascendingButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos + 22, 20, 20, Component.literal(""), button -> {
             if (this.sortedItems == null)
                 return;
             var prefs = PlayerPrefs.get();
@@ -115,7 +113,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             prefs.save();
             this.updateWidgets();
         }));
-        this.cancelCraftingButton = this.addRenderableWidget(new Button(this.leftPos + this.imageWidth + 4, this.topPos + 4 + 64, 54, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".cancel_all"), b -> {
+        this.cancelCraftingButton = this.addRenderableWidget(new Button(this.leftPos + this.imageWidth + 4, this.topPos + 4 + 64, 54, 20, Component.translatable("info." + PrettyPipes.ID + ".cancel_all"), b -> {
         }));
         this.cancelCraftingButton.visible = false;
         for (var y = 0; y < 4; y++) {
@@ -208,8 +206,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     public void updateWidgets() {
         var prefs = PlayerPrefs.get();
-        this.ascendingButton.setMessage(new TextComponent(prefs.terminalAscending ? "^" : "v"));
-        this.orderButton.setMessage(new TextComponent(prefs.terminalItemOrder.name().substring(0, 1)));
+        this.ascendingButton.setMessage(Component.literal(prefs.terminalAscending ? "^" : "v"));
+        this.orderButton.setMessage(Component.literal(prefs.terminalItemOrder.name().substring(0, 1)));
         this.cancelCraftingButton.visible = this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty();
 
         var comparator = prefs.terminalItemOrder.comparator;
@@ -281,13 +279,13 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (this.sortedItems != null) {
             var prefs = PlayerPrefs.get();
             if (this.orderButton.isHoveredOrFocused())
-                this.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
+                this.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
             if (this.ascendingButton.isHoveredOrFocused())
-                this.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
+                this.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
         if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHoveredOrFocused()) {
             var tooltip = I18n.get("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
-            this.renderComponentTooltip(matrix, Arrays.stream(tooltip).map(TextComponent::new).collect(Collectors.toList()), mouseX, mouseY);
+            this.renderComponentTooltip(matrix, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), mouseX, mouseY);
         }
         if (!this.hoveredCrafting.isEmpty())
             this.renderTooltip(matrix, this.hoveredCrafting, mouseX, mouseY);

@@ -8,7 +8,6 @@ import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -25,7 +24,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     protected void init() {
         super.init();
-        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + 8, this.topPos + 100, 50, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + 8, this.topPos + 100, 50, 20, Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
             var amount = ItemTerminalGui.requestModifier();
             // also allow holding backspace instead of alt for people whose alt key is inaccessible (linux?)
             var force = Screen.hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;

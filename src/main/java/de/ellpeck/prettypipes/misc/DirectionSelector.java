@@ -8,7 +8,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -34,13 +33,13 @@ public class DirectionSelector {
 
     @OnlyIn(Dist.CLIENT)
     public AbstractWidget getButton(int x, int y) {
-        return new ExtendedButton(x, y, 100, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button ->
+        return new ExtendedButton(x, y, 100, 20, Component.translatable("info." + PrettyPipes.ID + ".populate"), button ->
                 PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.DIRECTION_SELECTOR)) {
             @Override
             public Component getMessage() {
                 var pipe = DirectionSelector.this.pipe;
                 var dir = DirectionSelector.this.direction;
-                MutableComponent msg = new TranslatableComponent("dir." + PrettyPipes.ID + "." + (dir != null ? dir.getName() : "all"));
+                var msg = Component.translatable("dir." + PrettyPipes.ID + "." + (dir != null ? dir.getName() : "all"));
                 if (dir != null) {
                     var blockName = pipe.getItemHandler(dir) != null ? pipe.getLevel().getBlockState(pipe.getBlockPos().relative(dir)).getBlock().getName() : null;
                     if (blockName != null)
