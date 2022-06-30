@@ -186,61 +186,66 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public Pair<BlockPos, ItemStack> getAvailableDestination(ItemStack stack, boolean force, boolean preventOversending) {
-        if (!this.canWork())
-            return null;
         for (var dir : Direction.values()) {
-            var handler = this.getItemHandler(dir);
-            if (handler == null || !force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack, dir, handler)))
-                continue;
-            var remain = ItemHandlerHelper.insertItem(handler, stack, true);
-            // did we insert anything?
-            if (remain.getCount() == stack.getCount())
-                continue;
-            var toInsert = stack.copy();
-            toInsert.shrink(remain.getCount());
-            // limit to the max amount that modules allow us to insert
-            var maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
-            if (maxAmount < toInsert.getCount())
-                toInsert.setCount(maxAmount);
-            var offset = this.worldPosition.relative(dir);
-            if (preventOversending || maxAmount < Integer.MAX_VALUE) {
-                var network = PipeNetwork.get(this.level);
-                // these are the items that are currently in the pipes, going to this inventory
-                var onTheWay = network.getItemsOnTheWay(offset, null);
-                if (onTheWay > 0) {
-                    if (maxAmount < Integer.MAX_VALUE) {
-                        // these are the items on the way, limited to items of the same type as stack
-                        var onTheWaySame = network.getItemsOnTheWay(offset, stack);
-                        // check if any modules are limiting us
-                        if (toInsert.getCount() + onTheWaySame > maxAmount)
-                            toInsert.setCount(maxAmount - onTheWaySame);
-                    }
-                    // totalSpace will be the amount of items that fit into the attached container
-                    var totalSpace = 0;
-                    for (var i = 0; i < handler.getSlots(); i++) {
-                        var copy = stack.copy();
-                        var maxStackSize = copy.getMaxStackSize();
-                        // if the container can store more than 64 items in this slot, then it's likely
-                        // a barrel or similar, meaning that the slot limit matters more than the max stack size
-                        var limit = handler.getSlotLimit(i);
-                        if (limit > 64)
-                            maxStackSize = limit;
-                        copy.setCount(maxStackSize);
-                        // this is an inaccurate check since it ignores the fact that some slots might
-                        // have space for items of other types, but it'll be good enough for us
-                        var left = handler.insertItem(i, copy, true);
-                        totalSpace += maxStackSize - left.getCount();
-                    }
-                    // if the items on the way plus the items we're trying to move are too much, reduce
-                    if (onTheWay + toInsert.getCount() > totalSpace)
-                        toInsert.setCount(totalSpace - onTheWay);
-                }
-            }
-            // we return the item that can actually be inserted, NOT the remainder!
-            if (!toInsert.isEmpty())
-                return Pair.of(offset, toInsert);
+            var dest = this.getAvailableDestination(dir, stack, force, preventOversending);
+            if (!dest.isEmpty())
+                return Pair.of(this.worldPosition.relative(dir), dest);
         }
         return null;
+    }
+
+    public ItemStack getAvailableDestination(Direction direction, ItemStack stack, boolean force, boolean preventOversending) {
+        if (!this.canWork())
+            return ItemStack.EMPTY;
+        var handler = this.getItemHandler(direction);
+        if (handler == null || !force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack, direction, handler)))
+            return ItemStack.EMPTY;
+        var remain = ItemHandlerHelper.insertItem(handler, stack, true);
+        // did we insert anything?
+        if (remain.getCount() == stack.getCount())
+            return ItemStack.EMPTY;
+        var toInsert = stack.copy();
+        toInsert.shrink(remain.getCount());
+        // limit to the max amount that modules allow us to insert
+        var maxAmount = this.streamModules().mapToInt(m -> m.getRight().getMaxInsertionAmount(m.getLeft(), this, stack, handler)).min().orElse(Integer.MAX_VALUE);
+        if (maxAmount < toInsert.getCount())
+            toInsert.setCount(maxAmount);
+        var offset = this.worldPosition.relative(direction);
+        if (preventOversending || maxAmount < Integer.MAX_VALUE) {
+            var network = PipeNetwork.get(this.level);
+            // these are the items that are currently in the pipes, going to this inventory
+            var onTheWay = network.getItemsOnTheWay(offset, null);
+            if (onTheWay > 0) {
+                if (maxAmount < Integer.MAX_VALUE) {
+                    // these are the items on the way, limited to items of the same type as stack
+                    var onTheWaySame = network.getItemsOnTheWay(offset, stack);
+                    // check if any modules are limiting us
+                    if (toInsert.getCount() + onTheWaySame > maxAmount)
+                        toInsert.setCount(maxAmount - onTheWaySame);
+                }
+                // totalSpace will be the amount of items that fit into the attached container
+                var totalSpace = 0;
+                for (var i = 0; i < handler.getSlots(); i++) {
+                    var copy = stack.copy();
+                    var maxStackSize = copy.getMaxStackSize();
+                    // if the container can store more than 64 items in this slot, then it's likely
+                    // a barrel or similar, meaning that the slot limit matters more than the max stack size
+                    var limit = handler.getSlotLimit(i);
+                    if (limit > 64)
+                        maxStackSize = limit;
+                    copy.setCount(maxStackSize);
+                    // this is an inaccurate check since it ignores the fact that some slots might
+                    // have space for items of other types, but it'll be good enough for us
+                    var left = handler.insertItem(i, copy, true);
+                    totalSpace += maxStackSize - left.getCount();
+                }
+                // if the items on the way plus the items we're trying to move are too much, reduce
+                if (onTheWay + toInsert.getCount() > totalSpace)
+                    toInsert.setCount(totalSpace - onTheWay);
+            }
+        }
+        // we return the item that can actually be inserted, NOT the remainder!
+        return toInsert;
     }
 
     public int getPriority() {

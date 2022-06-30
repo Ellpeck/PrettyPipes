@@ -35,10 +35,10 @@ public class ExtractionModuleItem extends ModuleItem {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
         var filter = this.getItemFilter(module, tile);
-        var dirSelector = this.getDirectionSelector(module, tile);
-        if (dirSelector.direction == null)
+        var dir = this.getDirectionSelector(module, tile).getDirection();
+        if (dir == null)
             return;
-        var handler = tile.getItemHandler(dirSelector.direction);
+        var handler = tile.getItemHandler(dir);
         if (handler == null)
             return;
 
@@ -49,7 +49,7 @@ public class ExtractionModuleItem extends ModuleItem {
                 continue;
             if (!filter.isAllowed(stack))
                 continue;
-            var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dirSelector.direction), stack, this.preventOversending);
+            var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), stack, this.preventOversending);
             if (remain.getCount() != stack.getCount()) {
                 handler.extractItem(j, stack.getCount() - remain.getCount(), false);
                 return;
@@ -59,12 +59,12 @@ public class ExtractionModuleItem extends ModuleItem {
 
     @Override
     public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
-        return direction != this.getDirectionSelector(module, tile).direction;
+        return direction != this.getDirectionSelector(module, tile).getDirection();
     }
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
-        return direction != this.getDirectionSelector(module, tile).direction;
+        return direction != this.getDirectionSelector(module, tile).getDirection();
     }
 
     @Override

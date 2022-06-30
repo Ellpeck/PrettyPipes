@@ -16,7 +16,7 @@ import net.minecraftforge.client.gui.widget.ExtendedButton;
 
 public class DirectionSelector {
 
-    public Direction direction;
+    private Direction direction;
     private boolean modified;
 
     private final ItemStack stack;
@@ -35,7 +35,7 @@ public class DirectionSelector {
             @Override
             public Component getMessage() {
                 var pipe = DirectionSelector.this.pipe;
-                var dir = DirectionSelector.this.direction;
+                var dir = DirectionSelector.this.getDirection();
                 MutableComponent msg = new TranslatableComponent("dir." + PrettyPipes.ID + "." + (dir != null ? dir.getName() : "none"));
                 if (dir != null) {
                     var blockName = pipe.getItemHandler(dir) != null ? pipe.getLevel().getBlockState(pipe.getBlockPos().relative(dir)).getBlock().getName() : null;
@@ -48,7 +48,7 @@ public class DirectionSelector {
     }
 
     public void onButtonPacket() {
-        var dir = this.getValidDirection(this.direction != null ? this.direction : Direction.UP);
+        var dir = this.getValidDirection(this.getDirection());
         if (this.direction != dir) {
             this.direction = dir;
             this.modified = true;
@@ -61,8 +61,9 @@ public class DirectionSelector {
         this.modified = false;
 
         var tag = new CompoundTag();
-        if (this.direction != null)
-            tag.putString("direction", this.direction.getName());
+        var dir = this.getDirection();
+        if (dir != null)
+            tag.putString("direction", dir.getName());
         this.stack.getOrCreateTag().put("direction_selector", tag);
     }
 
@@ -71,11 +72,13 @@ public class DirectionSelector {
             var tag = this.stack.getTag().getCompound("direction_selector");
             this.direction = Direction.byName(tag.getString("direction"));
         }
+    }
 
-        // default to the first direction with a container
-        // don't mark as modified here because we don't want to save this automatic direction
+    public Direction getDirection() {
+        // default to the first direction with a container if ours is invalid or unset
         if (this.direction == null || !this.isDirectionValid(this.direction))
-            this.direction = this.getValidDirection(Direction.UP);
+            return this.getValidDirection(this.direction);
+        return this.direction;
     }
 
     private boolean isDirectionValid(Direction dir) {
@@ -84,10 +87,13 @@ public class DirectionSelector {
         return this.pipe.streamModules()
                 .filter(p -> p.getLeft() != this.stack)
                 .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
+                // don't use getDirection here because we don't want a stack overflow
                 .noneMatch(p -> p != null && p.direction == dir);
     }
 
     private Direction getValidDirection(Direction dir) {
+        if (dir == null)
+            dir = Direction.UP;
         for (var i = 0; i < 6; i++) {
             dir = Direction.from3DDataValue(dir.get3DDataValue() + 1);
             if (this.isDirectionValid(dir))

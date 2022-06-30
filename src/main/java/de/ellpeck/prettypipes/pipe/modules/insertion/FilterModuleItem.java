@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
+import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
@@ -26,8 +27,7 @@ public class FilterModuleItem extends ModuleItem {
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
-        var filter = this.getItemFilter(module, tile);
-        return filter.isAllowed(stack);
+        return this.getDirectionSelector(module, tile).getDirection() != direction || this.getItemFilter(module, tile).isAllowed(stack);
     }
 
     @Override
@@ -50,5 +50,10 @@ public class FilterModuleItem extends ModuleItem {
         var filter = new ItemFilter(this.filterSlots, module, tile);
         filter.canPopulateFromInventories = this.canPopulateFromInventories;
         return filter;
+    }
+
+    @Override
+    public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
+        return new DirectionSelector(module, tile);
     }
 }
