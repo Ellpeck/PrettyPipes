@@ -11,7 +11,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
@@ -48,20 +48,25 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public List<AbstractWidget> getButtons(Screen gui, int x, int y) {
+    public List<AbstractWidget> getButtons(Screen gui, int x, int y, boolean rightAligned) {
         List<AbstractWidget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
-            Supplier<Component> whitelistText = () -> Component.translatable("info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist"));
-            buttons.add(new Button(x, y, 70, 20, whitelistText.get(), button -> {
+            var whitelistText = (Supplier<String>) () -> "info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist");
+            buttons.add(new Button(x - 20, y, 20, 20, new TranslatableComponent(whitelistText.get()), button -> {
                 PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
-                button.setMessage(whitelistText.get());
-            }));
-        }
-        if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x + 72, y, 70, 20, Component.translatable("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+                button.setMessage(new TranslatableComponent(whitelistText.get()));
+            }) {
                 @Override
                 public void renderToolTip(PoseStack matrix, int x, int y) {
-                    gui.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
+                    gui.renderTooltip(matrix, new TranslatableComponent(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY), x, y);
+                }
+            });
+        }
+        if (this.canPopulateFromInventories) {
+            buttons.add(new Button(x - 42, y, 20, 20, new TranslatableComponent("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
+                @Override
+                public void renderToolTip(PoseStack matrix, int x, int y) {
+                    gui.renderTooltip(matrix, new TranslatableComponent("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
                 }
             });
         }

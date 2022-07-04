@@ -13,10 +13,12 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -54,12 +56,12 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
         return false;
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
         return false;
     }
 
@@ -73,7 +75,7 @@ public class CraftingModuleItem extends ModuleItem {
             network.startProfile("crafting_ingredients");
             var request = tile.craftIngredientRequests.peek();
             var equalityTypes = ItemFilter.getEqualityTypes(tile);
-            var dest = tile.getAvailableDestination(request.stack, true, true);
+            var dest = tile.getAvailableDestination(Direction.values(), request.stack, true, true);
             if (dest != null) {
                 var requestRemain = network.requestExistingItem(request.location, tile.getBlockPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
                 network.resolveNetworkLock(request);

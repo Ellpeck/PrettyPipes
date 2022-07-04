@@ -1,9 +1,11 @@
 package de.ellpeck.prettypipes.items;
 
+import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -17,9 +19,9 @@ public interface IModule {
 
     void tick(ItemStack module, PipeBlockEntity tile);
 
-    boolean canNetworkSee(ItemStack module, PipeBlockEntity tile);
+    boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler);
 
-    boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack);
+    boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination);
 
     int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination);
 
@@ -44,4 +46,6 @@ public interface IModule {
     Integer getCustomNextNode(ItemStack module, PipeBlockEntity tile, List<BlockPos> nodes, int index);
 
     ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile);
+
+    DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile);
 }

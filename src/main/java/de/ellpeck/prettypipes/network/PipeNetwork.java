@@ -147,7 +147,7 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
             if (!this.world.isLoaded(pipePos))
                 continue;
             var pipe = this.getPipe(pipePos);
-            var dest = pipe.getAvailableDestination(stack, false, preventOversending);
+            var dest = pipe.getAvailableDestination(Direction.values(), stack, false, preventOversending);
             if (dest == null || dest.getLeft().equals(startInventory))
                 continue;
             var sup = (Function<Float, IPipeItem>) speed -> itemSupplier.apply(dest.getRight(), speed);
@@ -324,11 +324,9 @@ public class PipeNetwork implements ICapabilitySerializable<CompoundTag>, GraphL
             if (!this.world.isLoaded(dest))
                 continue;
             var pipe = this.getPipe(dest);
-            if (!pipe.canNetworkSee())
-                continue;
             for (var dir : Direction.values()) {
                 var handler = pipe.getItemHandler(dir);
-                if (handler == null)
+                if (handler == null || !pipe.canNetworkSee(dir, handler))
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
                 if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.world))))

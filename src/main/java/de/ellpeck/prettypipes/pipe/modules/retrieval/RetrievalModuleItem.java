@@ -4,13 +4,16 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
+import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.IItemHandler;
 
 public class RetrievalModuleItem extends ModuleItem {
 
@@ -31,8 +34,8 @@ public class RetrievalModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
+        var directions = this.getDirectionSelector(module, tile).directions();
         var network = PipeNetwork.get(tile.getLevel());
-
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
         for (var subFilter : tile.getFilters()) {
@@ -42,8 +45,8 @@ public class RetrievalModuleItem extends ModuleItem {
                     continue;
                 var copy = filtered.copy();
                 copy.setCount(this.maxExtraction);
-                var dest = tile.getAvailableDestination(copy, true, this.preventOversending);
-                if (dest == null)
+                var dest = tile.getAvailableDestination(directions, copy, true, this.preventOversending);
+                if (dest.getRight().isEmpty())
                     continue;
                 var remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
@@ -55,13 +58,13 @@ public class RetrievalModuleItem extends ModuleItem {
     }
 
     @Override
-    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile) {
-        return false;
+    public boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler) {
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override
-    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack) {
-        return false;
+    public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
+        return !this.getDirectionSelector(module, tile).has(direction);
     }
 
     @Override
@@ -85,5 +88,10 @@ public class RetrievalModuleItem extends ModuleItem {
         filter.canModifyWhitelist = false;
         filter.isWhitelist = true;
         return filter;
+    }
+
+    @Override
+    public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
+        return new DirectionSelector(module, tile);
     }
 }

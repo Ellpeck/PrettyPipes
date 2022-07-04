@@ -13,7 +13,8 @@ public class ExtractionModuleGui extends AbstractPipeGui<ExtractionModuleContain
     @Override
     protected void init() {
         super.init();
-        for (var widget : this.menu.filter.getButtons(this, this.leftPos + 7, this.topPos + 17 + 32 + 20))
+        for (var widget : this.menu.filter.getButtons(this, this.leftPos + this.imageWidth - 7, this.topPos + 17 + 32 + 20, true))
             this.addRenderableWidget(widget);
+        this.addRenderableWidget(this.menu.directionSelector.getButton(this.leftPos + 7, this.topPos + 17 + 32 + 20));
     }
 }
