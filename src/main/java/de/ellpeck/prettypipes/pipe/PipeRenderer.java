@@ -1,6 +1,7 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import de.ellpeck.prettypipes.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -21,7 +22,7 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
 
     @Override
     public void render(PipeBlockEntity tile, float partialTicks, PoseStack matrixStack, MultiBufferSource source, int light, int overlay) {
-        if (!tile.getItems().isEmpty()) {
+        if (!tile.getItems().isEmpty() && Config.CLIENT.pipeRender.get()) {
             matrixStack.pushPose();
             var tilePos = tile.getBlockPos();
             matrixStack.translate(-tilePos.getX(), -tilePos.getY(), -tilePos.getZ());
