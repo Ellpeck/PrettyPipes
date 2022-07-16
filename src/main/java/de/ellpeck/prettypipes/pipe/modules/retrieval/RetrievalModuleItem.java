@@ -46,7 +46,7 @@ public class RetrievalModuleItem extends ModuleItem {
                 var copy = filtered.copy();
                 copy.setCount(this.maxExtraction);
                 var dest = tile.getAvailableDestination(directions, copy, true, this.preventOversending);
-                if (dest.getRight().isEmpty())
+                if (dest == null)
                     continue;
                 var remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
