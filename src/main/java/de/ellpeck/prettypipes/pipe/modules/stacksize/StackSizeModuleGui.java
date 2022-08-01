@@ -34,7 +34,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
             }
 
         });
-        textField.setValue(String.valueOf(StackSizeModuleItem.getMaxStackSize(this.menu.moduleStack)));
+        textField.setValue(String.valueOf(StackSizeModuleItem.getMaxStackSizeForModule(this.menu.moduleStack)));
         textField.setMaxLength(4);
         textField.setResponder(s -> {
             if (s.isEmpty())

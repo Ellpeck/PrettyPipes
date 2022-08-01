@@ -170,7 +170,7 @@ public final class Registry {
         event.register(ForgeRegistries.Keys.ENTITY_TYPES, h ->
                 h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
 
-        event.register(ForgeRegistries.Keys.CONTAINER_TYPES, h -> {
+        event.register(ForgeRegistries.Keys.MENU_TYPES, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IForgeMenuType.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
             h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalContainer = IForgeMenuType.create((windowId, inv, data) -> new ItemTerminalContainer(Registry.itemTerminalContainer, windowId, inv.player, data.readBlockPos())));
             h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalContainer = IForgeMenuType.create((windowId, inv, data) -> new CraftingTerminalContainer(Registry.craftingTerminalContainer, windowId, inv.player, data.readBlockPos())));
@@ -209,7 +209,6 @@ public final class Registry {
     public static final class Client {
 
         public static void setup(FMLClientSetupEvent event) {
-            ItemBlockRenderTypes.setRenderLayer(Registry.pipeBlock, RenderType.cutout());
             BlockEntityRenderers.register(Registry.pipeBlockEntity, PipeRenderer::new);
             EntityRenderers.register(Registry.pipeFrameEntity, PipeFrameRenderer::new);
 

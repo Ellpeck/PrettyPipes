@@ -40,7 +40,7 @@ public class PressurizerBlock extends BaseEntityBlock {
         if (tile == null)
             return InteractionResult.PASS;
         if (!worldIn.isClientSide)
-            NetworkHooks.openGui((ServerPlayer) player, tile, pos);
+            NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
         return InteractionResult.SUCCESS;
     }
 

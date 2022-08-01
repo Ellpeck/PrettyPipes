@@ -17,7 +17,7 @@ public class StackSizeModuleItem extends ModuleItem {
         super("stack_size_module");
     }
 
-    public static int getMaxStackSize(ItemStack module) {
+    public static int getMaxStackSizeForModule(ItemStack module) {
         if (module.hasTag()) {
             var amount = module.getTag().getInt("max_stack_size");
             if (amount > 0)
@@ -42,7 +42,7 @@ public class StackSizeModuleItem extends ModuleItem {
 
     @Override
     public int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination) {
-        var max = StackSizeModuleItem.getMaxStackSize(module);
+        var max = StackSizeModuleItem.getMaxStackSizeForModule(module);
         if (StackSizeModuleItem.getLimitToMaxStackSize(module))
             max = Math.min(max, stack.getMaxStackSize());
         var amount = 0;

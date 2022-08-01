@@ -69,7 +69,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @SubscribeEvent
-    public void onInitGui(ScreenEvent.InitScreenEvent.Post event) {
+    public void onInitGui(ScreenEvent.Init.Post event) {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
@@ -84,15 +84,15 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @SubscribeEvent
-    public void onRenderGui(ScreenEvent.DrawScreenEvent event) {
+    public void onRenderGui(ScreenEvent.Render event) {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
         var sync = PlayerPrefs.get().syncJei;
-        if (event instanceof ScreenEvent.DrawScreenEvent.Post) {
+        if (event instanceof ScreenEvent.Render.Post) {
             if (this.jeiSyncButton.isHoveredOrFocused())
                 terminal.renderTooltip(event.getPoseStack(), Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
-        } else if (event instanceof ScreenEvent.DrawScreenEvent.Pre) {
+        } else if (event instanceof ScreenEvent.Render.Pre) {
             this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
         }
     }

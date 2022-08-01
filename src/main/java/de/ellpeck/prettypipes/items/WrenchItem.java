@@ -118,7 +118,7 @@ public class WrenchItem extends Item {
     }
 
     @Override
-    public int getItemEnchantability(ItemStack stack) {
+    public int getEnchantmentValue(ItemStack stack) {
         return 1;
     }
 

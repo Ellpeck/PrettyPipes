@@ -2,15 +2,11 @@ package de.ellpeck.prettypipes.pipe;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.util.RandomSource;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.model.data.EmptyModelData;
-import net.minecraftforge.client.model.pipeline.ForgeBlockModelRenderer;
+import net.minecraftforge.client.model.data.ModelData;
 
 import java.util.Random;
 
@@ -36,18 +32,14 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
         }
         if (tile.cover != null) {
             matrixStack.pushPose();
-            ForgeBlockModelRenderer.enableCaching();
             var renderer = Minecraft.getInstance().getBlockRenderer();
-            for (var layer : RenderType.chunkBufferLayers()) {
-                if (!ItemBlockRenderTypes.canRenderInLayer(tile.cover, layer))
-                    continue;
-                ForgeHooksClient.setRenderType(layer);
-                renderer.getModelRenderer().tesselateBlock(tile.getLevel(), renderer.getBlockModel(tile.cover), tile.cover, tile.getBlockPos(), matrixStack, source.getBuffer(layer), true, RandomSource.create(), tile.cover.getSeed(tile.getBlockPos()), overlay, EmptyModelData.INSTANCE);
+            var model = renderer.getBlockModel(tile.cover);
+            for (var layer : model.getRenderTypes(tile.cover, RandomSource.create(tile.cover.getSeed(tile.getBlockPos())), ModelData.EMPTY)) {
+                renderer.getModelRenderer().tesselateBlock(tile.getLevel(), model, tile.cover, tile.getBlockPos(), matrixStack, source.getBuffer(layer), true, RandomSource.create(), tile.cover.getSeed(tile.getBlockPos()), overlay, ModelData.EMPTY, layer);
             }
-            ForgeHooksClient.setRenderType(null);
-            ForgeBlockModelRenderer.clearCache();
             matrixStack.popPose();
         }
     }
 
 }
+

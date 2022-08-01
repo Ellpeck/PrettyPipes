@@ -79,10 +79,10 @@ public class PacketButton {
         PIPE_TAB((pos, data, player) -> {
             var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level, pos);
             if (data[0] < 0) {
-                NetworkHooks.openGui((ServerPlayer) player, tile, pos);
+                NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
             } else {
                 var stack = tile.modules.getStackInSlot(data[0]);
-                NetworkHooks.openGui((ServerPlayer) player, new MenuProvider() {
+                NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
                         return stack.getHoverName();
