@@ -35,9 +35,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.Lazy;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
@@ -291,7 +291,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        var handler = this.getNeighborCap(dir, CapabilityItemHandler.ITEM_HANDLER_CAPABILITY);
+        var handler = this.getNeighborCap(dir, ForgeCapabilities.ITEM_HANDLER);
         if (handler != null)
             return handler;
         return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());
