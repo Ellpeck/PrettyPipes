@@ -339,9 +339,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         Stream.Builder<Pair<ItemStack, IModule>> builder = Stream.builder();
         for (var i = 0; i < this.modules.getSlots(); i++) {
             var stack = this.modules.getStackInSlot(i);
-            if (stack.isEmpty())
-                continue;
-            builder.accept(Pair.of(stack, (IModule) stack.getItem()));
+            if (!stack.isEmpty() && stack.getItem() instanceof IModule module)
+                builder.accept(Pair.of(stack, module));
         }
         return builder.build();
     }
