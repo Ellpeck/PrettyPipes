@@ -129,6 +129,7 @@ public class ItemFilter extends ItemStackHandler {
     public void save() {
         if (this.modified) {
             this.stack.getOrCreateTag().put("filter", this.serializeNBT());
+            this.pipe.setChanged();
             this.modified = false;
         }
     }
