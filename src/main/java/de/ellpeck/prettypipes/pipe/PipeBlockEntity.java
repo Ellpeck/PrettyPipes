@@ -65,6 +65,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         public int getSlotLimit(int slot) {
             return 1;
         }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            PipeBlockEntity.this.setChanged();
+        }
     };
     public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
     public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
