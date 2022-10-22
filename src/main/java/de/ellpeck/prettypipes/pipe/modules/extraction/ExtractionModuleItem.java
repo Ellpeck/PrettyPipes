@@ -27,7 +27,7 @@ public class ExtractionModuleItem extends ModuleItem {
         this.maxExtraction = tier.forTier(1, 8, 64);
         this.speed = tier.forTier(20, 15, 10);
         this.filterSlots = tier.forTier(3, 6, 9);
-        this.preventOversending = tier.forTier(false, false, true);
+        this.preventOversending = tier.forTier(false, true, true);
     }
 
     @Override
