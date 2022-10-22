@@ -74,7 +74,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
     public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
         if (this.isScrolling) {
             var percentage = Mth.clamp(((float) mouseY - (this.topPos + 32 + 18)) / (58 - 15), 0, 1);
-            var offset = (int) (percentage * (float) (this.tags.size() - 5));
+            var offset = Math.max(0, (int) (percentage * (float) (this.tags.size() - 5)));
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
                 this.updateWidgets();
