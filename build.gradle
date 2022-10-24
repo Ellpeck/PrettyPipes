@@ -111,6 +111,9 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-1.19.2-common-api:11.3.0.260")
     runtimeOnly fg.deobf("mezz.jei:jei-1.19.2-forge:11.3.0.260")
 
+    // test storage drawers
+    runtimeOnly fg.deobf("curse.maven:storage-drawers-223852:3884263")
+
     // to test the rf requiring and crafting stuff
 /*    runtimeOnly fg.deobf("curse.maven:powah-352656:3057732")
     runtimeOnly fg.deobf("curse.maven:lollipop-347954:3057731")

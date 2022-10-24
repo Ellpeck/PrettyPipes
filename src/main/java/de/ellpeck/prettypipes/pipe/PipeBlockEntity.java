@@ -236,12 +236,21 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                         // have space for items of other types, but it'll be good enough for us
                         var left = handler.insertItem(i, copy, true);
                         totalSpace += maxStackSize - left.getCount();
+
                     }
                     // if the items on the way plus the items we're trying to move are too much, reduce
                     if (onTheWay + toInsert.getCount() > totalSpace)
                         toInsert.setCount(totalSpace - onTheWay);
                 }
             }
+
+            // the 0th slot of a storage drawer is a "catch-all" for any items that can be inserted into the drawer, and all
+            // subsequent slots are the actual slots for the items. this causes a problem because the drawer will seem to have
+            // space for twice the amount of items that it actually does.
+            // see https://github.com/Ellpeck/PrettyPipes/issues/131#issuecomment-1288653623 and Discord convo with Quinteger
+            if (handler.getClass().getName().equals("com.jaquadro.minecraft.storagedrawers.capabilities.DrawerItemHandler"))
+                toInsert.setCount(toInsert.getCount() / 2);
+
             // we return the item that can actually be inserted, NOT the remainder!
             if (!toInsert.isEmpty())
                 return Pair.of(offset, toInsert);
