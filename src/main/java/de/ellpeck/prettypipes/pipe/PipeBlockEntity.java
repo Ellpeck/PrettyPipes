@@ -39,7 +39,6 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.Lazy;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -198,10 +197,27 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                 continue;
             if (!force && this.streamModules().anyMatch(m -> !m.getRight().canAcceptItem(m.getLeft(), this, stack, dir, handler)))
                 continue;
-            var remain = ItemHandlerHelper.insertItem(handler, stack, true);
+
+            var startSlot = 0;
+            var slotAmount = handler.getSlots();
+            // the 0th slot of a storage drawer is a "catch-all" for any items that can be inserted into the drawer, and all
+            // subsequent slots are the actual slots for the items. this causes a problem because the drawer will seem to have
+            // space for more items that it actually does, so we restrict to only inspecting the 0th slot here.
+            // see https://github.com/Ellpeck/PrettyPipes/issues/131#issuecomment-1288653623 and Discord convo with Quinteger
+            if (handler.getClass().getName().equals("com.jaquadro.minecraft.storagedrawers.capabilities.DrawerItemHandler"))
+                slotAmount = 1;
+
+            // check how many items from the stack we can insert into this destination in total
+            var remain = stack;
+            for (var i = startSlot; i < slotAmount; i++) {
+                remain = handler.insertItem(i, remain, true);
+                if (remain.isEmpty())
+                    break;
+            }
             // did we insert anything?
             if (remain.getCount() == stack.getCount())
                 continue;
+
             var toInsert = stack.copy();
             toInsert.shrink(remain.getCount());
             // limit to the max amount that modules allow us to insert
@@ -223,7 +239,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                     }
                     // totalSpace will be the amount of items that fit into the attached container
                     var totalSpace = 0;
-                    for (var i = 0; i < handler.getSlots(); i++) {
+                    for (var i = startSlot; i < slotAmount; i++) {
                         var copy = stack.copy();
                         var maxStackSize = copy.getMaxStackSize();
                         // if the container can store more than 64 items in this slot, then it's likely
@@ -236,20 +252,12 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                         // have space for items of other types, but it'll be good enough for us
                         var left = handler.insertItem(i, copy, true);
                         totalSpace += maxStackSize - left.getCount();
-
                     }
                     // if the items on the way plus the items we're trying to move are too much, reduce
                     if (onTheWay + toInsert.getCount() > totalSpace)
                         toInsert.setCount(totalSpace - onTheWay);
                 }
             }
-
-            // the 0th slot of a storage drawer is a "catch-all" for any items that can be inserted into the drawer, and all
-            // subsequent slots are the actual slots for the items. this causes a problem because the drawer will seem to have
-            // space for twice the amount of items that it actually does.
-            // see https://github.com/Ellpeck/PrettyPipes/issues/131#issuecomment-1288653623 and Discord convo with Quinteger
-            if (handler.getClass().getName().equals("com.jaquadro.minecraft.storagedrawers.capabilities.DrawerItemHandler"))
-                toInsert.setCount(toInsert.getCount() / 2);
 
             // we return the item that can actually be inserted, NOT the remainder!
             if (!toInsert.isEmpty())
