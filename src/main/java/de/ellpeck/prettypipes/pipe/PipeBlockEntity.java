@@ -239,8 +239,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                     }
                     // totalSpace will be the amount of items that fit into the attached container
                     var totalSpace = 0;
+                    var copy = stack.copy();
                     for (var i = startSlot; i < slotAmount; i++) {
-                        var copy = stack.copy();
                         var maxStackSize = copy.getMaxStackSize();
                         // if the container can store more than 64 items in this slot, then it's likely
                         // a barrel or similar, meaning that the slot limit matters more than the max stack size
