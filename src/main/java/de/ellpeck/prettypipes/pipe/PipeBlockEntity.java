@@ -11,6 +11,7 @@ import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -117,7 +118,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public void load(CompoundTag compound) {
         this.modules.deserializeNBT(compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
-        this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level.holderLookup(Registries.BLOCK), compound.getCompound("cover")) : null;
+        this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
         this.craftIngredientRequests.clear();
         this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), NetworkLock::new));
         this.craftResultRequests.clear();
