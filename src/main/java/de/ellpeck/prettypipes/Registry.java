@@ -50,12 +50,16 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.capabilities.Capability;
@@ -70,19 +74,12 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
-
-    // TODO creative tab bleh
-/*    public static final CreativeModeTab TAB = new CreativeModeTab(PrettyPipes.ID) {
-        @Override
-        public ItemStack makeIcon() {
-            return new ItemStack(Registry.wrenchItem);
-        }
-    };*/
 
     public static Capability<PipeNetwork> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
     });
@@ -180,6 +177,17 @@ public final class Registry {
             Registry.filterIncreaseModuleContainer = Registry.registerPipeContainer(h, "filter_increase_module");
             Registry.craftingModuleContainer = Registry.registerPipeContainer(h, "crafting_module");
             Registry.filterModifierModuleContainer = Registry.registerPipeContainer(h, "filter_modifier_module");
+        });
+
+        event.register(BuiltInRegistries.CREATIVE_MODE_TAB.key(), h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
+                    .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
+                    .icon(() -> new ItemStack(Registry.wrenchItem))
+                    .displayItems((params, output) -> ForgeRegistries.ITEMS.getEntries().stream()
+                            .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
+                            .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
+                            .forEach(b -> output.accept(b.getValue()))).build()
+            );
         });
     }
 

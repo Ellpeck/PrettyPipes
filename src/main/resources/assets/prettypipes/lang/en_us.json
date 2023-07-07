@@ -57,7 +57,7 @@
     "block.prettypipes.item_terminal": "Item Terminal",
     "block.prettypipes.crafting_terminal": "Crafting Terminal",
     "block.prettypipes.pressurizer": "Pipe Pressurizer",
-    "itemGroup.prettypipes": "Pretty Pipes",
+    "item_group.prettypipes.tab": "Pretty Pipes",
     "container.prettypipes.pipe": "Pipe",
     "container.prettypipes.item_terminal": "Item Terminal",
     "container.prettypipes.crafting_terminal": "Crafting Terminal",
