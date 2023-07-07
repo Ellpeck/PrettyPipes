@@ -16,7 +16,7 @@ public class PressurizerContainer extends AbstractContainerMenu {
 
     public PressurizerContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos) {
         super(type, id);
-        this.tile = Utility.getBlockEntity(PressurizerBlockEntity.class, player.level, pos);
+        this.tile = Utility.getBlockEntity(PressurizerBlockEntity.class, player.level(), pos);
 
         for (var l = 0; l < 3; ++l)
             for (var j1 = 0; j1 < 9; ++j1)

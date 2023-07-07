@@ -1,6 +1,5 @@
 package de.ellpeck.prettypipes.items;
 
-import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
@@ -27,7 +26,7 @@ import java.util.List;
 public class WrenchItem extends Item {
 
     public WrenchItem() {
-        super(new Item.Properties().stacksTo(1).tab(Registry.TAB));
+        super(new Item.Properties().stacksTo(1));
     }
 
     @Override

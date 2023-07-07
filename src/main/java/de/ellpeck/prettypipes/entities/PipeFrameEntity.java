@@ -10,6 +10,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -48,19 +49,19 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     @Override
     public void tick() {
         super.tick();
-        if (this.level.isClientSide)
+        if (this.level().isClientSide)
             return;
         if (this.tickCount % 40 != 0)
             return;
-        var network = PipeNetwork.get(this.level);
-        var attached = PipeFrameEntity.getAttachedPipe(this.level, this.pos, this.direction);
+        var network = PipeNetwork.get(this.level());
+        var attached = PipeFrameEntity.getAttachedPipe(this.level(), this.pos, this.direction);
         if (attached != null) {
             var node = network.getNodeFromPipe(attached);
             if (node != null) {
                 var stack = this.getItem();
                 if (!stack.isEmpty()) {
                     var items = network.getOrderedNetworkItems(node);
-                    var amount = items.stream().mapToInt(i -> i.getItemAmount(this.level, stack)).sum();
+                    var amount = items.stream().mapToInt(i -> i.getItemAmount(this.level(), stack)).sum();
                     this.entityData.set(PipeFrameEntity.AMOUNT, amount);
                     return;
                 }
@@ -71,7 +72,7 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
 
     @Override
     public boolean survives() {
-        return super.survives() && PipeFrameEntity.canPlace(this.level, this.pos, this.direction);
+        return super.survives() && PipeFrameEntity.canPlace(this.level(), this.pos, this.direction);
     }
 
     private static BlockPos getAttachedPipe(Level world, BlockPos pos, Direction direction) {
@@ -96,8 +97,8 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     public boolean hurt(DamageSource source, float amount) {
         if (this.isInvulnerableTo(source)) {
             return false;
-        } else if (!source.isExplosion() && !this.getItem().isEmpty()) {
-            if (!this.level.isClientSide) {
+        } else if (!source.is(DamageTypeTags.IS_EXPLOSION) && !this.getItem().isEmpty()) {
+            if (!this.level().isClientSide) {
                 this.dropItemOrSelf(source.getDirectEntity(), false);
                 this.playSound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 1.0F, 1.0F);
             }
@@ -115,7 +116,7 @@ public class PipeFrameEntity extends ItemFrame implements IEntityAdditionalSpawn
     }
 
     private void dropItemOrSelf(@Nullable Entity entityIn, boolean b) {
-        if (!this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+        if (!this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             if (entityIn == null)
                 this.getItem().setEntityRepresentation(null);
         } else {

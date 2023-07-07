@@ -1,8 +1,6 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
@@ -10,14 +8,14 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
 import joptsimple.internal.Strings;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Widget;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -70,7 +68,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (this.items != null)
             this.updateWidgets();
 
-        this.plusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12, Component.literal("+"), button -> {
+        this.plusButton = this.addRenderableWidget(Button.builder(Component.literal("+"), button -> {
             var modifier = ItemTerminalGui.requestModifier();
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
@@ -80,14 +78,14 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             // 384 items is 6 stacks, which is what fits into the terminal slots
             if (this.requestAmount > 384)
                 this.requestAmount = 384;
-        }));
-        this.minusButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12, Component.literal("-"), button -> {
+        }).bounds(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12).build());
+        this.minusButton = this.addRenderableWidget(Button.builder(Component.literal("-"), button -> {
             this.requestAmount -= ItemTerminalGui.requestModifier();
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
-        }));
+        }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12).build());
         this.minusButton.active = false;
-        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20, Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addRenderableWidget(Button.builder(Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
             var widget = this.streamWidgets().filter(w -> w.selected).findFirst();
             if (!widget.isPresent())
                 return;
@@ -95,26 +93,25 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             stack.setCount(1);
             PacketHandler.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
-        }));
+        }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20).build());
         this.requestButton.active = false;
-        this.orderButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos, 20, 20, Component.literal(""), button -> {
+        this.orderButton = this.addRenderableWidget(Button.builder(Component.literal(""), button -> {
             if (this.sortedItems == null)
                 return;
             var prefs = PlayerPrefs.get();
             prefs.terminalItemOrder = prefs.terminalItemOrder.next();
             prefs.save();
             this.updateWidgets();
-        }));
-        this.ascendingButton = this.addRenderableWidget(new Button(this.leftPos - 22, this.topPos + 22, 20, 20, Component.literal(""), button -> {
+        }).bounds(this.leftPos - 22, this.topPos, 20, 20).build());
+        this.ascendingButton = this.addRenderableWidget(Button.builder(Component.literal(""), button -> {
             if (this.sortedItems == null)
                 return;
             var prefs = PlayerPrefs.get();
             prefs.terminalAscending = !prefs.terminalAscending;
             prefs.save();
             this.updateWidgets();
-        }));
-        this.cancelCraftingButton = this.addRenderableWidget(new Button(this.leftPos + this.imageWidth + 4, this.topPos + 4 + 64, 54, 20, Component.translatable("info." + PrettyPipes.ID + ".cancel_all"), b -> {
-        }));
+        }).bounds(this.leftPos - 22, this.topPos + 22, 20, 20).build());
+        this.cancelCraftingButton = this.addRenderableWidget(Button.builder(Component.translatable("info." + PrettyPipes.ID + ".cancel_all"), b -> {}).bounds(this.leftPos + this.imageWidth + 4, this.topPos + 4 + 64, 54, 20).build());
         this.cancelCraftingButton.visible = false;
         for (var y = 0; y < 4; y++) {
             for (var x = 0; x < 9; x++)
@@ -148,9 +145,9 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (button == 0 && mouseX >= this.leftPos + this.getXOffset() + 172 && this.topPos + mouseY >= 18 && mouseX < this.leftPos + this.getXOffset() + 172 + 12 && mouseY < this.topPos + 18 + 70) {
             this.isScrolling = true;
             return true;
-        } else if (button == 1 && mouseX >= this.search.x && mouseX <= this.search.x + this.search.getWidth() && mouseY >= this.search.y && mouseY <= this.search.y + 8) {
+        } else if (button == 1 && mouseX >= this.search.getX() && mouseX <= this.search.getX() + this.search.getWidth() && mouseY >= this.search.getY() && mouseY <= this.search.getY() + 8) {
             this.search.setValue("");
-            this.search.setFocus(true);
+            this.search.setFocused(true);
             this.setFocused(this.search);
             return true;
         }
@@ -268,72 +265,70 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         }
     }
 
+
     @Override
-    public void render(PoseStack matrix, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(matrix);
-        super.render(matrix, mouseX, mouseY, partialTicks);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(graphics);
+        super.render(graphics, mouseX, mouseY, partialTicks);
         for (var widget : this.renderables) {
             if (widget instanceof ItemTerminalWidget terminal)
-                terminal.renderToolTip(matrix, mouseX, mouseY);
+                terminal.renderToolTip(graphics, mouseX, mouseY);
         }
         if (this.sortedItems != null) {
             var prefs = PlayerPrefs.get();
             if (this.orderButton.isHoveredOrFocused())
-                this.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
+                graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
             if (this.ascendingButton.isHoveredOrFocused())
-                this.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
+                graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
         if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHoveredOrFocused()) {
             var tooltip = I18n.get("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
-            this.renderComponentTooltip(matrix, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), mouseX, mouseY);
+            graphics.renderTooltip(this.font, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), Optional.empty(), mouseX, mouseY);
         }
         if (!this.hoveredCrafting.isEmpty())
-            this.renderTooltip(matrix, this.hoveredCrafting, mouseX, mouseY);
-        this.renderTooltip(matrix, mouseX, mouseY);
+            graphics.renderTooltip(this.font, this.hoveredCrafting, mouseX, mouseY);
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
+
     @Override
-    protected void renderLabels(PoseStack matrix, int mouseX, int mouseY) {
-        this.font.draw(matrix, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752);
-        this.font.draw(matrix, this.title.getString(), 8, 6, 4210752);
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752);
+        graphics.drawString(this.font, this.title.getString(), 8, 6, 4210752);
 
         var amount = String.valueOf(this.requestAmount);
-        this.font.draw(matrix, amount, (176 + 15 - this.font.width(amount)) / 2F - 7 + this.getXOffset(), 106, 4210752);
+        graphics.drawString(this.font, amount, (176 + 15 - this.font.width(amount)) / 2 - 7 + this.getXOffset(), 106, 4210752);
 
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            this.font.draw(matrix, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752);
+            graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752);
             if (this.currentlyCrafting.size() > 6)
-                this.font.draw(matrix, ". . .", this.imageWidth + 24, 4 + 51, 4210752);
+                graphics.drawString(this.font, ". . .", this.imageWidth + 24, 4 + 51, 4210752);
         }
     }
 
     @Override
-    protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, this.getTexture());
-        this.blit(matrix, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+    protected void renderBg(GuiGraphics graphics, float partialTicks, int mouseX, int mouseY) {
+        graphics.blit(this.getTexture(), this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
             var percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
-            this.blit(matrix, this.leftPos + this.getXOffset() + 172, this.topPos + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
+            graphics.blit(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
-            this.blit(matrix, this.leftPos + this.getXOffset() + 172, this.topPos + 18, 244, 241, 12, 15);
+            graphics.blit(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18, 244, 241, 12, 15);
         }
 
         // draw the items that are currently crafting
         this.hoveredCrafting = ItemStack.EMPTY;
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, ItemTerminalGui.TEXTURE);
-            this.blit(matrix, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
+            graphics.blit(ItemTerminalGui.TEXTURE, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
 
             var x = 0;
             var y = 0;
             for (var stack : this.currentlyCrafting) {
                 var itemX = this.leftPos + this.imageWidth + 4 + x * 18;
                 var itemY = this.topPos + 4 + 16 + y * 18;
-                this.itemRenderer.renderGuiItem(stack, itemX, itemY);
-                this.itemRenderer.renderGuiItemDecorations(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
+                graphics.renderItem(stack, itemX, itemY);
+                graphics.renderItemDecorations(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
                 if (mouseX >= itemX && mouseY >= itemY && mouseX < itemX + 16 && mouseY < itemY + 18)
                     this.hoveredCrafting = stack;
                 x++;
@@ -364,7 +359,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     @Override
-    public <T extends GuiEventListener & Widget & NarratableEntry> T addRenderableWidget(T p_169406_) {
+    public <T extends GuiEventListener & Renderable & NarratableEntry> T addRenderableWidget(T p_169406_) {
         // overriding to public for JEIPrettyPipesPlugin
         return super.addRenderableWidget(p_169406_);
     }

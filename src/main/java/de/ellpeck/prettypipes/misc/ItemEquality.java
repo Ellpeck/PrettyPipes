@@ -10,7 +10,8 @@ import java.util.function.Supplier;
 public class ItemEquality {
 
     public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamageValue() == filter.getDamageValue(), false, Type.DAMAGE);
-    public static final ItemEquality NBT = new ItemEquality(ItemStack::tagMatches, false, Type.NBT);
+    // TODO see if this tagMatches replacement is good enough?
+    public static final ItemEquality NBT = new ItemEquality(ItemStack::areShareTagsEqual, false, Type.NBT);
     public static final ItemEquality MOD = new ItemEquality((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true, Type.MOD);
 
     public final Type type;
@@ -28,7 +29,7 @@ public class ItemEquality {
     }
 
     public static boolean compareItems(ItemStack stack, ItemStack filter, ItemEquality... types) {
-        var equal = ItemStack.isSameIgnoreDurability(stack, filter);
+        var equal = ItemStack.isSameItem(stack, filter);
         if (types.length <= 0)
             return equal;
         for (var type : types) {

@@ -48,7 +48,7 @@ public final class Utility {
 
     public static Direction getDirectionFromOffset(BlockPos pos, BlockPos other) {
         var diff = pos.subtract(other);
-        return Direction.fromNormal(diff.getX(), diff.getY(), diff.getZ());
+        return Direction.fromDelta(diff.getX(), diff.getY(), diff.getZ());
     }
 
     public static void addTooltip(String name, List<Component> tooltip) {

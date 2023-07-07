@@ -1,6 +1,5 @@
 package de.ellpeck.prettypipes.items;
 
-import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
@@ -30,7 +29,7 @@ public abstract class ModuleItem extends Item implements IModule {
     private final String name;
 
     public ModuleItem(String name) {
-        super(new Properties().tab(Registry.TAB).stacksTo(16));
+        super(new Properties().stacksTo(16));
         this.name = name;
     }
 

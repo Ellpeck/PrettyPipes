@@ -6,7 +6,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -14,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class PacketGhostSlot {
     @SuppressWarnings("Convert2Lambda")
     public static void onMessage(PacketGhostSlot message, Supplier<NetworkEvent.Context> ctx) {
         var doIt = (Consumer<Player>) p -> {
-            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, p.level, message.pos);
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, p.level(), message.pos);
             if (tile != null)
                 tile.setGhostItems(message.stacks);
         };
@@ -88,8 +89,8 @@ public class PacketGhostSlot {
         private final List<ItemStack> stacks;
         private final TagKey<Item> tag;
 
-        public Entry(List<ItemStack> stacks) {
-            var tag = Entry.getTagForStacks(stacks);
+        public Entry(Level level, List<ItemStack> stacks) {
+            var tag = Entry.getTagForStacks(level, stacks);
             if (tag != null) {
                 this.stacks = null;
                 this.tag = tag;
@@ -107,14 +108,14 @@ public class PacketGhostSlot {
                     this.stacks.add(buf.readItem());
             } else {
                 this.stacks = null;
-                this.tag = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation(buf.readUtf()));
+                this.tag = TagKey.create(Registries.ITEM, new ResourceLocation(buf.readUtf()));
             }
         }
 
-        public List<ItemStack> getStacks() {
+        public List<ItemStack> getStacks(Level level) {
             if (this.stacks != null)
                 return this.stacks;
-            return Streams.stream(Registry.ITEM.getTagOrEmpty(this.tag).iterator())
+            return Streams.stream(level.registryAccess().registry(Registries.ITEM).get().getTagOrEmpty(this.tag).iterator())
                     .filter(h -> h.value() != null & h.value() != Items.AIR)
                     .map(h -> new ItemStack(h.value())).collect(Collectors.toList());
         }
@@ -132,8 +133,8 @@ public class PacketGhostSlot {
             return buf;
         }
 
-        private static TagKey<Item> getTagForStacks(List<ItemStack> stacks) {
-            return Registry.ITEM.getTags().filter(e -> {
+        private static TagKey<Item> getTagForStacks(Level level, List<ItemStack> stacks) {
+            return level.registryAccess().registry(Registries.ITEM).get().getTags().filter(e -> {
                 var tag = e.getSecond();
                 if (tag.size() != stacks.size())
                     return false;

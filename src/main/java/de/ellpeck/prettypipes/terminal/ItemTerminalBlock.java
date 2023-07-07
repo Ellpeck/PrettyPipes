@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -31,7 +30,7 @@ import java.util.List;
 public class ItemTerminalBlock extends BaseEntityBlock {
 
     public ItemTerminalBlock() {
-        super(Properties.of(Material.STONE).strength(3).sound(SoundType.STONE));
+        super(Properties.of().strength(3).sound(SoundType.STONE));
     }
 
     @Override

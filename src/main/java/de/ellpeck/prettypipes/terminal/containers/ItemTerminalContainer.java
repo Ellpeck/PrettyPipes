@@ -19,7 +19,7 @@ public class ItemTerminalContainer extends AbstractContainerMenu {
 
     public ItemTerminalContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos) {
         super(type, id);
-        this.tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);
+        this.tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), pos);
 
         this.addOwnSlots(player);
 

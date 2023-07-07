@@ -61,7 +61,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
     public void setGhostItems(List<PacketGhostSlot.Entry> stacks) {
         this.updateItems();
         for (var i = 0; i < this.ghostItems.getSlots(); i++) {
-            var items = stacks.get(i).getStacks();
+            var items = stacks.get(i).getStacks(this.level);
             if (items.isEmpty()) {
                 this.ghostItems.setStackInSlot(i, ItemStack.EMPTY);
                 continue;
@@ -97,7 +97,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         if (!this.level.isClientSide) {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
-                clients.add(new PacketGhostSlot.Entry(Collections.singletonList(this.ghostItems.getStackInSlot(i))));
+                clients.add(new PacketGhostSlot.Entry(this.level, Collections.singletonList(this.ghostItems.getStackInSlot(i))));
             PacketHandler.sendToAllLoaded(this.level, this.getBlockPos(), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }

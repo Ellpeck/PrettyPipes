@@ -77,7 +77,7 @@ public class PacketButton {
 
     public enum ButtonResult {
         PIPE_TAB((pos, data, player) -> {
-            var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level(), pos);
             if (data[0] < 0) {
                 NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
             } else {
@@ -113,11 +113,11 @@ public class PacketButton {
             StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
-            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), pos);
             tile.requestCraftingItems(player, data[0], data[1] > 0);
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
-            var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, pos);
+            var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), pos);
             tile.cancelCrafting();
         }),
         TAG_FILTER((pos, data, player) -> {

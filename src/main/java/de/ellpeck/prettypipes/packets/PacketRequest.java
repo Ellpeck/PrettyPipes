@@ -51,7 +51,7 @@ public class PacketRequest {
             @Override
             public void run() {
                 Player player = ctx.get().getSender();
-                var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level, message.pos);
+                var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), message.pos);
                 message.stack.setCount(message.amount);
                 tile.requestItem(player, message.stack, message.nbtHash);
             }

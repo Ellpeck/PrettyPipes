@@ -7,7 +7,6 @@ import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -18,6 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -104,7 +104,7 @@ public class PipeItem implements IPipeItem {
             var currSpeed = Math.min(0.25F, motionLeft);
             motionLeft -= currSpeed;
 
-            var myPos = new BlockPos(this.x, this.y, this.z);
+            var myPos = BlockPos.containing(this.x, this.y, this.z);
             if (!myPos.equals(currPipe.getBlockPos()) && (currPipe.getBlockPos().equals(this.getDestPipe()) || !myPos.equals(this.startInventory))) {
                 // we're done with the current pipe, so switch to the next one
                 currPipe.getItems().remove(this);
@@ -196,7 +196,7 @@ public class PipeItem implements IPipeItem {
     @Override
     public void drop(Level world, ItemStack stack) {
         var item = new ItemEntity(world, this.x, this.y, this.z, stack.copy());
-        item.level.addFreshEntity(item);
+        item.level().addFreshEntity(item);
     }
 
     protected ItemStack store(PipeBlockEntity currPipe) {
@@ -312,7 +312,7 @@ public class PipeItem implements IPipeItem {
                         (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
                         (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
             }
-            Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemTransforms.TransformType.GROUND, light, overlay, matrixStack, source, 0);
+            Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemDisplayContext.GROUND, light, overlay, matrixStack, source, tile.getLevel(), 0);
             matrixStack.popPose();
         }
     }

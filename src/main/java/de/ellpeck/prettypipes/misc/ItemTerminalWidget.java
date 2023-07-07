@@ -1,12 +1,12 @@
 package de.ellpeck.prettypipes.misc;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
@@ -37,46 +37,44 @@ public class ItemTerminalWidget extends AbstractWidget {
     }
 
     @Override
-    public void renderButton(PoseStack matrix, int mouseX, int mouseY, float partialTicks) {
+    protected void renderWidget(GuiGraphics graphics, int p_268034_, int p_268009_, float p_268085_) {
         var mc = this.screen.getMinecraft();
         var renderer = mc.getItemRenderer();
-        this.setBlitOffset(100);
-        renderer.blitOffset = 100;
+        // TODO test this new blit offset replacement?
+        graphics.pose().translate(0, 0, 100);
         if (this.selected)
-            GuiComponent.fill(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433);
+            graphics.fill(this.getX(), this.getY(), this.getX() + 16, this.getY() + 16, -2130706433);
         RenderSystem.enableDepthTest();
-        renderer.renderGuiItem(this.stack, this.x, this.y);
+        graphics.renderItem(this.stack, this.getX(), this.getY());
         var amount = !this.craftable ? this.stack.getCount() : 0;
         var amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        renderer.renderGuiItemDecorations(mc.font, this.stack, this.x, this.y, amountStrg);
-        renderer.blitOffset = 0;
-        this.setBlitOffset(0);
+        graphics.renderItemDecorations(mc.font, this.stack, this.getX(), this.getY(), amountStrg);
+        graphics.pose().translate(0, 0, -100);
 
         if (this.isHoveredOrFocused()) {
             RenderSystem.disableDepthTest();
             RenderSystem.colorMask(true, true, true, false);
-            this.fillGradient(matrix, this.x, this.y, this.x + 16, this.y + 16, -2130706433, -2130706433);
+            graphics.fillGradient(this.getX(), this.getY(), this.getX() + 16, this.getY() + 16, -2130706433, -2130706433);
             RenderSystem.colorMask(true, true, true, true);
             RenderSystem.enableDepthTest();
         }
     }
 
-    @Override
-    public void renderToolTip(PoseStack matrix, int mouseX, int mouseY) {
+    public void renderToolTip(GuiGraphics graphics, int mouseX, int mouseY) {
         if (this.visible && this.isHoveredOrFocused()) {
-            var tooltip = this.screen.getTooltipFromItem(this.stack);
+            var tooltip = Screen.getTooltipFromItem(this.screen.getMinecraft(), this.stack);
             if (this.stack.getCount() >= 1000) {
                 var comp = tooltip.get(0);
-                if (comp instanceof MutableComponent m) {
+                if (comp instanceof MutableComponent m)
                     tooltip.set(0, m.append(Component.literal(" (" + this.stack.getCount() + ')').withStyle(ChatFormatting.BOLD)));
-                }
             }
-            this.screen.renderTooltip(matrix, tooltip, Optional.empty(), mouseX, mouseY);
+            graphics.renderTooltip(this.screen.getMinecraft().font, tooltip, Optional.empty(), mouseX, mouseY);
         }
     }
 
     @Override
-    public void updateNarration(NarrationElementOutput output) {
+    public void updateWidgetNarration(NarrationElementOutput output) {
         this.defaultButtonNarrationText(output);
     }
+
 }

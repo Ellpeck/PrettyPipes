@@ -48,8 +48,6 @@ import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
@@ -57,9 +55,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.capabilities.Capability;
@@ -80,12 +76,13 @@ import java.util.function.BiFunction;
 @Mod.EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
 
-    public static final CreativeModeTab TAB = new CreativeModeTab(PrettyPipes.ID) {
+    // TODO creative tab bleh
+/*    public static final CreativeModeTab TAB = new CreativeModeTab(PrettyPipes.ID) {
         @Override
         public ItemStack makeIcon() {
             return new ItemStack(Registry.wrenchItem);
         }
-    };
+    };*/
 
     public static Capability<PipeNetwork> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
     });
@@ -132,7 +129,7 @@ public final class Registry {
 
         event.register(ForgeRegistries.Keys.ITEMS, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "wrench"), Registry.wrenchItem = new WrenchItem());
-            h.register(new ResourceLocation(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties().tab(Registry.TAB)));
+            h.register(new ResourceLocation(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties()));
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameItem = new PipeFrameItem());
             h.register(new ResourceLocation(PrettyPipes.ID, "stack_size_module"), new StackSizeModuleItem());
             h.register(new ResourceLocation(PrettyPipes.ID, "redstone_module"), new RedstoneModuleItem());
@@ -157,7 +154,7 @@ public final class Registry {
 
             ForgeRegistries.BLOCKS.getEntries().stream()
                     .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
-                    .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties().tab(Registry.TAB))));
+                    .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties())));
         });
 
         event.register(ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, h -> {
@@ -188,7 +185,7 @@ public final class Registry {
 
     private static <T extends AbstractPipeContainer<?>> MenuType<T> registerPipeContainer(RegisterEvent.RegisterHelper<MenuType<?>> helper, String name) {
         var type = (MenuType<T>) IForgeMenuType.create((windowId, inv, data) -> {
-            var tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.level, data.readBlockPos());
+            var tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.level(), data.readBlockPos());
             var moduleIndex = data.readInt();
             var moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);

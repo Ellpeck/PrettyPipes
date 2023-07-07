@@ -73,12 +73,12 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
-        terminal.addRenderableWidget(this.jeiSyncButton = new Button(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20, Component.literal(""), button -> {
+        terminal.addRenderableWidget(this.jeiSyncButton = Button.builder(Component.literal(""), button -> {
             var preferences = PlayerPrefs.get();
             preferences.syncJei = !preferences.syncJei;
             preferences.save();
             terminal.updateWidgets();
-        }));
+        }).bounds(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20).build());
         if (PlayerPrefs.get().syncJei)
             terminal.search.setValue(this.runtime.getIngredientFilter().getFilterText());
     }
@@ -91,7 +91,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         var sync = PlayerPrefs.get().syncJei;
         if (event instanceof ScreenEvent.Render.Post) {
             if (this.jeiSyncButton.isHoveredOrFocused())
-                terminal.renderTooltip(event.getPoseStack(), Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
+                event.getGuiGraphics().renderTooltip(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
         } else if (event instanceof ScreenEvent.Render.Pre) {
             this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
         }

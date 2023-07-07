@@ -23,7 +23,7 @@ import java.util.List;
 public class PipeFrameItem extends Item {
 
     public PipeFrameItem() {
-        super(new Properties().tab(Registry.TAB));
+        super(new Properties());
     }
 
     // HangingEntityItem copypasta mostly, since it hardcodes the entities bleh
@@ -60,7 +60,7 @@ public class PipeFrameItem extends Item {
     }
 
     protected boolean canPlace(Player playerIn, Direction directionIn, ItemStack itemStackIn, BlockPos posIn) {
-        return !directionIn.getAxis().isVertical() && playerIn.mayUseItemAt(posIn, directionIn, itemStackIn) && PipeFrameEntity.canPlace(playerIn.level, posIn, directionIn);
+        return !directionIn.getAxis().isVertical() && playerIn.mayUseItemAt(posIn, directionIn, itemStackIn) && PipeFrameEntity.canPlace(playerIn.level(), posIn, directionIn);
     }
 
     @Override

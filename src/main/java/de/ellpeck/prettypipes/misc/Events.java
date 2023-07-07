@@ -33,7 +33,7 @@ public final class Events {
                     var dump = PipeNetwork.get(source.getLevel()).toString();
                     try {
                         Files.writeString(file, dump, StandardCharsets.UTF_8);
-                        source.sendSuccess(Component.literal("Wrote network dump to file " + file.toAbsolutePath()), true);
+                        source.sendSuccess(() -> Component.literal("Wrote network dump to file " + file.toAbsolutePath()), true);
                     } catch (IOException e) {
                         source.sendFailure(Component.literal("Failed to write network dump to file " + file.toAbsolutePath()));
                         return -1;
@@ -43,13 +43,13 @@ public final class Events {
                 .then(Commands.literal("uncache").executes(c -> {
                     var source = c.getSource();
                     PipeNetwork.get(source.getLevel()).clearCaches();
-                    source.sendSuccess(Component.literal("Cleared all pipe caches in the world"), true);
+                    source.sendSuccess(() -> Component.literal("Cleared all pipe caches in the world"), true);
                     return 0;
                 }))
                 .then(Commands.literal("unlock").executes(c -> {
                     var source = c.getSource();
                     PipeNetwork.get(source.getLevel()).unlock();
-                    source.sendSuccess(Component.literal("Resolved all network locks in the world"), true);
+                    source.sendSuccess(() -> Component.literal("Resolved all network locks in the world"), true);
                     return 0;
                 })));
     }

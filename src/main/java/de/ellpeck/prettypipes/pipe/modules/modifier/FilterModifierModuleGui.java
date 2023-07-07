@@ -1,10 +1,10 @@
 package de.ellpeck.prettypipes.pipe.modules.modifier;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -28,18 +28,18 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
     }
 
     @Override
-    protected void renderBg(PoseStack matrix, float partialTicks, int mouseX, int mouseY) {
-        super.renderBg(matrix, partialTicks, mouseX, mouseY);
-        this.blit(matrix, this.leftPos + 7, this.topPos + 32 + 15, 0, 196, 162, 60);
+    protected void renderBg(GuiGraphics graphics, float partialTicks, int mouseX, int mouseY) {
+        super.renderBg(graphics, partialTicks, mouseX, mouseY);
+        graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 7, this.topPos + 32 + 15, 0, 196, 162, 60);
 
         for (var tag : this.tagButtons)
-            tag.draw(matrix, mouseX, mouseY);
+            tag.draw(graphics, mouseX, mouseY);
 
         if (this.tags.size() >= 6) {
             var percentage = this.scrollOffset / (float) (this.tags.size() - 5);
-            this.blit(matrix, this.leftPos + 156, this.topPos + 32 + 16 + (int) (percentage * (58 - 15)), 232, 241, 12, 15);
+            graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16 + (int) (percentage * (58 - 15)), 232, 241, 12, 15);
         } else {
-            this.blit(matrix, this.leftPos + 156, this.topPos + 32 + 16, 244, 241, 12, 15);
+            graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16, 244, 241, 12, 15);
         }
     }
 
@@ -117,14 +117,14 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             this.y = y;
         }
 
-        private void draw(PoseStack matrix, double mouseX, double mouseY) {
+        private void draw(GuiGraphics graphics, double mouseX, double mouseY) {
             var color = 4210752;
             var text = this.tag.toString();
             if (mouseX >= this.x && mouseY >= this.y && mouseX < this.x + 140 && mouseY < this.y + 12)
                 color = 0xFFFFFF;
             if (this.tag.equals(FilterModifierModuleItem.getFilterTag(FilterModifierModuleGui.this.menu.moduleStack)))
                 text = ChatFormatting.BOLD + text;
-            FilterModifierModuleGui.this.font.draw(matrix, text, this.x, this.y, color);
+            graphics.drawString(FilterModifierModuleGui.this.font, text, this.x, this.y, color);
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
         }

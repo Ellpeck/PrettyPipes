@@ -1,10 +1,10 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketHandler;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -24,12 +24,12 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     protected void init() {
         super.init();
-        this.requestButton = this.addRenderableWidget(new Button(this.leftPos + 8, this.topPos + 100, 50, 20, Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
+        this.requestButton = this.addRenderableWidget(Button.builder(Component.translatable("info." + PrettyPipes.ID + ".request"), button -> {
             var amount = ItemTerminalGui.requestModifier();
             // also allow holding backspace instead of alt for people whose alt key is inaccessible (linux?)
             var force = Screen.hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;
             PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
-        }));
+        }).bounds(this.leftPos + 8, this.topPos + 100, 50, 20).build());
         this.tick();
     }
 
@@ -47,9 +47,10 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         }
     }
 
+
     @Override
-    protected void renderLabels(PoseStack matrix, int mouseX, int mouseY) {
-        super.renderLabels(matrix, mouseX, mouseY);
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        super.renderLabels(graphics, mouseX, mouseY);
 
         var container = this.getCraftingContainer();
         var tile = container.getTile();
@@ -63,8 +64,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             var slot = container.slots.stream().filter(s -> s.container == container.craftInventory && s.getSlotIndex() == finalI).findFirst().orElse(null);
             if (slot == null)
                 continue;
-            this.minecraft.getItemRenderer().renderGuiItem(ghost, slot.x, slot.y);
-            this.minecraft.getItemRenderer().renderGuiItemDecorations(this.font, ghost, slot.x, slot.y, "0");
+            graphics.renderItem(ghost, slot.x, slot.y);
+            graphics.renderItemDecorations(this.font, ghost, slot.x, slot.y, "0");
         }
     }
 

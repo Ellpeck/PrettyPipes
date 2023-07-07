@@ -24,7 +24,7 @@ public abstract class AbstractPipeContainer<T extends IModule> extends AbstractC
 
     public AbstractPipeContainer(@Nullable MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
         super(type, id);
-        this.tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level, pos);
+        this.tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level(), pos);
         this.moduleStack = moduleIndex < 0 ? null : this.tile.modules.getStackInSlot(moduleIndex);
         this.module = moduleIndex < 0 ? null : (T) this.moduleStack.getItem();
         this.moduleIndex = moduleIndex;

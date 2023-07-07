@@ -46,11 +46,11 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     @Override
     public void slotsChanged(Container inventoryIn) {
         super.slotsChanged(inventoryIn);
-        if (!this.player.level.isClientSide) {
+        if (!this.player.level().isClientSide) {
             var ret = ItemStack.EMPTY;
-            var optional = this.player.level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftInventory, this.player.level);
+            var optional = this.player.level().getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftInventory, this.player.level());
             if (optional.isPresent())
-                ret = optional.get().assemble(this.craftInventory);
+                ret = optional.get().assemble(this.craftInventory, this.player.level().registryAccess());
             this.craftResult.setItem(0, ret);
             ((ServerPlayer) this.player).connection.send(new ClientboundContainerSetSlotPacket(this.containerId, 0, 0, ret));
         }

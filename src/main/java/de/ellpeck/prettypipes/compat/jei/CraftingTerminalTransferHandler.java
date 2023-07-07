@@ -45,7 +45,7 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         List<PacketGhostSlot.Entry> stacks = new ArrayList<>();
         var ingredients = slots.getSlotViews(RecipeIngredientRole.INPUT);
         for (var entry : ingredients)
-            stacks.add(new PacketGhostSlot.Entry(entry.getIngredients(VanillaTypes.ITEM_STACK).collect(Collectors.toList())));
+            stacks.add(new PacketGhostSlot.Entry(player.level(), entry.getIngredients(VanillaTypes.ITEM_STACK).collect(Collectors.toList())));
         PacketHandler.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
         return null;
     }

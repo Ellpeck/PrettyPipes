@@ -1,6 +1,5 @@
 package de.ellpeck.prettypipes.misc;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
@@ -8,6 +7,7 @@ import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -52,23 +52,13 @@ public class ItemFilter extends ItemStackHandler {
         List<AbstractWidget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
             var whitelistText = (Supplier<String>) () -> "info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist");
-            buttons.add(new Button(x - 20, y, 20, 20, Component.translatable(whitelistText.get()), button -> {
+            buttons.add(Button.builder(Component.translatable(whitelistText.get()), button -> {
                 PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 0);
                 button.setMessage(Component.translatable(whitelistText.get()));
-            }) {
-                @Override
-                public void renderToolTip(PoseStack matrix, int x, int y) {
-                    gui.renderTooltip(matrix, Component.translatable(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY), x, y);
-                }
-            });
+            }).bounds(x - 20, y, 20, 20).tooltip(Tooltip.create(Component.translatable(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY))).build());
         }
         if (this.canPopulateFromInventories) {
-            buttons.add(new Button(x - 42, y, 20, 20, Component.translatable("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)) {
-                @Override
-                public void renderToolTip(PoseStack matrix, int x, int y) {
-                    gui.renderTooltip(matrix, Component.translatable("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY), x, y);
-                }
-            });
+            buttons.add(Button.builder(Component.translatable("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, 1)).bounds(x - 42, y, 20, 20).tooltip(Tooltip.create(Component.translatable("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY))).build());
         }
         return buttons;
     }
