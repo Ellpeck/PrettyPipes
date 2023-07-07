@@ -9,7 +9,7 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    archivesName = mod_name
 }
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
@@ -79,10 +79,6 @@ minecraft {
                     source sourceSets.main
                 }
             }
-
-            lazyToken('minecraft_classpath') {
-                configurations.embed.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
-            }
         }
 
         client {
@@ -108,6 +104,12 @@ minecraft {
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+        
+        all {
+            lazyToken('minecraft_classpath') {
+                configurations.embed.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
         }
     }
 }
@@ -201,7 +203,7 @@ tasks.named('jar', Jar).configure {
 
     // TODO figure out if leaving this out causes jgrapht to be left out of the jar
     // from configurations.embed.collect { it.isDirectory() ? it : zipTree(it) }
-    
+
     // This is the preferred method to reobfuscate your jar file
     finalizedBy 'reobfJar'
 }
