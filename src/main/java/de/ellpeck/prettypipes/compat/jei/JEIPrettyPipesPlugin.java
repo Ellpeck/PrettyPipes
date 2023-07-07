@@ -90,7 +90,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             return;
         var sync = PlayerPrefs.get().syncJei;
         if (event instanceof ScreenEvent.Render.Post) {
-            if (this.jeiSyncButton.isHoveredOrFocused())
+            if (this.jeiSyncButton.isHovered())
                 event.getGuiGraphics().renderTooltip(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
         } else if (event instanceof ScreenEvent.Render.Pre) {
             this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));

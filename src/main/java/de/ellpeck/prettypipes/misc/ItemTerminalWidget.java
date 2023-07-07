@@ -61,7 +61,7 @@ public class ItemTerminalWidget extends AbstractWidget {
     }
 
     public void renderToolTip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (this.visible && this.isHoveredOrFocused()) {
+        if (this.visible && this.isHovered()) {
             var tooltip = Screen.getTooltipFromItem(this.screen.getMinecraft(), this.stack);
             if (this.stack.getCount() >= 1000) {
                 var comp = tooltip.get(0);

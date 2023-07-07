@@ -68,8 +68,8 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8, this.imageHeight - 96 + 2, 4210752);
-        graphics.drawString(this.font, this.title.getString(), 8, 6 + 32, 4210752);
+        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8, this.imageHeight - 96 + 2, 4210752, false);
+        graphics.drawString(this.font, this.title.getString(), 8, 6 + 32, 4210752, false);
         for (var tab : this.tabs)
             tab.drawForeground(graphics, mouseX, mouseY);
     }

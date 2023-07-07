@@ -158,7 +158,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         // we have to do the click logic here because JEI is activated when letting go of the mouse button
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
-        if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHoveredOrFocused()) {
+        if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
                 PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
                 return true;
@@ -276,12 +276,12 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         }
         if (this.sortedItems != null) {
             var prefs = PlayerPrefs.get();
-            if (this.orderButton.isHoveredOrFocused())
+            if (this.orderButton.isHovered())
                 graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
-            if (this.ascendingButton.isHoveredOrFocused())
+            if (this.ascendingButton.isHovered())
                 graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
-        if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHoveredOrFocused()) {
+        if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             var tooltip = I18n.get("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
             graphics.renderTooltip(this.font, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), Optional.empty(), mouseX, mouseY);
         }
@@ -293,16 +293,16 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752);
-        graphics.drawString(this.font, this.title.getString(), 8, 6, 4210752);
+        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752, false);
+        graphics.drawString(this.font, this.title.getString(), 8, 6, 4210752, false);
 
         var amount = String.valueOf(this.requestAmount);
-        graphics.drawString(this.font, amount, (176 + 15 - this.font.width(amount)) / 2 - 7 + this.getXOffset(), 106, 4210752);
+        graphics.drawString(this.font, amount, (176 + 15 - this.font.width(amount)) / 2 - 7 + this.getXOffset(), 106, 4210752, false);
 
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752);
+            graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752, false);
             if (this.currentlyCrafting.size() > 6)
-                graphics.drawString(this.font, ". . .", this.imageWidth + 24, 4 + 51, 4210752);
+                graphics.drawString(this.font, ". . .", this.imageWidth + 24, 4 + 51, 4210752, false);
         }
     }
 
