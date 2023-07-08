@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -224,9 +225,9 @@ public class PipeBlock extends BaseEntityBlock {
     protected static boolean hasLegsTo(Level world, BlockState state, BlockPos pos, Direction direction) {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
-        // TODO figure out new condition for legs now that materials are gone
-/*        if (state.getMaterial() == Material.STONE || state.getMaterial() == Material.METAL)
-            return Block.canSupportCenter(world, pos, direction.getOpposite());*/
+        var mapColor = state.getMapColor(world,pos);
+        if (mapColor == MapColor.STONE || mapColor == MapColor.METAL)
+            return Block.canSupportCenter(world, pos, direction.getOpposite());
         return false;
     }
 

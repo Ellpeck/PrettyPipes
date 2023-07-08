@@ -39,8 +39,6 @@ public class ItemTerminalWidget extends AbstractWidget {
     @Override
     protected void renderWidget(GuiGraphics graphics, int p_268034_, int p_268009_, float p_268085_) {
         var mc = this.screen.getMinecraft();
-        var renderer = mc.getItemRenderer();
-        // TODO test this new blit offset replacement?
         graphics.pose().translate(0, 0, 100);
         if (this.selected)
             graphics.fill(this.getX(), this.getY(), this.getX() + 16, this.getY() + 16, -2130706433);

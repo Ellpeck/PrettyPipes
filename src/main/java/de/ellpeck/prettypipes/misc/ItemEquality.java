@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 public class ItemEquality {
 
     public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamageValue() == filter.getDamageValue(), false, Type.DAMAGE);
-    // TODO see if this tagMatches replacement is good enough?
     public static final ItemEquality NBT = new ItemEquality(ItemStack::areShareTagsEqual, false, Type.NBT);
     public static final ItemEquality MOD = new ItemEquality((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true, Type.MOD);
 
