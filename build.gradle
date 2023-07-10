@@ -9,8 +9,8 @@ plugins {
 jarJar.enable()
 
 version = mod_version
-if (System.getenv('BUILD_NUMBER') != null) {
-    version += "." + System.getenv('BUILD_NUMBER')
+if (System.getenv('CI_PIPELINE_NUMBER') != null) {
+    version += "." + System.getenv('CI_PIPELINE_NUMBER')
 }
 
 group = mod_group_id

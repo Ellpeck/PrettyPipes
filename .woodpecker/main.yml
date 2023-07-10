@@ -13,6 +13,5 @@ steps:
       - ./gradlew publish --no-daemon
     environment: 
       - LOCAL_MAVEN=/var/www/maven
-      - BUILD_NUMBER=$CI_PIPELINE_NUMBER
     volumes:
       - /var/www/maven:/var/www/maven
