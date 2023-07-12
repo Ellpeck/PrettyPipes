@@ -13,6 +13,7 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -229,6 +230,10 @@ public class ItemTerminalGui extends ContainerScreen<ItemTerminalContainer> {
                 String toCompare;
                 if (search.startsWith("@")) {
                     toCompare = s.getLeft().getItem().getCreatorModId(s.getLeft());
+                    search = search.substring(1);
+                } else if (search.startsWith("#")) {
+                    // search item description
+                    toCompare = s.getLeft().getTooltip(this.minecraft.player, ITooltipFlag.TooltipFlags.NORMAL).stream().map(ITextComponent::getString).collect(Collectors.joining("\n"));
                     search = search.substring(1);
                 } else {
                     // don't use formatted text here since we want to search for name
