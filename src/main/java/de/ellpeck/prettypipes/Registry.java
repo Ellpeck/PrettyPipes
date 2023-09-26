@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
 import de.ellpeck.prettypipes.misc.ItemEquality;
+import de.ellpeck.prettypipes.misc.ModuleClearingRecipe;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
@@ -189,6 +190,10 @@ public final class Registry {
                             .forEach(b -> output.accept(b.getValue()))).build()
             );
         });
+
+        event.register(ForgeRegistries.Keys.RECIPE_SERIALIZERS, h -> {
+            h.register(new ResourceLocation(PrettyPipes.ID, "module_clearing"), ModuleClearingRecipe.SERIALIZER);
+        });
     }
 
     private static <T extends AbstractPipeContainer<?>> MenuType<T> registerPipeContainer(RegisterEvent.RegisterHelper<MenuType<?>> helper, String name) {
@@ -229,5 +234,7 @@ public final class Registry {
             MenuScreens.register(Registry.craftingModuleContainer, CraftingModuleGui::new);
             MenuScreens.register(Registry.filterModifierModuleContainer, FilterModifierModuleGui::new);
         }
+
     }
+
 }
