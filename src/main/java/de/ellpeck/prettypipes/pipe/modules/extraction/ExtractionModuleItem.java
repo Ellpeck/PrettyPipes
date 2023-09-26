@@ -45,7 +45,7 @@ public class ExtractionModuleItem extends ModuleItem {
                 var stack = handler.extractItem(j, this.maxExtraction, true);
                 if (stack.isEmpty())
                     continue;
-                if (!filter.isAllowed(stack))
+                if (!filter.isAllowed(stack, dir))
                     continue;
                 var remain = network.routeItem(tile.getBlockPos(), tile.getBlockPos().relative(dir), stack, this.preventOversending);
                 if (remain.getCount() != stack.getCount()) {
@@ -90,4 +90,5 @@ public class ExtractionModuleItem extends ModuleItem {
     public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return new DirectionSelector(module, tile);
     }
+
 }

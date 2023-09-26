@@ -15,6 +15,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
+import java.util.Arrays;
+
 public class RetrievalModuleItem extends ModuleItem {
 
     private final int maxExtraction;
@@ -38,9 +40,9 @@ public class RetrievalModuleItem extends ModuleItem {
         var network = PipeNetwork.get(tile.getLevel());
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
-        for (var subFilter : tile.getFilters()) {
-            for (var f = 0; f < subFilter.getSlots(); f++) {
-                var filtered = subFilter.getStackInSlot(f);
+        Arrays.stream(directions).flatMap(d -> tile.getFilters(d).stream()).distinct().forEach(f -> {
+            for (var i = 0; i < f.getSlots(); i++) {
+                var filtered = f.getStackInSlot(i);
                 if (filtered.isEmpty())
                     continue;
                 var copy = filtered.copy();
@@ -54,7 +56,7 @@ public class RetrievalModuleItem extends ModuleItem {
                 if (network.requestItem(tile.getBlockPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                     break;
             }
-        }
+        });
     }
 
     @Override
@@ -94,4 +96,5 @@ public class RetrievalModuleItem extends ModuleItem {
     public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return new DirectionSelector(module, tile);
     }
+
 }

@@ -71,14 +71,14 @@ public class ItemFilter extends ItemStackHandler {
         } else if (id == 1 && this.canPopulateFromInventories) {
             var changed = false;
             // populate filter from inventories
-            var filters = this.pipe.getFilters();
+            var filters = this.pipe.getFilters(null);
             for (var direction : Direction.values()) {
                 var handler = this.pipe.getItemHandler(direction);
                 if (handler == null)
                     continue;
                 for (var i = 0; i < handler.getSlots(); i++) {
                     var stack = handler.getStackInSlot(i);
-                    if (stack.isEmpty() || this.isFiltered(stack))
+                    if (stack.isEmpty() || this.isFiltered(stack, null))
                         continue;
                     var copy = stack.copy();
                     copy.setCount(1);
@@ -97,14 +97,14 @@ public class ItemFilter extends ItemStackHandler {
         }
     }
 
-    public boolean isAllowed(ItemStack stack) {
-        return this.isFiltered(stack) == this.isWhitelist;
+    public boolean isAllowed(ItemStack stack, Direction direction) {
+        return this.isFiltered(stack, direction) == this.isWhitelist;
     }
 
-    private boolean isFiltered(ItemStack stack) {
+    private boolean isFiltered(ItemStack stack, Direction direction) {
         var types = ItemFilter.getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
-        for (ItemStackHandler handler : this.pipe.getFilters()) {
+        for (ItemStackHandler handler : this.pipe.getFilters(direction)) {
             for (var i = 0; i < handler.getSlots(); i++) {
                 var filter = handler.getStackInSlot(i);
                 if (filter.isEmpty())
@@ -162,5 +162,7 @@ public class ItemFilter extends ItemStackHandler {
 
         default void onFilterPopulated() {
         }
+
     }
+
 }

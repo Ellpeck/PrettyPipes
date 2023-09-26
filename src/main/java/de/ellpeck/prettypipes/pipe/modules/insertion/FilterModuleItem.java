@@ -27,7 +27,7 @@ public class FilterModuleItem extends ModuleItem {
 
     @Override
     public boolean canAcceptItem(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction, IItemHandler destination) {
-        return !this.getDirectionSelector(module, tile).has(direction) || this.getItemFilter(module, tile).isAllowed(stack);
+        return !this.getDirectionSelector(module, tile).has(direction) || this.getItemFilter(module, tile).isAllowed(stack, direction);
     }
 
     @Override
@@ -56,4 +56,5 @@ public class FilterModuleItem extends ModuleItem {
     public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return new DirectionSelector(module, tile);
     }
+
 }

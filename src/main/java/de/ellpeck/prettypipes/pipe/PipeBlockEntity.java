@@ -382,10 +382,15 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                 .filter(m -> m != null && m >= 0).findFirst().orElse(index);
     }
 
-    public List<ItemFilter> getFilters() {
-        return this.streamModules()
-                .map(p -> p.getRight().getItemFilter(p.getLeft(), this))
-                .filter(Objects::nonNull).collect(Collectors.toList());
+    public List<ItemFilter> getFilters(Direction direction) {
+        return this.streamModules().map(p -> {
+            if (direction != null) {
+                var dir = p.getRight().getDirectionSelector(p.getLeft(), this);
+                if (dir != null && !dir.has(direction))
+                    return null;
+            }
+            return p.getRight().getItemFilter(p.getLeft(), this);
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     @Override
