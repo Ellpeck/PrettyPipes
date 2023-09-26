@@ -161,6 +161,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
                     // don't compare with nbt equality here or the whole hashing thing is pointless
                     .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
                     .findFirst().orElse(filter);
+            stack.setCount(filter.getCount());
         }
         var requested = this.requestItemImpl(stack, ItemTerminalBlockEntity.onItemUnavailable(player, false));
         if (requested > 0) {
@@ -321,4 +322,5 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
             player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".not_found", s.getHoverName()).setStyle(Style.EMPTY.applyFormat(ChatFormatting.RED)));
         };
     }
+
 }
