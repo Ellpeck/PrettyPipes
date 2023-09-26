@@ -379,7 +379,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public int getNextNode(List<BlockPos> nodes, int index) {
         return this.streamModules()
                 .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
-                .filter(Objects::nonNull).findFirst().orElse(index);
+                .filter(m -> m != null && m >= 0).findFirst().orElse(index);
     }
 
     public List<ItemFilter> getFilters() {
