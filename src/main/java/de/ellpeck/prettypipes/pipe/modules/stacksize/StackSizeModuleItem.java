@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEquality;
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -42,6 +43,7 @@ public class StackSizeModuleItem extends ModuleItem {
 
     @Override
     public int getMaxInsertionAmount(ItemStack module, PipeBlockEntity tile, ItemStack stack, IItemHandler destination) {
+        var types = ItemFilter.getEqualityTypes(tile);
         var max = StackSizeModuleItem.getMaxStackSizeForModule(module);
         if (StackSizeModuleItem.getLimitToMaxStackSize(module))
             max = Math.min(max, stack.getMaxStackSize());
@@ -50,7 +52,7 @@ public class StackSizeModuleItem extends ModuleItem {
             var stored = destination.getStackInSlot(i);
             if (stored.isEmpty())
                 continue;
-            if (!ItemEquality.compareItems(stored, stack))
+            if (!ItemEquality.compareItems(stored, stack, types))
                 continue;
             amount += stored.getCount();
             if (amount >= max)
@@ -73,4 +75,5 @@ public class StackSizeModuleItem extends ModuleItem {
     public AbstractPipeContainer<?> getContainer(ItemStack module, PipeBlockEntity tile, int windowId, Inventory inv, Player player, int moduleIndex) {
         return new StackSizeModuleContainer(Registry.stackSizeModuleContainer, windowId, player, tile.getBlockPos(), moduleIndex);
     }
+
 }
