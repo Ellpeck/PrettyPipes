@@ -3,7 +3,7 @@ package de.ellpeck.prettypipes.terminal.containers;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class WrappedCraftingInventory extends TransientCraftingContainer {
 

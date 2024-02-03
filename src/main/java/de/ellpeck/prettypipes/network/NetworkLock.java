@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.network;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.util.INBTSerializable;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 
 import java.util.Objects;
 import java.util.UUID;

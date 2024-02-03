@@ -34,14 +34,14 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.Lazy;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.common.util.Lazy;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.common.capabilities.Capability;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -315,7 +315,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        var handler = this.getNeighborCap(dir, ForgeCapabilities.ITEM_HANDLER);
+        var handler = this.getNeighborCap(dir, Capabilities.ITEM_HANDLER);
         if (handler != null)
             return handler;
         return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());

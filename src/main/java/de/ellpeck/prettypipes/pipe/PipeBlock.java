@@ -34,9 +34,9 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.network.NetworkHooks;
+import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.network.NetworkHooks;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -207,7 +207,7 @@ public class PipeBlock extends BaseEntityBlock {
             var connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
             if (connectable != null)
                 return connectable.getConnectionType(pos, direction);
-            var handler = tile.getCapability(ForgeCapabilities.ITEM_HANDLER, opposite).orElse(null);
+            var handler = tile.getCapability(Capabilities.ITEM_HANDLER, opposite).orElse(null);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
