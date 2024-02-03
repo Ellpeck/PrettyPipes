@@ -1,15 +1,17 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.event.AttachCapabilitiesEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,8 +22,13 @@ import java.nio.file.Paths;
 public final class Events {
 
     @SubscribeEvent
-    public static void onWorldCaps(AttachCapabilitiesEvent<Level> event) {
-        event.addCapability(new ResourceLocation(PrettyPipes.ID, "network"), new PipeNetwork(event.getObject()));
+    public static void onWorldCaps(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pipeBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pressurizerBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.itemTerminalBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.craftingTerminalBlockEntity, (e, d) -> e);
+
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, Registry.pressurizerBlockEntity, (e, d) -> e.storage);
     }
 
     @SubscribeEvent
@@ -53,4 +60,5 @@ public final class Events {
                     return 0;
                 })));
     }
+
 }

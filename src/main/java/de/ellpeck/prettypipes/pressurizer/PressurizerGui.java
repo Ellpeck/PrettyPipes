@@ -19,7 +19,7 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         super.render(graphics, mouseX, mouseY, partialTicks);
         this.renderTooltip(graphics, mouseX, mouseY);
         if (mouseX >= this.leftPos + 26 && mouseY >= this.topPos + 22 && mouseX < this.leftPos + 26 + 124 && mouseY < this.topPos + 22 + 12)
@@ -38,4 +38,5 @@ public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer
         var energy = (int) (this.menu.tile.getEnergyPercentage() * 124);
         graphics.blit(PressurizerGui.TEXTURE, this.leftPos + 26, this.topPos + 22, 0, 137, energy, 12);
     }
+
 }

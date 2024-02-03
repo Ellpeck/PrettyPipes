@@ -243,7 +243,7 @@ public class PipeItem implements IPipeItem {
     public CompoundTag serializeNBT() {
         var nbt = new CompoundTag();
         nbt.putString("type", this.type.toString());
-        nbt.put("stack", this.stack.serializeNBT());
+        nbt.put("stack", this.stack.save(new CompoundTag()));
         nbt.putFloat("speed", this.speed);
         nbt.put("start_inv", NbtUtils.writeBlockPos(this.startInventory));
         nbt.put("dest_inv", NbtUtils.writeBlockPos(this.destInventory));

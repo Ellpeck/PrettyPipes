@@ -31,8 +31,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.util.LazyOptional;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,7 +51,6 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     };
     protected Map<EquatableItemStack, NetworkItem> networkItems;
     private final Queue<NetworkLock> existingRequests = new LinkedList<>();
-    private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
 
     public ItemTerminalBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -106,7 +103,6 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         var network = PipeNetwork.get(this.level);
         for (var lock : this.existingRequests)
             network.resolveNetworkLock(lock);
-        this.lazyThis.invalidate();
     }
 
     public String getInvalidTerminalReason() {
@@ -255,13 +251,6 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     @Override
     public AbstractContainerMenu createMenu(int window, Inventory inv, Player player) {
         return new ItemTerminalContainer(Registry.itemTerminalContainer, window, player, this.worldPosition);
-    }
-
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-        if (cap == Registry.pipeConnectableCapability)
-            return this.lazyThis.cast();
-        return LazyOptional.empty();
     }
 
     @Override

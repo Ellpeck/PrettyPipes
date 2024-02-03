@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -19,7 +20,6 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
-import net.neoforged.neoforge.registries.ForgeRegistries;
 
 import java.util.List;
 
@@ -108,7 +108,7 @@ public class WrenchItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(ForgeRegistries.ITEMS.getKey(this).getPath(), tooltip);
+        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), tooltip);
     }
 
     @Override
@@ -125,4 +125,5 @@ public class WrenchItem extends Item {
     public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
         return enchantment == Enchantments.SILK_TOUCH;
     }
+
 }

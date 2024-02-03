@@ -14,6 +14,7 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<CraftingTerminalContainer, CraftingRecipe> {
+public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<CraftingTerminalContainer, RecipeHolder<CraftingRecipe>> {
 
     @Override
     public Class<CraftingTerminalContainer> getContainerClass() {
@@ -34,12 +35,12 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
     }
 
     @Override
-    public RecipeType<CraftingRecipe> getRecipeType() {
+    public RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
         return RecipeTypes.CRAFTING;
     }
 
     @Override
-    public @Nullable IRecipeTransferError transferRecipe(CraftingTerminalContainer container, CraftingRecipe recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
+    public @Nullable IRecipeTransferError transferRecipe(CraftingTerminalContainer container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
         if (!doTransfer)
             return null;
         List<PacketGhostSlot.Entry> stacks = new ArrayList<>();
@@ -49,4 +50,5 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         PacketHandler.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
         return null;
     }
+
 }

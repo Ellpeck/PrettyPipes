@@ -85,9 +85,9 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
     }
 
     @Override
-    public boolean mouseScrolled(double x, double y, double scroll) {
+    public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
         if (this.tags.size() >= 6) {
-            var offset = Mth.clamp(this.scrollOffset - (int) Math.signum(scroll), 0, this.tags.size() - 5);
+            var offset = Mth.clamp(this.scrollOffset - (int) Math.signum(scrollY), 0, this.tags.size() - 5);
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
                 this.updateWidgets();
@@ -138,5 +138,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             FilterModifierModuleGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }
+
     }
+
 }

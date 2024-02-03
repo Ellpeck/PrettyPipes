@@ -36,12 +36,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.util.Lazy;
-import net.neoforged.neoforge.common.util.LazyOptional;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.common.capabilities.Capability;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -80,7 +79,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     protected List<IPipeItem> items;
     private int lastItemAmount;
     private int priority;
-    private final LazyOptional<PipeBlockEntity> lazyThis = LazyOptional.of(() -> this);
     private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
     public PipeBlockEntity(BlockPos pos, BlockState state) {
@@ -108,7 +106,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         for (var triple : this.craftResultRequests) {
             var nbt = new CompoundTag();
             nbt.putLong("dest_pipe", triple.getLeft().asLong());
-            nbt.put("item", triple.getRight().serializeNBT());
+            nbt.put("item", triple.getRight().save(new CompoundTag()));
             results.add(nbt);
         }
         compound.put("craft_results", results);
@@ -315,26 +313,26 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        var handler = this.getNeighborCap(dir, Capabilities.ITEM_HANDLER);
+        var handler = this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
         if (handler != null)
             return handler;
         return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());
     }
 
-    public <T> T getNeighborCap(Direction dir, Capability<T> cap) {
+    public <T, C> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
         if (!this.isConnected(dir))
             return null;
         var pos = this.worldPosition.relative(dir);
         var tile = this.level.getBlockEntity(pos);
         if (tile != null)
-            return tile.getCapability(cap, dir.getOpposite()).orElse(null);
+            return this.level.getCapability(cap, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
         return null;
     }
 
     public IPipeConnectable getPipeConnectable(Direction dir) {
         var tile = this.level.getBlockEntity(this.worldPosition.relative(dir));
         if (tile != null)
-            return tile.getCapability(Registry.pipeConnectableCapability, dir.getOpposite()).orElse(null);
+            return this.level.getCapability(Registry.pipeConnectableCapability, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
         return null;
     }
 
@@ -400,7 +398,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         var network = PipeNetwork.get(this.level);
         for (var lock : this.craftIngredientRequests)
             network.resolveNetworkLock(lock);
-        this.lazyThis.invalidate();
     }
 
     @Override
@@ -414,19 +411,13 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return new MainPipeContainer(Registry.pipeContainer, window, player, PipeBlockEntity.this.worldPosition);
     }
 
-    @Override
+    // TODO render bounding box?
+/*    @Override
     @OnlyIn(Dist.CLIENT)
     public AABB getRenderBoundingBox() {
         // our render bounding box should always be the full block in case we're covered
         return new AABB(this.worldPosition);
-    }
-
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-        if (cap == Registry.pipeConnectableCapability)
-            return this.lazyThis.cast();
-        return LazyOptional.empty();
-    }
+    }*/
 
     @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {

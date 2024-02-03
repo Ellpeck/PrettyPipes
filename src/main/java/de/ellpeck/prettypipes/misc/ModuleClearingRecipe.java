@@ -12,8 +12,8 @@ public class ModuleClearingRecipe extends CustomRecipe {
 
     public static final RecipeSerializer<ModuleClearingRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<>(ModuleClearingRecipe::new);
 
-    public ModuleClearingRecipe(ResourceLocation res, CraftingBookCategory cat) {
-        super(res, cat);
+    public ModuleClearingRecipe(CraftingBookCategory cat) {
+        super(cat);
     }
 
     @Override

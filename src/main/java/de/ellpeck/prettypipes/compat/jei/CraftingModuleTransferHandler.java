@@ -16,12 +16,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Optional;
 
-public class CraftingModuleTransferHandler implements IRecipeTransferHandler<CraftingModuleContainer, CraftingRecipe> {
+public class CraftingModuleTransferHandler implements IRecipeTransferHandler<CraftingModuleContainer, RecipeHolder<CraftingRecipe>> {
 
     @Override
     public Class<CraftingModuleContainer> getContainerClass() {
@@ -34,12 +35,12 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
     }
 
     @Override
-    public RecipeType<CraftingRecipe> getRecipeType() {
+    public RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
         return RecipeTypes.CRAFTING;
     }
 
     @Override
-    public @Nullable IRecipeTransferError transferRecipe(CraftingModuleContainer container, CraftingRecipe recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
+    public @Nullable IRecipeTransferError transferRecipe(CraftingModuleContainer container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
         if (!doTransfer)
             return null;
         var inputs = new ArrayList<ItemStack>();
@@ -65,4 +66,5 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
         PacketHandler.sendToServer(new PacketCraftingModuleTransfer(inputs, outputs));
         return null;
     }
+
 }

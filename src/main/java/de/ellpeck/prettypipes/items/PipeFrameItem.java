@@ -5,6 +5,7 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
@@ -15,7 +16,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -66,6 +66,6 @@ public class PipeFrameItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         super.appendHoverText(stack, worldIn, tooltip, flagIn);
-        Utility.addTooltip(ForgeRegistries.ITEMS.getKey(this).getPath(), tooltip);
+        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), tooltip);
     }
 }

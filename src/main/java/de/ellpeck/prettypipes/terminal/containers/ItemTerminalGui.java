@@ -130,7 +130,6 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         this.plusButton.active = this.requestAmount < 384;
         this.minusButton.active = this.requestAmount > 1;
 
-        this.search.tick();
         if (this.items != null) {
             var text = this.search.getValue();
             if (!this.lastSearchText.equals(text)) {
@@ -265,10 +264,9 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         }
     }
 
-
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         super.render(graphics, mouseX, mouseY, partialTicks);
         for (var widget : this.renderables) {
             if (widget instanceof ItemTerminalWidget terminal)
@@ -289,7 +287,6 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             graphics.renderTooltip(this.font, this.hoveredCrafting, mouseX, mouseY);
         this.renderTooltip(graphics, mouseX, mouseY);
     }
-
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -347,9 +344,9 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     @Override
-    public boolean mouseScrolled(double x, double y, double scroll) {
+    public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
-            var offset = Mth.clamp(this.scrollOffset - (int) Math.signum(scroll), 0, this.sortedItems.size() / 9 - 3);
+            var offset = Mth.clamp(this.scrollOffset - (int) Math.signum(scrollY), 0, this.sortedItems.size() / 9 - 3);
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
                 this.updateWidgets();
@@ -379,4 +376,5 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             return 1;
         }
     }
+
 }

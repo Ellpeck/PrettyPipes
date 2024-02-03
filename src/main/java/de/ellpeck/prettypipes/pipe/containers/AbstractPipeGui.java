@@ -54,10 +54,10 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         super.render(graphics, mouseX, mouseY, partialTicks);
         for (var widget : this.renderables) {
-            // TDOO render widget tooltips?
+            // TODO render widget tooltips?
            /* if (widget instanceof AbstractWidget abstractWidget) {
                 if (abstractWidget.isHoveredOrFocused())
                     abstractWidget.renderToolTip(matrix, mouseX, mouseY);
@@ -156,5 +156,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             AbstractPipeGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }
+
     }
+
 }

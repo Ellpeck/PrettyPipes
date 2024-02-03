@@ -20,19 +20,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.EnergyStorage;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.common.util.LazyOptional;
 
 import javax.annotation.Nullable;
 
 public class PressurizerBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable {
 
-    private final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
-    private final LazyOptional<IEnergyStorage> lazyStorage = LazyOptional.of(() -> this.storage);
-    private final LazyOptional<IPipeConnectable> lazyThis = LazyOptional.of(() -> this);
+    public final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
     private int lastEnergy;
 
     public PressurizerBlockEntity(BlockPos pos, BlockState state) {
@@ -95,24 +89,6 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
     }
 
     @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-        if (cap == Capabilities.ENERGY) {
-            return this.lazyStorage.cast();
-        } else if (cap == Registry.pipeConnectableCapability) {
-            return this.lazyThis.cast();
-        } else {
-            return LazyOptional.empty();
-        }
-    }
-
-    @Override
-    public void setRemoved() {
-        super.setRemoved();
-        this.lazyStorage.invalidate();
-        this.lazyThis.invalidate();
-    }
-
-    @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
         return ConnectionType.CONNECTED;
     }
@@ -141,7 +117,7 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
         }
     }
 
-    private static class ModifiableEnergyStorage extends EnergyStorage {
+    public static class ModifiableEnergyStorage extends EnergyStorage {
 
         public ModifiableEnergyStorage(int capacity, int maxReceive, int maxExtract) {
             super(capacity, maxReceive, maxExtract);
@@ -157,5 +133,7 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
                 this.energy -= energyExtracted;
             return energyExtracted;
         }
+
     }
+
 }

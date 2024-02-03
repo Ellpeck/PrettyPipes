@@ -50,7 +50,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
             var ret = ItemStack.EMPTY;
             var optional = this.player.level().getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftInventory, this.player.level());
             if (optional.isPresent())
-                ret = optional.get().assemble(this.craftInventory, this.player.level().registryAccess());
+                ret = optional.get().value().assemble(this.craftInventory, this.player.level().registryAccess());
             this.craftResult.setItem(0, ret);
             ((ServerPlayer) this.player).connection.send(new ClientboundContainerSetSlotPacket(this.containerId, 0, 0, ret));
         }
@@ -79,4 +79,5 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     public CraftingTerminalBlockEntity getTile() {
         return (CraftingTerminalBlockEntity) this.tile;
     }
+
 }

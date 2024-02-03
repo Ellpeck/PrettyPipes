@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.pressurizer;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -21,8 +22,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.registries.ForgeRegistries;
-import net.neoforged.neoforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -56,7 +55,7 @@ public class PressurizerBlock extends BaseEntityBlock {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(ForgeRegistries.BLOCKS.getKey(this).getPath(), tooltip);
+        Utility.addTooltip(BuiltInRegistries.BLOCK.getKey(this).getPath(), tooltip);
     }
 
     @org.jetbrains.annotations.Nullable
@@ -77,4 +76,5 @@ public class PressurizerBlock extends BaseEntityBlock {
             return 0;
         return (int) (pipe.getEnergy() / (float) pipe.getMaxEnergy() * 15);
     }
+
 }

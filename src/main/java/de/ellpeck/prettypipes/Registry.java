@@ -51,7 +51,9 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
@@ -63,16 +65,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.neoforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.capabilities.CapabilityToken;
+import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.registries.ForgeRegistries;
 import net.neoforged.neoforge.registries.RegisterEvent;
-import net.neoforged.neoforge.common.capabilities.CapabilityManager;
 
 import java.util.Comparator;
 import java.util.Locale;
@@ -81,10 +80,10 @@ import java.util.function.BiFunction;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class Registry {
 
-    public static Capability<PipeNetwork> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
-    });
-    public static Capability<IPipeConnectable> pipeConnectableCapability = CapabilityManager.get(new CapabilityToken<>() {
-    });
+    // TODO use saved data for pipe networks
+    /*public static BlockCapability<PipeNetwork, Void> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
+    });*/
+    public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(new ResourceLocation(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
 
     public static Item wrenchItem;
     public static Item pipeFrameItem;
@@ -117,14 +116,14 @@ public final class Registry {
 
     @SubscribeEvent
     public static void register(RegisterEvent event) {
-        event.register(ForgeRegistries.Keys.BLOCKS, h -> {
+        event.register(Registries.BLOCK, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock());
             h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock());
             h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock());
             h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock());
         });
 
-        event.register(ForgeRegistries.Keys.ITEMS, h -> {
+        event.register(Registries.ITEM, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "wrench"), Registry.wrenchItem = new WrenchItem());
             h.register(new ResourceLocation(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties()));
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameItem = new PipeFrameItem());
@@ -149,22 +148,22 @@ public final class Registry {
                 h.register(new ResourceLocation(PrettyPipes.ID, name), new SortingModuleItem(name, type));
             }
 
-            ForgeRegistries.BLOCKS.getEntries().stream()
+            BuiltInRegistries.BLOCK.entrySet().stream()
                     .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
                     .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties())));
         });
 
-        event.register(ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, h -> {
+        event.register(Registries.BLOCK_ENTITY_TYPE, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = BlockEntityType.Builder.of(PipeBlockEntity::new, Registry.pipeBlock).build(null));
             h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock).build(null));
             h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock).build(null));
             h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = BlockEntityType.Builder.of(PressurizerBlockEntity::new, Registry.pressurizerBlock).build(null));
         });
 
-        event.register(ForgeRegistries.Keys.ENTITY_TYPES, h ->
+        event.register(Registries.ENTITY_TYPE, h ->
                 h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
 
-        event.register(ForgeRegistries.Keys.MENU_TYPES, h -> {
+        event.register(Registries.MENU, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IMenuTypeExtension.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
             h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new ItemTerminalContainer(Registry.itemTerminalContainer, windowId, inv.player, data.readBlockPos())));
             h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new CraftingTerminalContainer(Registry.craftingTerminalContainer, windowId, inv.player, data.readBlockPos())));
@@ -183,14 +182,14 @@ public final class Registry {
             h.register(new ResourceLocation(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
                     .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
                     .icon(() -> new ItemStack(Registry.wrenchItem))
-                    .displayItems((params, output) -> ForgeRegistries.ITEMS.getEntries().stream()
+                    .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
                             .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
                             .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
                             .forEach(b -> output.accept(b.getValue()))).build()
             );
         });
 
-        event.register(ForgeRegistries.Keys.RECIPE_SERIALIZERS, h -> {
+        event.register(Registries.RECIPE_SERIALIZER, h -> {
             h.register(new ResourceLocation(PrettyPipes.ID, "module_clearing"), ModuleClearingRecipe.SERIALIZER);
         });
     }

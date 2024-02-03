@@ -34,9 +34,8 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.common.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.network.NetworkHooks;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -204,10 +203,10 @@ public class PipeBlock extends BaseEntityBlock {
         var opposite = direction.getOpposite();
         var tile = world.getBlockEntity(offset);
         if (tile != null) {
-            var connectable = tile.getCapability(Registry.pipeConnectableCapability, opposite).orElse(null);
+            var connectable = world.getCapability(Registry.pipeConnectableCapability, pos, state, tile, opposite);
             if (connectable != null)
                 return connectable.getConnectionType(pos, direction);
-            var handler = tile.getCapability(Capabilities.ITEM_HANDLER, opposite).orElse(null);
+            var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, tile, opposite);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }
@@ -225,7 +224,7 @@ public class PipeBlock extends BaseEntityBlock {
     protected static boolean hasLegsTo(Level world, BlockState state, BlockPos pos, Direction direction) {
         if (state.getBlock() instanceof WallBlock || state.getBlock() instanceof FenceBlock)
             return direction == Direction.DOWN;
-        var mapColor = state.getMapColor(world,pos);
+        var mapColor = state.getMapColor(world, pos);
         if (mapColor == MapColor.STONE || mapColor == MapColor.METAL)
             return Block.canSupportCenter(world, pos, direction.getOpposite());
         return false;
@@ -271,9 +270,9 @@ public class PipeBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
+    public BlockState playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
         PipeBlock.dropItems(worldIn, pos, player);
-        super.playerWillDestroy(worldIn, pos, state, player);
+        return super.playerWillDestroy(worldIn, pos, state, player);
     }
 
     @Override
@@ -316,4 +315,5 @@ public class PipeBlock extends BaseEntityBlock {
                 tile.removeCover(player, InteractionHand.MAIN_HAND);
         }
     }
+
 }
