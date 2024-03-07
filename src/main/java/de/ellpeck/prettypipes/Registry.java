@@ -5,6 +5,7 @@ import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ModuleClearingRecipe;
+import de.ellpeck.prettypipes.packets.*;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
@@ -65,18 +66,23 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.Mod.EventBusSubscriber;
+import net.neoforged.fml.common.Mod.EventBusSubscriber.Bus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
 
     public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(new ResourceLocation(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
@@ -190,6 +196,27 @@ public final class Registry {
         });
     }
 
+    @SubscribeEvent
+    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pipeBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pressurizerBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.itemTerminalBlockEntity, (e, d) -> e);
+        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.craftingTerminalBlockEntity, (e, d) -> e);
+
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, Registry.pressurizerBlockEntity, (e, d) -> e.storage);
+    }
+
+    @SubscribeEvent
+    public static void registerPayloads(final RegisterPayloadHandlerEvent event) {
+        var registrar = event.registrar(PrettyPipes.ID);
+        registrar.play(PacketItemEnterPipe.ID, PacketItemEnterPipe::new, PacketItemEnterPipe::onMessage);
+        registrar.play(PacketButton.ID, PacketButton::new, PacketButton::onMessage);
+        registrar.play(PacketCraftingModuleTransfer.ID, PacketCraftingModuleTransfer::new, PacketCraftingModuleTransfer::onMessage);
+        registrar.play(PacketGhostSlot.ID, PacketGhostSlot::new, PacketGhostSlot::onMessage);
+        registrar.play(PacketNetworkItems.ID, PacketNetworkItems::new, PacketNetworkItems::onMessage);
+        registrar.play(PacketRequest.ID, PacketRequest::new, PacketRequest::onMessage);
+    }
+
     private static <T extends AbstractPipeContainer<?>> MenuType<T> registerPipeContainer(RegisterEvent.RegisterHelper<MenuType<?>> helper, String name) {
         var type = (MenuType<T>) IMenuTypeExtension.create((windowId, inv, data) -> {
             var tile = Utility.getBlockEntity(PipeBlockEntity.class, inv.player.level(), data.readBlockPos());
@@ -206,8 +233,10 @@ public final class Registry {
             helper.register(new ResourceLocation(PrettyPipes.ID, tier.name().toLowerCase(Locale.ROOT) + "_" + name), item.apply(name, tier));
     }
 
+    @EventBusSubscriber(bus = Bus.MOD, value = Dist.CLIENT)
     public static final class Client {
 
+        @SubscribeEvent
         public static void setup(FMLClientSetupEvent event) {
             BlockEntityRenderers.register(Registry.pipeBlockEntity, PipeRenderer::new);
             EntityRenderers.register(Registry.pipeFrameEntity, PipeFrameRenderer::new);

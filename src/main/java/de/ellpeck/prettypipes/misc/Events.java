@@ -1,17 +1,12 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.PrettyPipes;
-import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.packets.*;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,16 +15,6 @@ import java.nio.file.Paths;
 
 @Mod.EventBusSubscriber
 public final class Events {
-
-    @SubscribeEvent
-    public static void onWorldCaps(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pipeBlockEntity, (e, d) -> e);
-        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.pressurizerBlockEntity, (e, d) -> e);
-        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.itemTerminalBlockEntity, (e, d) -> e);
-        event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.craftingTerminalBlockEntity, (e, d) -> e);
-
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, Registry.pressurizerBlockEntity, (e, d) -> e.storage);
-    }
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
@@ -59,17 +44,6 @@ public final class Events {
                     source.sendSuccess(() -> Component.literal("Resolved all network locks in the world"), true);
                     return 0;
                 })));
-    }
-
-    @SubscribeEvent
-    public static void onPayloadRegister(final RegisterPayloadHandlerEvent event) {
-        var registrar = event.registrar(PrettyPipes.ID);
-        registrar.play(PacketItemEnterPipe.ID, PacketItemEnterPipe::new, PacketItemEnterPipe::onMessage);
-        registrar.play(PacketButton.ID, PacketButton::new, PacketButton::onMessage);
-        registrar.play(PacketCraftingModuleTransfer.ID, PacketCraftingModuleTransfer::new, PacketCraftingModuleTransfer::onMessage);
-        registrar.play(PacketGhostSlot.ID, PacketGhostSlot::new, PacketGhostSlot::onMessage);
-        registrar.play(PacketNetworkItems.ID, PacketNetworkItems::new, PacketNetworkItems::onMessage);
-        registrar.play(PacketRequest.ID, PacketRequest::new, PacketRequest::onMessage);
     }
 
 }
