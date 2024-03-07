@@ -79,9 +79,6 @@ import java.util.function.BiFunction;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class Registry {
 
-    // TODO use saved data for pipe networks
-    /*public static BlockCapability<PipeNetwork, Void> pipeNetworkCapability = CapabilityManager.get(new CapabilityToken<>() {
-    });*/
     public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(new ResourceLocation(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
 
     public static Item wrenchItem;
