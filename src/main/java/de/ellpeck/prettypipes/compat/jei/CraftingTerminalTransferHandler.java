@@ -2,7 +2,6 @@ package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.constants.VanillaTypes;
@@ -15,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         var ingredients = slots.getSlotViews(RecipeIngredientRole.INPUT);
         for (var entry : ingredients)
             stacks.add(new PacketGhostSlot.Entry(player.level(), entry.getIngredients(VanillaTypes.ITEM_STACK).collect(Collectors.toList())));
-        PacketHandler.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
+        PacketDistributor.SERVER.noArg().send(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
         return null;
     }
 

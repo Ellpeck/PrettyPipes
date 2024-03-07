@@ -5,7 +5,6 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.ItemTerminalWidget;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.packets.PacketButton;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketRequest;
 import joptsimple.internal.Strings;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,6 +22,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -91,7 +91,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 return;
             var stack = widget.get().stack.copy();
             stack.setCount(1);
-            PacketHandler.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
+            PacketDistributor.SERVER.noArg().send(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
         }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20).build());
         this.requestButton.active = false;
@@ -159,7 +159,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
         if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-                PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+                PacketDistributor.SERVER.noArg().send(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
                 return true;
             }
         }

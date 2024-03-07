@@ -9,7 +9,6 @@ import de.ellpeck.prettypipes.network.NetworkItem;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
@@ -22,6 +21,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -141,7 +141,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
                     continue;
                 if (container.tile != this)
                     continue;
-                PacketHandler.sendTo(player, new PacketNetworkItems(clientItems, clientCraftables, currentlyCrafting));
+                ((ServerPlayer) player).connection.send(new PacketNetworkItems(clientItems, clientCraftables, currentlyCrafting));
             }
         }
     }

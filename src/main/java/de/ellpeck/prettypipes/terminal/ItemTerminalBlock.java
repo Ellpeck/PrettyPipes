@@ -44,7 +44,7 @@ public class ItemTerminalBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
         if (!worldIn.isClientSide) {
-            NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
+            player.openMenu(tile, pos);
             tile.updateItems(player);
         }
         return InteractionResult.SUCCESS;

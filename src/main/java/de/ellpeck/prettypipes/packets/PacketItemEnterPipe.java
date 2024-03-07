@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.packets;
 
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
@@ -7,50 +8,48 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.neoforged.neoforge.network.NetworkEvent;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 
-import java.util.function.Supplier;
+public class PacketItemEnterPipe implements CustomPacketPayload {
 
-public class PacketItemEnterPipe {
+    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "item_enter_pipe");
 
-    private BlockPos tilePos;
-    private CompoundTag item;
+    private final BlockPos tilePos;
+    private final CompoundTag item;
 
     public PacketItemEnterPipe(BlockPos tilePos, IPipeItem item) {
         this.tilePos = tilePos;
         this.item = item.serializeNBT();
     }
 
-    private PacketItemEnterPipe() {
-
+    public PacketItemEnterPipe(FriendlyByteBuf buf) {
+        this.tilePos = buf.readBlockPos();
+        this.item = buf.readNbt();
     }
 
-    public static PacketItemEnterPipe fromBytes(FriendlyByteBuf buf) {
-        var client = new PacketItemEnterPipe();
-        client.tilePos = buf.readBlockPos();
-        client.item = buf.readNbt();
-        return client;
+    @Override
+    public void write(FriendlyByteBuf buf) {
+        buf.writeBlockPos(this.tilePos);
+        buf.writeNbt(this.item);
     }
 
-    public static void toBytes(PacketItemEnterPipe packet, FriendlyByteBuf buf) {
-        buf.writeBlockPos(packet.tilePos);
-        buf.writeNbt(packet.item);
+    @Override
+    public ResourceLocation id() {
+        return PacketItemEnterPipe.ID;
     }
 
-    @SuppressWarnings("Convert2Lambda")
-    public static void onMessage(PacketItemEnterPipe message, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(new Runnable() {
-            @Override
-            public void run() {
-                var mc = Minecraft.getInstance();
-                if (mc.level == null)
-                    return;
-                var item = IPipeItem.load(message.item);
-                var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
-                if (pipe != null)
-                    pipe.getItems().add(item);
-            }
+    public static void onMessage(PacketItemEnterPipe message, PlayPayloadContext ctx) {
+        ctx.workHandler().execute(() -> {
+            var mc = Minecraft.getInstance();
+            if (mc.level == null)
+                return;
+            var item = IPipeItem.load(message.item);
+            var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
+            if (pipe != null)
+                pipe.getItems().add(item);
         });
-        ctx.get().setPacketHandled(true);
     }
+
 }

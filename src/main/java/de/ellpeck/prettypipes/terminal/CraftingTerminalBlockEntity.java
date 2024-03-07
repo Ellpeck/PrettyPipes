@@ -8,7 +8,6 @@ import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.network.NetworkLocation;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.packets.PacketGhostSlot;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import net.minecraft.ChatFormatting;
@@ -24,6 +23,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import javax.annotation.Nullable;
@@ -98,7 +98,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
                 clients.add(new PacketGhostSlot.Entry(this.level, Collections.singletonList(this.ghostItems.getStackInSlot(i))));
-            PacketHandler.sendToAllLoaded(this.level, this.getBlockPos(), new PacketGhostSlot(this.getBlockPos(), clients));
+            PacketDistributor.TRACKING_CHUNK.with(this.level.getChunkAt(this.getBlockPos())).send(new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
 
@@ -244,4 +244,5 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         }
         return lowestAvailable;
     }
+
 }

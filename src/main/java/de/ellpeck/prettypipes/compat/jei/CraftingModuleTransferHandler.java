@@ -3,7 +3,6 @@ package de.ellpeck.prettypipes.compat.jei;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.packets.PacketCraftingModuleTransfer;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.constants.VanillaTypes;
@@ -17,6 +16,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -63,7 +63,7 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
             if (!remain.isEmpty())
                 toAdd.add(remain);
         }
-        PacketHandler.sendToServer(new PacketCraftingModuleTransfer(inputs, outputs));
+        PacketDistributor.SERVER.noArg().send(new PacketCraftingModuleTransfer(inputs, outputs));
         return null;
     }
 

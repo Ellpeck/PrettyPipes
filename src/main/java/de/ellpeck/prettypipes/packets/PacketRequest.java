@@ -1,61 +1,62 @@
 package de.ellpeck.prettypipes.packets;
 
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 
-import java.util.function.Supplier;
+public class PacketRequest implements CustomPacketPayload {
 
-public class PacketRequest {
+    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "request");
 
-    private BlockPos pos;
-    private ItemStack stack;
-    private int nbtHash;
-    private int amount;
+    private final BlockPos pos;
+    private final ItemStack stack;
+    private final int nbtHash;
+    private final int amount;
 
     public PacketRequest(BlockPos pos, ItemStack stack, int amount) {
         this.pos = pos;
         this.stack = stack;
-        if (stack.hasTag())
-            this.nbtHash = stack.getTag().hashCode();
+        this.nbtHash = stack.hasTag() ? stack.getTag().hashCode() : 0;
         this.amount = amount;
     }
 
-    private PacketRequest() {
-
+    public PacketRequest(FriendlyByteBuf buf) {
+        this.pos = buf.readBlockPos();
+        this.stack = buf.readItem();
+        this.nbtHash = buf.readVarInt();
+        this.amount = buf.readVarInt();
     }
 
-    public static PacketRequest fromBytes(FriendlyByteBuf buf) {
-        var packet = new PacketRequest();
-        packet.pos = buf.readBlockPos();
-        packet.stack = buf.readItem();
-        packet.nbtHash = buf.readVarInt();
-        packet.amount = buf.readVarInt();
-        return packet;
+    @Override
+    public void write(FriendlyByteBuf buf) {
+        buf.writeBlockPos(this.pos);
+        buf.writeItem(this.stack);
+        buf.writeVarInt(this.nbtHash);
+        buf.writeVarInt(this.amount);
     }
 
-    public static void toBytes(PacketRequest packet, FriendlyByteBuf buf) {
-        buf.writeBlockPos(packet.pos);
-        buf.writeItem(packet.stack);
-        buf.writeVarInt(packet.nbtHash);
-        buf.writeVarInt(packet.amount);
+    @Override
+    public ResourceLocation id() {
+        return PacketRequest.ID;
     }
 
     @SuppressWarnings("Convert2Lambda")
-    public static void onMessage(PacketRequest message, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(new Runnable() {
+    public static void onMessage(PacketRequest message, PlayPayloadContext ctx) {
+        ctx.workHandler().execute(new Runnable() {
             @Override
             public void run() {
-                Player player = ctx.get().getSender();
+                var player = ctx.player().orElseThrow();
                 var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), message.pos);
                 message.stack.setCount(message.amount);
                 tile.requestItem(player, message.stack, message.nbtHash);
             }
         });
-        ctx.get().setPacketHandled(true);
     }
+
 }

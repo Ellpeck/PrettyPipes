@@ -91,7 +91,7 @@ public class PipeBlock extends BaseEntityBlock {
             }
         } else if (handIn == InteractionHand.MAIN_HAND && stack.isEmpty()) {
             if (!worldIn.isClientSide)
-                NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
+                player.openMenu(tile, pos);
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;

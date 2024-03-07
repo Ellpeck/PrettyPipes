@@ -3,13 +3,13 @@ package de.ellpeck.prettypipes.terminal.containers;
 import com.mojang.blaze3d.platform.InputConstants;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
-import de.ellpeck.prettypipes.packets.PacketHandler;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
 
@@ -28,7 +28,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             var amount = ItemTerminalGui.requestModifier();
             // also allow holding backspace instead of alt for people whose alt key is inaccessible (linux?)
             var force = Screen.hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;
-            PacketHandler.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
+            PacketDistributor.SERVER.noArg().send(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
         }).bounds(this.leftPos + 8, this.topPos + 100, 50, 20).build());
         this.tick();
     }
@@ -46,7 +46,6 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             }
         }
     }
-
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -82,4 +81,5 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     protected CraftingTerminalContainer getCraftingContainer() {
         return (CraftingTerminalContainer) this.menu;
     }
+
 }

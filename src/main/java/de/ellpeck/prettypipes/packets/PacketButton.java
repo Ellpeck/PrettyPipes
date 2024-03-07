@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.packets;
 
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
@@ -14,23 +15,27 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 import org.apache.logging.log4j.util.TriConsumer;
 
 import javax.annotation.Nullable;
-import java.util.function.Supplier;
 
 import static de.ellpeck.prettypipes.misc.DirectionSelector.IDirectionContainer;
 
-public class PacketButton {
+public class PacketButton implements CustomPacketPayload {
 
-    private BlockPos pos;
-    private ButtonResult result;
-    private int[] data;
+    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "button");
+
+    private final BlockPos pos;
+    private final ButtonResult result;
+    private final int[] data;
 
     public PacketButton(BlockPos pos, ButtonResult result, int... data) {
         this.pos = pos;
@@ -38,38 +43,33 @@ public class PacketButton {
         this.data = data;
     }
 
-    private PacketButton() {
-
+    public PacketButton(FriendlyByteBuf buf) {
+        this.pos = buf.readBlockPos();
+        this.result = ButtonResult.values()[buf.readByte()];
+        this.data = buf.readVarIntArray();
     }
 
-    public static PacketButton fromBytes(FriendlyByteBuf buf) {
-        var packet = new PacketButton();
-        packet.pos = buf.readBlockPos();
-        packet.result = ButtonResult.values()[buf.readByte()];
-        packet.data = buf.readVarIntArray();
-        return packet;
+    @Override
+    public void write(FriendlyByteBuf buf) {
+        buf.writeBlockPos(this.pos);
+        buf.writeByte(this.result.ordinal());
+        buf.writeVarIntArray(this.data);
     }
 
-    public static void toBytes(PacketButton packet, FriendlyByteBuf buf) {
-        buf.writeBlockPos(packet.pos);
-        buf.writeByte(packet.result.ordinal());
-        buf.writeVarIntArray(packet.data);
+    @Override
+    public ResourceLocation id() {
+        return PacketButton.ID;
     }
 
-    @SuppressWarnings("Convert2Lambda")
-    public static void onMessage(PacketButton message, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(new Runnable() {
-            @Override
-            public void run() {
-                Player player = ctx.get().getSender();
-                message.result.action.accept(message.pos, message.data, player);
-            }
+    public static void onMessage(PacketButton message, PlayPayloadContext ctx) {
+        ctx.workHandler().execute(() -> {
+            var player = ctx.player().orElseThrow();
+            message.result.action.accept(message.pos, message.data, player);
         });
-        ctx.get().setPacketHandled(true);
     }
 
     public static void sendAndExecute(BlockPos pos, ButtonResult result, int... data) {
-        PacketHandler.sendToServer(new PacketButton(pos, result, data));
+        PacketDistributor.SERVER.noArg().send(new PacketButton(pos, result, data));
         result.action.accept(pos, data, Minecraft.getInstance().player);
     }
 
@@ -77,10 +77,10 @@ public class PacketButton {
         PIPE_TAB((pos, data, player) -> {
             var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level(), pos);
             if (data[0] < 0) {
-                NetworkHooks.openScreen((ServerPlayer) player, tile, pos);
+                player.openMenu(tile, pos);
             } else {
                 var stack = tile.modules.getStackInSlot(data[0]);
-                NetworkHooks.openScreen((ServerPlayer) player, new MenuProvider() {
+                player.openMenu(new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
                         return stack.getHoverName();
@@ -133,4 +133,5 @@ public class PacketButton {
             this.action = action;
         }
     }
+
 }
