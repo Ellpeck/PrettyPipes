@@ -206,10 +206,10 @@ public class PipeBlock extends BaseEntityBlock {
         var opposite = direction.getOpposite();
         var tile = world.getBlockEntity(offset);
         if (tile != null) {
-            var connectable = world.getCapability(Registry.pipeConnectableCapability, pos, state, tile, opposite);
+            var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, tile.getBlockState(), tile, opposite);
             if (connectable != null)
                 return connectable.getConnectionType(pos, direction);
-            var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, tile, opposite);
+            var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, tile.getBlockState(), tile, opposite);
             if (handler != null)
                 return ConnectionType.CONNECTED;
         }

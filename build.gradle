@@ -47,6 +47,12 @@ runs {
         systemProperty 'forge.logging.console.level', 'info'
 
         modSource project.sourceSets.main
+
+        dependencies {
+            runtime "org.jgrapht:jgrapht-core:${jgt_version}"
+            runtime "org.jheaps:jheaps:${jheaps_version}"
+            runtime "org.apfloat:apfloat:${apfloat_version}"
+        }
     }
 
     client {
@@ -88,15 +94,14 @@ dependencies {
 
     implementation "org.jgrapht:jgrapht-core:${jgt_version}"
     jarJar(group: "org.jgrapht", name: "jgrapht-core", version: "[${jgt_version}]")
-    // for some reason jgrapht dependencies aren't auto-included in the metadata and i can't figure out how to make that happen
     jarJar(group: "org.jheaps", name: "jheaps", version: "[${jheaps_version}]")
     jarJar(group: "org.apfloat", name: "apfloat", version: "[${apfloat_version}]")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-forge:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar

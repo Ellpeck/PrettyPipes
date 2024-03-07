@@ -266,7 +266,6 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         super.render(graphics, mouseX, mouseY, partialTicks);
         for (var widget : this.renderables) {
             if (widget instanceof ItemTerminalWidget terminal)

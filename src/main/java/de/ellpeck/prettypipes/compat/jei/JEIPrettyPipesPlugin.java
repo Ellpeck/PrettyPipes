@@ -84,17 +84,22 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @SubscribeEvent
-    public void onRenderGui(ScreenEvent.Render event) {
+    public void onRenderGuiPre(ScreenEvent.Render.Pre event) {
+        var screen = event.getScreen();
+        if (!(screen instanceof ItemTerminalGui))
+            return;
+        var sync = PlayerPrefs.get().syncJei;
+        this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
+    }
+
+    @SubscribeEvent
+    public void onRenderGuiPost(ScreenEvent.Render.Post event) {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
         var sync = PlayerPrefs.get().syncJei;
-        if (event instanceof ScreenEvent.Render.Post) {
-            if (this.jeiSyncButton.isHovered())
-                event.getGuiGraphics().renderTooltip(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
-        } else if (event instanceof ScreenEvent.Render.Pre) {
-            this.jeiSyncButton.setMessage(Component.literal((sync ? ChatFormatting.GREEN : ChatFormatting.RED) + "J"));
-        }
+        if (this.jeiSyncButton.isHovered())
+            event.getGuiGraphics().renderTooltip(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
     }
 
     @SubscribeEvent
@@ -122,4 +127,5 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             filter.setFilterText(terminalText);
         }
     }
+
 }

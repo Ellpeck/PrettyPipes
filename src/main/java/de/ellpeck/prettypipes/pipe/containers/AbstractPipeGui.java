@@ -54,15 +54,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         super.render(graphics, mouseX, mouseY, partialTicks);
-        for (var widget : this.renderables) {
-            // TODO render widget tooltips?
-           /* if (widget instanceof AbstractWidget abstractWidget) {
-                if (abstractWidget.isHoveredOrFocused())
-                    abstractWidget.renderToolTip(matrix, mouseX, mouseY);
-            }*/
-        }
         this.renderTooltip(graphics, mouseX, mouseY);
     }
 

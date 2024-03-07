@@ -39,6 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO it appears that this doesn't save properly yet :(
 public class PipeNetwork extends SavedData implements GraphListener<BlockPos, NetworkEdge> {
 
     private static final Factory<PipeNetwork> FACTORY = new Factory<>(PipeNetwork::new, PipeNetwork::new);
@@ -61,7 +62,16 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public PipeNetwork(CompoundTag nbt) {
         this();
-        this.load(nbt);
+        var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
+        for (var i = 0; i < nodes.size(); i++)
+            this.graph.addVertex(NbtUtils.readBlockPos(nodes.getCompound(i)));
+        var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
+        for (var i = 0; i < edges.size(); i++)
+            this.addEdge(new NetworkEdge(edges.getCompound(i)));
+        for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load))
+            this.pipeItems.put(item.getCurrentPipe(), item);
+        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), NetworkLock::new))
+            this.createNetworkLock(lock);
     }
 
     @Override
@@ -110,23 +120,6 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         nbt.put("items", Utility.serializeAll(this.pipeItems.values()));
         nbt.put("locks", Utility.serializeAll(this.networkLocks.values()));
         return nbt;
-    }
-
-    public void load(CompoundTag nbt) {
-        this.graph.removeAllVertices(new ArrayList<>(this.graph.vertexSet()));
-        this.pipeItems.clear();
-        this.networkLocks.clear();
-
-        var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
-        for (var i = 0; i < nodes.size(); i++)
-            this.graph.addVertex(NbtUtils.readBlockPos(nodes.getCompound(i)));
-        var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
-        for (var i = 0; i < edges.size(); i++)
-            this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load))
-            this.pipeItems.put(item.getCurrentPipe(), item);
-        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), NetworkLock::new))
-            this.createNetworkLock(lock);
     }
 
     public void addNode(BlockPos pos, BlockState state) {
