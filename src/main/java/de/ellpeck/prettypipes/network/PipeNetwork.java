@@ -39,7 +39,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// TODO it appears that this doesn't save properly yet :(
 public class PipeNetwork extends SavedData implements GraphListener<BlockPos, NetworkEdge> {
 
     private static final Factory<PipeNetwork> FACTORY = new Factory<>(PipeNetwork::new, PipeNetwork::new);
@@ -518,11 +517,13 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     }
 
     public void startProfile(String name) {
-        this.level.getProfiler().push(() -> PrettyPipes.ID + ":pipe_network_" + name);
+        if (this.level != null)
+            this.level.getProfiler().push(() -> PrettyPipes.ID + ":pipe_network_" + name);
     }
 
     public void endProfile() {
-        this.level.getProfiler().pop();
+        if (this.level != null)
+            this.level.getProfiler().pop();
     }
 
     public static PipeNetwork get(Level level) {

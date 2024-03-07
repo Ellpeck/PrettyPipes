@@ -33,9 +33,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.util.Lazy;
@@ -389,15 +386,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             }
             return p.getRight().getItemFilter(p.getLeft(), this);
         }).filter(Objects::nonNull).collect(Collectors.toList());
-    }
-
-    @Override
-    public void setRemoved() {
-        super.setRemoved();
-        this.getItems().clear();
-        var network = PipeNetwork.get(this.level);
-        for (var lock : this.craftIngredientRequests)
-            network.resolveNetworkLock(lock);
     }
 
     @Override

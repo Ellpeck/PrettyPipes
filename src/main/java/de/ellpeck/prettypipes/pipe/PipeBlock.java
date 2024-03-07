@@ -268,6 +268,11 @@ public class PipeBlock extends BaseEntityBlock {
             var network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
+            if (worldIn.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
+                pipe.getItems().clear();
+                for (var lock : pipe.craftIngredientRequests)
+                    network.resolveNetworkLock(lock);
+            }
             super.onRemove(state, worldIn, pos, newState, isMoving);
         }
     }
