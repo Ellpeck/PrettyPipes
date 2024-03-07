@@ -399,14 +399,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return new MainPipeContainer(Registry.pipeContainer, window, player, PipeBlockEntity.this.worldPosition);
     }
 
-    // TODO render bounding box?
-/*    @Override
-    @OnlyIn(Dist.CLIENT)
-    public AABB getRenderBoundingBox() {
-        // our render bounding box should always be the full block in case we're covered
-        return new AABB(this.worldPosition);
-    }*/
-
     @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
         var state = this.level.getBlockState(pipePos.relative(direction));

@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.util.Random;
@@ -41,5 +42,10 @@ public class PipeRenderer implements BlockEntityRenderer<PipeBlockEntity> {
         }
     }
 
-}
+    @Override
+    public AABB getRenderBoundingBox(PipeBlockEntity blockEntity) {
+        // our render bounding box should always be the full block in case we're covered
+        return new AABB(blockEntity.getBlockPos());
+    }
 
+}
