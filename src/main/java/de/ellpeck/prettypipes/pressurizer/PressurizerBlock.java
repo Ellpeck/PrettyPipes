@@ -1,11 +1,11 @@
 package de.ellpeck.prettypipes.pressurizer;
 
+import com.mojang.serialization.MapCodec;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -15,7 +15,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -28,8 +27,15 @@ import java.util.List;
 
 public class PressurizerBlock extends BaseEntityBlock {
 
-    public PressurizerBlock() {
-        super(BlockBehaviour.Properties.of().strength(3).sound(SoundType.STONE));
+    public static final MapCodec<PressurizerBlock> CODEC = BlockBehaviour.simpleCodec(PressurizerBlock::new);
+
+    public PressurizerBlock(Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return PressurizerBlock.CODEC;
     }
 
     @Override

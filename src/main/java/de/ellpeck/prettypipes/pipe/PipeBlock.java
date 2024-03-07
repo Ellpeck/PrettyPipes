@@ -1,13 +1,13 @@
 package de.ellpeck.prettypipes.pipe;
 
 import com.google.common.collect.ImmutableMap;
+import com.mojang.serialization.MapCodec;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -46,6 +47,8 @@ import java.util.function.Function;
 
 public class PipeBlock extends BaseEntityBlock {
 
+    public static final MapCodec<PipeBlock> CODEC = BlockBehaviour.simpleCodec(PipeBlock::new);
+
     public static final Map<Direction, EnumProperty<ConnectionType>> DIRECTIONS = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> SHAPE_CACHE = new HashMap<>();
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
@@ -64,8 +67,8 @@ public class PipeBlock extends BaseEntityBlock {
             PipeBlock.DIRECTIONS.put(dir, EnumProperty.create(dir.getName(), ConnectionType.class));
     }
 
-    public PipeBlock() {
-        super(Block.Properties.of().strength(2).sound(SoundType.STONE).noOcclusion());
+    public PipeBlock(Block.Properties properties) {
+        super(properties);
 
         var state = this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false);
         for (var prop : PipeBlock.DIRECTIONS.values())
@@ -292,6 +295,11 @@ public class PipeBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new PipeBlockEntity(pos, state);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return PipeBlock.CODEC;
     }
 
     @Override

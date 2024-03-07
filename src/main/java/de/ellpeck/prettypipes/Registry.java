@@ -62,7 +62,9 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -114,10 +116,10 @@ public final class Registry {
     @SubscribeEvent
     public static void register(RegisterEvent event) {
         event.register(Registries.BLOCK, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock());
-            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock());
-            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock());
-            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock());
+            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock(Properties.of().strength(2).sound(SoundType.STONE).noOcclusion()));
+            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
+            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
+            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock(Properties.of().strength(3).sound(SoundType.STONE)));
         });
 
         event.register(Registries.ITEM, h -> {
