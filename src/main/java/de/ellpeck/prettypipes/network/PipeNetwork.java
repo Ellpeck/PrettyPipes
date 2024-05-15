@@ -334,12 +334,11 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         }
         return total;
     }
-
     public List<NetworkLocation> getOrderedNetworkItems(BlockPos node) {
         if (!this.isNode(node))
             return Collections.emptyList();
         this.startProfile("get_network_items");
-        List<NetworkLocation> info = new ArrayList<>();
+        Map<IItemHandler, NetworkLocation> info = new LinkedHashMap<>();
         for (var dest : this.getOrderedNetworkNodes(node)) {
             if (!this.level.isLoaded(dest))
                 continue;
@@ -348,16 +347,13 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                 var handler = pipe.getItemHandler(dir);
                 if (handler == null || !pipe.canNetworkSee(dir, handler))
                     continue;
-                // check if this handler already exists (double-connected pipes, double chests etc.)
-                if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.level))))
-                    continue;
                 var location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.level))
                     info.add(location);
             }
         }
         this.endProfile();
-        return info;
+        return new ArrayList<>(info.values());
     }
 
     public void createNetworkLock(NetworkLock lock) {
