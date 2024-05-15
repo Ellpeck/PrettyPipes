@@ -349,7 +349,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                     continue;
                 var location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.level))
-                    info.add(location);
+                    info.putIfAbsent(handler, location);
             }
         }
         this.endProfile();
