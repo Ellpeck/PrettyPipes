@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgrapht.ListenableGraph;
@@ -339,7 +340,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         if (!this.isNode(node))
             return Collections.emptyList();
         this.startProfile("get_network_items");
-        List<NetworkLocation> info = new ArrayList<>();
+        var ret = new HashMap<IItemHandler, NetworkLocation>();
         for (var dest : this.getOrderedNetworkNodes(node)) {
             if (!this.level.isLoaded(dest))
                 continue;
@@ -349,15 +350,15 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                 if (handler == null || !pipe.canNetworkSee(dir, handler))
                     continue;
                 // check if this handler already exists (double-connected pipes, double chests etc.)
-                if (info.stream().anyMatch(l -> handler.equals(l.getItemHandler(this.level))))
+                if (ret.containsKey(handler))
                     continue;
                 var location = new NetworkLocation(dest, dir);
                 if (!location.isEmpty(this.level))
-                    info.add(location);
+                    ret.put(handler, location);
             }
         }
         this.endProfile();
-        return info;
+        return new ArrayList<>(ret.values());
     }
 
     public void createNetworkLock(NetworkLock lock) {
