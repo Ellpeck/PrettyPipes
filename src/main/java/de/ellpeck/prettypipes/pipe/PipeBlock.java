@@ -45,7 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class PipeBlock extends BaseEntityBlock {
+public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
     public static final MapCodec<PipeBlock> CODEC = BlockBehaviour.simpleCodec(PipeBlock::new);
 
