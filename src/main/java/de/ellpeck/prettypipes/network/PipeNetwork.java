@@ -340,7 +340,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         if (!this.isNode(node))
             return Collections.emptyList();
         this.startProfile("get_network_items");
-        var ret = new HashMap<IItemHandler, NetworkLocation>();
+        var ret = new LinkedHashMap<IItemHandler, NetworkLocation>();
         for (var dest : this.getOrderedNetworkNodes(node)) {
             if (!this.level.isLoaded(dest))
                 continue;
