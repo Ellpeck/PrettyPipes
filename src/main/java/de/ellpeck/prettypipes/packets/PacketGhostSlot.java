@@ -54,10 +54,12 @@ public class PacketGhostSlot implements CustomPacketPayload {
     }
 
     public static void onMessage(PacketGhostSlot message, PlayPayloadContext ctx) {
-        var player = ctx.player().orElseThrow();
-        var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), message.pos);
-        if (tile != null)
-            tile.setGhostItems(message.stacks);
+        ctx.workHandler().execute(() -> {
+            var player = ctx.player().orElseThrow();
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), message.pos);
+            if (tile != null)
+                tile.setGhostItems(message.stacks);
+        });
     }
 
     public static class Entry {
