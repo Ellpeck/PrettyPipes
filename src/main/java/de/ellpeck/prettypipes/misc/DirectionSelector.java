@@ -13,6 +13,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.gui.widget.ExtendedButton;
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.List;
+
 public class DirectionSelector {
 
     private static final Direction[] ALL = ArrayUtils.addAll(Direction.values(), (Direction) null);
@@ -33,7 +35,7 @@ public class DirectionSelector {
     @OnlyIn(Dist.CLIENT)
     public AbstractWidget getButton(int x, int y) {
         return new ExtendedButton(x, y, 100, 20, Component.translatable("info." + PrettyPipes.ID + ".populate"), button ->
-                PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.DIRECTION_SELECTOR)) {
+            PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.DIRECTION_SELECTOR, List.of())) {
             @Override
             public Component getMessage() {
                 var pipe = DirectionSelector.this.pipe;
@@ -92,9 +94,9 @@ public class DirectionSelector {
         if (this.pipe.getItemHandler(dir) == null)
             return false;
         return this.pipe.streamModules()
-                .filter(p -> p.getLeft() != this.stack)
-                .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
-                .noneMatch(p -> p != null && p.direction == dir);
+            .filter(p -> p.getLeft() != this.stack)
+            .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
+            .noneMatch(p -> p != null && p.direction == dir);
     }
 
     public interface IDirectionContainer {
@@ -102,4 +104,5 @@ public class DirectionSelector {
         DirectionSelector getSelector();
 
     }
+
 }

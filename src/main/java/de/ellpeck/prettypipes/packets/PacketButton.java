@@ -13,8 +13,10 @@ import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
@@ -22,64 +24,50 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.apache.logging.log4j.util.TriConsumer;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 import static de.ellpeck.prettypipes.misc.DirectionSelector.IDirectionContainer;
 
-public class PacketButton implements CustomPacketPayload {
+public record PacketButton(BlockPos pos, int result, List<Integer> data) implements CustomPacketPayload {
 
-    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "button");
+    public static final Type<PacketButton> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "button"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, PacketButton> CODEC = StreamCodec.composite(
+        BlockPos.STREAM_CODEC, PacketButton::pos,
+        ByteBufCodecs.INT, PacketButton::result,
+        ByteBufCodecs.collection(ArrayList::new, ByteBufCodecs.INT), PacketButton::data,
+        PacketButton::new);
 
-    private final BlockPos pos;
-    private final ButtonResult result;
-    private final int[] data;
-
-    public PacketButton(BlockPos pos, ButtonResult result, int... data) {
-        this.pos = pos;
-        this.result = result;
-        this.data = data;
-    }
-
-    public PacketButton(FriendlyByteBuf buf) {
-        this.pos = buf.readBlockPos();
-        this.result = ButtonResult.values()[buf.readByte()];
-        this.data = buf.readVarIntArray();
+    public PacketButton(BlockPos pos, ButtonResult result, List<Integer> data) {
+        this(pos, result.ordinal(), data);
     }
 
     @Override
-    public void write(FriendlyByteBuf buf) {
-        buf.writeBlockPos(this.pos);
-        buf.writeByte(this.result.ordinal());
-        buf.writeVarIntArray(this.data);
+    public Type<? extends CustomPacketPayload> type() {
+        return PacketButton.TYPE;
     }
 
-    @Override
-    public ResourceLocation id() {
-        return PacketButton.ID;
+    public static void onMessage(PacketButton message, IPayloadContext ctx) {
+        var player = ctx.player();
+        ButtonResult.values()[message.result].action.accept(message.pos, message.data, player);
     }
 
-    public static void onMessage(PacketButton message, PlayPayloadContext ctx) {
-        ctx.workHandler().execute(() -> {
-            var player = ctx.player().orElseThrow();
-            message.result.action.accept(message.pos, message.data, player);
-        });
-    }
-
-    public static void sendAndExecute(BlockPos pos, ButtonResult result, int... data) {
-        PacketDistributor.SERVER.noArg().send(new PacketButton(pos, result, data));
+    public static void sendAndExecute(BlockPos pos, ButtonResult result, List<Integer> data) {
+        PacketDistributor.sendToServer(new PacketButton(pos, result, data));
         result.action.accept(pos, data, Minecraft.getInstance().player);
     }
 
     public enum ButtonResult {
         PIPE_TAB((pos, data, player) -> {
             var tile = Utility.getBlockEntity(PipeBlockEntity.class, player.level(), pos);
-            if (data[0] < 0) {
+            if (data.getFirst() < 0) {
                 player.openMenu(tile, pos);
             } else {
-                var stack = tile.modules.getStackInSlot(data[0]);
+                var stack = tile.modules.getStackInSlot(data.getFirst());
                 player.openMenu(new MenuProvider() {
                     @Override
                     public Component getDisplayName() {
@@ -89,18 +77,18 @@ public class PacketButton implements CustomPacketPayload {
                     @Nullable
                     @Override
                     public AbstractContainerMenu createMenu(int windowId, Inventory inv, Player player) {
-                        return ((IModule) stack.getItem()).getContainer(stack, tile, windowId, inv, player, data[0]);
+                        return ((IModule) stack.getItem()).getContainer(stack, tile, windowId, inv, player, data.getFirst());
                     }
 
                 }, buf -> {
                     buf.writeBlockPos(pos);
-                    buf.writeInt(data[0]);
+                    buf.writeInt(data.getFirst());
                 });
             }
         }),
         FILTER_CHANGE((pos, data, player) -> {
             if (player.containerMenu instanceof IFilteredContainer filtered)
-                filtered.getFilter().onButtonPacket(filtered, data[0]);
+                filtered.getFilter().onButtonPacket(filtered, data.getFirst());
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
@@ -108,11 +96,11 @@ public class PacketButton implements CustomPacketPayload {
         }),
         STACK_SIZE_AMOUNT((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
-            StackSizeModuleItem.setMaxStackSize(container.moduleStack, data[0]);
+            StackSizeModuleItem.setMaxStackSize(container.moduleStack, data.getFirst());
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
             var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), pos);
-            tile.requestCraftingItems(player, data[0], data[1] > 0);
+            tile.requestCraftingItems(player, data.getFirst(), data.get(1) > 0);
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
             var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), pos);
@@ -120,16 +108,16 @@ public class PacketButton implements CustomPacketPayload {
         }),
         TAG_FILTER((pos, data, player) -> {
             var container = (FilterModifierModuleContainer) player.containerMenu;
-            FilterModifierModuleItem.setFilterTag(container.moduleStack, container.getTags().get(data[0]));
+            FilterModifierModuleItem.setFilterTag(container.moduleStack, container.getTags().get(data.getFirst()));
         }),
         DIRECTION_SELECTOR((pos, data, player) -> {
             if (player.containerMenu instanceof IDirectionContainer filtered)
                 filtered.getSelector().onButtonPacket();
         });
 
-        public final TriConsumer<BlockPos, int[], Player> action;
+        public final TriConsumer<BlockPos, List<Integer>, Player> action;
 
-        ButtonResult(TriConsumer<BlockPos, int[], Player> action) {
+        ButtonResult(TriConsumer<BlockPos, List<Integer>, Player> action) {
             this.action = action;
         }
     }

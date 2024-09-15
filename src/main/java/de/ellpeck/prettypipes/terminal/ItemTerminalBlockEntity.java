@@ -109,8 +109,8 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public String getInvalidTerminalReason() {
         var network = PipeNetwork.get(this.level);
         var pipes = Arrays.stream(Direction.values())
-                .map(d -> network.getPipe(this.worldPosition.relative(d)))
-                .filter(Objects::nonNull).count();
+            .map(d -> network.getPipe(this.worldPosition.relative(d)))
+            .filter(Objects::nonNull).count();
         if (pipes <= 0)
             return "info." + PrettyPipes.ID + ".no_pipe_connected";
         if (pipes > 1)
@@ -154,10 +154,10 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         if (nbtHash != 0) {
             var filter = stack;
             stack = this.networkItems.values().stream()
-                    .map(NetworkItem::asStack)
-                    // don't compare with nbt equality here or the whole hashing thing is pointless
-                    .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
-                    .findFirst().orElse(filter);
+                .map(NetworkItem::asStack)
+                // don't compare with nbt equality here or the whole hashing thing is pointless
+                .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
+                .findFirst().orElse(filter);
             stack.setCount(filter.getCount());
         }
         var requested = this.requestItemImpl(stack, ItemTerminalBlockEntity.onItemUnavailable(player, false));
@@ -232,7 +232,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public void saveAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
         super.saveAdditional(compound, pRegistries);
         compound.put("items", this.items.serializeNBT(pRegistries));
-        compound.put("requests", Utility.serializeAll(this.existingRequests));
+        compound.put("requests", Utility.serializeAll(pRegistries, this.existingRequests));
     }
 
     @Override

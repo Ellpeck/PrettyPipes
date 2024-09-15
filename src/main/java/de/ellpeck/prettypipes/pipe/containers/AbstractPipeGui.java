@@ -144,7 +144,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 return false;
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return false;
-            PacketDistributor.sendToServer(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, this.index));
+            PacketDistributor.sendToServer(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, List.of(this.index)));
             AbstractPipeGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }

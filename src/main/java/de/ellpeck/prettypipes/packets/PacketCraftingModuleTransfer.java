@@ -2,63 +2,40 @@ package de.ellpeck.prettypipes.packets;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PacketCraftingModuleTransfer implements CustomPacketPayload {
+public record PacketCraftingModuleTransfer(List<ItemStack> inputs, List<ItemStack> outputs) implements CustomPacketPayload {
 
-    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "crafting_module_transfer");
-
-    private final List<ItemStack> inputs;
-    private final List<ItemStack> outputs;
-
-    public PacketCraftingModuleTransfer(List<ItemStack> inputs, List<ItemStack> outputs) {
-        this.inputs = inputs;
-        this.outputs = outputs;
-    }
-
-    public PacketCraftingModuleTransfer(FriendlyByteBuf buf) {
-        this.inputs = new ArrayList<>();
-        for (var i = buf.readInt(); i > 0; i--)
-            this.inputs.add(buf.readItem());
-        this.outputs = new ArrayList<>();
-        for (var i = buf.readInt(); i > 0; i--)
-            this.outputs.add(buf.readItem());
-    }
+    public static final Type<PacketCraftingModuleTransfer> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_module_transfer"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, PacketCraftingModuleTransfer> CODEC = StreamCodec.composite(
+        ByteBufCodecs.collection(ArrayList::new, ItemStack.STREAM_CODEC), PacketCraftingModuleTransfer::inputs,
+        ByteBufCodecs.collection(ArrayList::new, ItemStack.STREAM_CODEC), PacketCraftingModuleTransfer::outputs,
+        PacketCraftingModuleTransfer::new);
 
     @Override
-    public void write(FriendlyByteBuf buf) {
-        buf.writeInt(this.inputs.size());
-        for (var stack : this.inputs)
-            buf.writeItem(stack);
-        buf.writeInt(this.outputs.size());
-        for (var stack : this.outputs)
-            buf.writeItem(stack);
+    public Type<? extends CustomPacketPayload> type() {
+        return PacketCraftingModuleTransfer.TYPE;
     }
 
-    @Override
-    public ResourceLocation id() {
-        return PacketCraftingModuleTransfer.ID;
-    }
-
-    public static void onMessage(PacketCraftingModuleTransfer message, PlayPayloadContext ctx) {
-        ctx.workHandler().execute(() -> {
-            var player = ctx.player().orElseThrow();
-            if (player.containerMenu instanceof CraftingModuleContainer container) {
-                PacketCraftingModuleTransfer.copy(container.input, message.inputs);
-                PacketCraftingModuleTransfer.copy(container.output, message.outputs);
-                container.modified = true;
-                container.broadcastChanges();
-            }
-        });
+    public static void onMessage(PacketCraftingModuleTransfer message, IPayloadContext ctx) {
+        var player = ctx.player();
+        if (player.containerMenu instanceof CraftingModuleContainer container) {
+            PacketCraftingModuleTransfer.copy(container.input, message.inputs);
+            PacketCraftingModuleTransfer.copy(container.output, message.outputs);
+            container.modified = true;
+            container.broadcastChanges();
+        }
     }
 
     private static void copy(ItemStackHandler container, List<ItemStack> contents) {

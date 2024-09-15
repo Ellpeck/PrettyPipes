@@ -97,7 +97,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         super.saveAdditional(compound, provider);
         compound.put("modules", this.modules.serializeNBT(provider));
         compound.putInt("module_drop_check", this.moduleDropCheck);
-        compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
+        compound.put("requests", Utility.serializeAll(provider, this.craftIngredientRequests));
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
         var results = new ListTag();
@@ -122,8 +122,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         for (var i = 0; i < results.size(); i++) {
             var nbt = results.getCompound(i);
             this.craftResultRequests.add(Pair.of(
-                    BlockPos.of(nbt.getLong("dest_pipe")),
-                    ItemStack.parseOptional(provider, nbt.getCompound("item"))));
+                BlockPos.of(nbt.getLong("dest_pipe")),
+                ItemStack.parseOptional(provider, nbt.getCompound("item"))));
         }
         super.loadAdditional(compound, provider);
     }
@@ -132,7 +132,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
         var nbt = this.saveWithoutMetadata(provider);
-        nbt.put("items", Utility.serializeAll(this.getItems()));
+        nbt.put("items", Utility.serializeAll(provider, this.getItems()));
         return nbt;
     }
 
@@ -280,8 +280,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     public List<ItemStack> getAllCraftables() {
         return this.streamModules()
-                .flatMap(m -> m.getRight().getAllCraftables(m.getLeft(), this).stream())
-                .collect(Collectors.toList());
+            .flatMap(m -> m.getRight().getAllCraftables(m.getLeft(), this).stream())
+            .collect(Collectors.toList());
     }
 
     public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
@@ -374,8 +374,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     public int getNextNode(List<BlockPos> nodes, int index) {
         return this.streamModules()
-                .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
-                .filter(m -> m != null && m >= 0).findFirst().orElse(index);
+            .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
+            .filter(m -> m != null && m >= 0).findFirst().orElse(index);
     }
 
     public List<ItemFilter> getFilters(Direction direction) {

@@ -7,49 +7,34 @@ import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public class PacketItemEnterPipe implements CustomPacketPayload {
+public record PacketItemEnterPipe(BlockPos tilePos, CompoundTag item) implements CustomPacketPayload {
 
-    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "item_enter_pipe");
-
-    private final BlockPos tilePos;
-    private final CompoundTag item;
-
-    public PacketItemEnterPipe(BlockPos tilePos, IPipeItem item) {
-        this.tilePos = tilePos;
-        this.item = item.serializeNBT();
-    }
-
-    public PacketItemEnterPipe(FriendlyByteBuf buf) {
-        this.tilePos = buf.readBlockPos();
-        this.item = buf.readNbt();
-    }
-    
-    @Override
-    public void write(FriendlyByteBuf buf) {
-        buf.writeBlockPos(this.tilePos);
-        buf.writeNbt(this.item);
-    }
+    public static final Type<PacketItemEnterPipe> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_enter_pipe"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, PacketItemEnterPipe> CODEC = StreamCodec.composite(
+        BlockPos.STREAM_CODEC, PacketItemEnterPipe::tilePos,
+        ByteBufCodecs.COMPOUND_TAG, PacketItemEnterPipe::item,
+        PacketItemEnterPipe::new);
 
     @Override
-    public ResourceLocation id() {
-        return PacketItemEnterPipe.ID;
+    public Type<? extends CustomPacketPayload> type() {
+        return PacketItemEnterPipe.TYPE;
     }
 
-    public static void onMessage(PacketItemEnterPipe message, PlayPayloadContext ctx) {
-        ctx.workHandler().execute(() -> {
-            var mc = Minecraft.getInstance();
-            if (mc.level == null)
-                return;
-            var item = IPipeItem.load(message.item);
-            var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
-            if (pipe != null)
-                pipe.getItems().add(item);
-        });
+    public static void onMessage(PacketItemEnterPipe message, IPayloadContext ctx) {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null)
+            return;
+        var item = IPipeItem.load(message.item);
+        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
+        if (pipe != null)
+            pipe.getItems().add(item);
     }
 
 }

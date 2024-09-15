@@ -13,6 +13,7 @@ import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -78,8 +79,8 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                     var network = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
                     if (network != null) {
                         amount = network.getLocations().stream()
-                                .mapToInt(l -> l.getItemAmount(this.level, stack, ItemEquality.NBT))
-                                .sum();
+                            .mapToInt(l -> l.getItemAmount(this.level, stack, ItemEquality.NBT))
+                            .sum();
                     }
                     // check craftables
                     if (amount <= 0 && highestAmount <= 0) {
@@ -99,7 +100,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         if (!this.level.isClientSide) {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
-                clients.add(new PacketGhostSlot.Entry(this.level, Collections.singletonList(this.ghostItems.getStackInSlot(i))));
+                clients.add(PacketGhostSlot.Entry.fromStacks(this.level, List.of(this.ghostItems.getStackInSlot(i))));
             PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(this.getBlockPos()), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
@@ -139,15 +140,15 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("craft_items", this.craftItems.serializeNBT());
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
+        compound.put("craft_items", this.craftItems.serializeNBT(provider));
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.craftItems.deserializeNBT(compound.getCompound("craft_items"));
-        super.load(compound);
+    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        this.craftItems.deserializeNBT(provider, compound.getCompound("craft_items"));
+        super.loadAdditional(compound, provider);
     }
 
     @Override

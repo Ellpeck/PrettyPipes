@@ -10,7 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -54,13 +54,13 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = Block.box(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
-            .put(Direction.UP, Block.box(5, 10, 5, 11, 16, 11))
-            .put(Direction.DOWN, Block.box(5, 0, 5, 11, 6, 11))
-            .put(Direction.NORTH, Block.box(5, 5, 0, 11, 11, 6))
-            .put(Direction.SOUTH, Block.box(5, 5, 10, 11, 11, 16))
-            .put(Direction.EAST, Block.box(10, 5, 5, 16, 11, 11))
-            .put(Direction.WEST, Block.box(0, 5, 5, 6, 11, 11))
-            .build();
+        .put(Direction.UP, Block.box(5, 10, 5, 11, 16, 11))
+        .put(Direction.DOWN, Block.box(5, 0, 5, 11, 6, 11))
+        .put(Direction.NORTH, Block.box(5, 5, 0, 11, 11, 6))
+        .put(Direction.SOUTH, Block.box(5, 5, 10, 11, 11, 16))
+        .put(Direction.EAST, Block.box(10, 5, 5, 16, 11, 11))
+        .put(Direction.WEST, Block.box(0, 5, 5, 6, 11, 11))
+        .build();
 
     static {
         for (var dir : Direction.values())
@@ -77,12 +77,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
+    public ItemInteractionResult useItemOn(ItemStack pStack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
         var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile == null)
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (!tile.canHaveModules())
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         var stack = player.getItemInHand(handIn);
         if (stack.getItem() instanceof IModule) {
             var copy = stack.copy();
@@ -90,14 +90,14 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             var remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
             if (remain.isEmpty()) {
                 stack.shrink(1);
-                return InteractionResult.SUCCESS;
+                return ItemInteractionResult.SUCCESS;
             }
         } else if (handIn == InteractionHand.MAIN_HAND && stack.isEmpty()) {
             if (!worldIn.isClientSide)
                 player.openMenu(tile, pos);
-            return InteractionResult.SUCCESS;
+            return ItemInteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

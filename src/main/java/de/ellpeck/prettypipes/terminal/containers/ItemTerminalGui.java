@@ -161,7 +161,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
         if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of()));
                 return true;
             }
         }

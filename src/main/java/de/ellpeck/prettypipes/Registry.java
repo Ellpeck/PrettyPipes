@@ -47,7 +47,6 @@ import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
-import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.core.Direction;
@@ -153,8 +152,8 @@ public final class Registry {
             }
 
             BuiltInRegistries.BLOCK.entrySet().stream()
-                    .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
-                    .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties())));
+                .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
+                .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties())));
         });
 
         event.register(Registries.BLOCK_ENTITY_TYPE, h -> {
@@ -165,7 +164,7 @@ public final class Registry {
         });
 
         event.register(Registries.ENTITY_TYPE, h ->
-                h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
 
         event.register(Registries.MENU, h -> {
             h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IMenuTypeExtension.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
@@ -184,12 +183,12 @@ public final class Registry {
 
         event.register(BuiltInRegistries.CREATIVE_MODE_TAB.key(), h -> {
             h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
-                    .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
-                    .icon(() -> new ItemStack(Registry.wrenchItem))
-                    .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
-                            .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
-                            .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
-                            .forEach(b -> output.accept(b.getValue()))).build()
+                .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
+                .icon(() -> new ItemStack(Registry.wrenchItem))
+                .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
+                    .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
+                    .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
+                    .forEach(b -> output.accept(b.getValue()))).build()
             );
         });
 
@@ -211,12 +210,12 @@ public final class Registry {
     @SubscribeEvent
     public static void registerPayloads(final RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(PrettyPipes.ID);
-        registrar.play(PacketItemEnterPipe.ID, PacketItemEnterPipe::new, PacketItemEnterPipe::onMessage);
-        registrar.play(PacketButton.ID, PacketButton::new, PacketButton::onMessage);
-        registrar.play(PacketCraftingModuleTransfer.ID, PacketCraftingModuleTransfer::new, PacketCraftingModuleTransfer::onMessage);
-        registrar.play(PacketGhostSlot.ID, PacketGhostSlot::new, PacketGhostSlot::onMessage);
-        registrar.play(PacketNetworkItems.ID, PacketNetworkItems::new, PacketNetworkItems::onMessage);
-        registrar.play(PacketRequest.ID, PacketRequest::new, PacketRequest::onMessage);
+        registrar.playBidirectional(PacketItemEnterPipe.TYPE, PacketItemEnterPipe.CODEC, PacketItemEnterPipe::onMessage);
+        registrar.playBidirectional(PacketButton.TYPE, PacketButton.CODEC, PacketButton::onMessage);
+        registrar.playBidirectional(PacketCraftingModuleTransfer.TYPE, PacketCraftingModuleTransfer.CODEC, PacketCraftingModuleTransfer::onMessage);
+        registrar.playBidirectional(PacketGhostSlot.TYPE, PacketGhostSlot.CODEC, PacketGhostSlot::onMessage);
+        registrar.playBidirectional(PacketNetworkItems.TYPE, PacketNetworkItems.CODEC, PacketNetworkItems::onMessage);
+        registrar.playBidirectional(PacketRequest.TYPE, PacketRequest.CODEC, PacketRequest::onMessage);
     }
 
     private static <T extends AbstractPipeContainer<?>> MenuType<T> registerPipeContainer(RegisterEvent.RegisterHelper<MenuType<?>> helper, String name) {
