@@ -1,6 +1,9 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.PrettyPipes;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
@@ -10,8 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -24,18 +26,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ItemFilter extends ItemStackHandler {
+public class ItemFilter {
+
+    public final ItemStackHandler content;
+
+    public boolean isWhitelist;
+    public boolean canPopulateFromInventories;
+    public boolean canModifyWhitelist = true;
 
     private final ItemStack stack;
     private final PipeBlockEntity pipe;
-    public boolean isWhitelist;
 
-    public boolean canPopulateFromInventories;
-    public boolean canModifyWhitelist = true;
     private boolean modified;
 
     public ItemFilter(int size, ItemStack stack, PipeBlockEntity pipe) {
-        super(size);
+        this.content = new ItemStackHandler(size) {
+            @Override
+            protected void onContentsChanged(int slot) {
+                ItemFilter.this.modified = true;
+            }
+        };
         this.stack = stack;
         this.pipe = pipe;
         this.load();
@@ -43,8 +53,8 @@ public class ItemFilter extends ItemStackHandler {
 
     public List<Slot> getSlots(int x, int y) {
         List<Slot> slots = new ArrayList<>();
-        for (var i = 0; i < this.getSlots(); i++)
-            slots.add(new FilterSlot(this, i, x + i % 9 * 18, y + i / 9 * 18, true));
+        for (var i = 0; i < this.content.getSlots(); i++)
+            slots.add(new FilterSlot(this.content, i, x + i % 9 * 18, y + i / 9 * 18, true));
         return slots;
     }
 
@@ -85,7 +95,7 @@ public class ItemFilter extends ItemStackHandler {
                     copy.setCount(1);
                     // try inserting into ourselves and any filter increase modifiers
                     for (var filter : filters) {
-                        if (ItemHandlerHelper.insertItem(filter, copy, false).isEmpty()) {
+                        if (ItemHandlerHelper.insertItem(filter.content, copy, false).isEmpty()) {
                             changed = true;
                             filter.save();
                             break;
@@ -105,9 +115,9 @@ public class ItemFilter extends ItemStackHandler {
     private boolean isFiltered(ItemStack stack, Direction direction) {
         var types = ItemFilter.getEqualityTypes(this.pipe);
         // also check if any filter increase modules have the item we need
-        for (ItemStackHandler handler : this.pipe.getFilters(direction)) {
-            for (var i = 0; i < handler.getSlots(); i++) {
-                var filter = handler.getStackInSlot(i);
+        for (ItemFilter handler : this.pipe.getFilters(direction)) {
+            for (var i = 0; i < handler.content.getSlots(); i++) {
+                var filter = handler.content.getStackInSlot(i);
                 if (filter.isEmpty())
                     continue;
                 if (ItemEquality.compareItems(stack, filter, types))
@@ -119,35 +129,20 @@ public class ItemFilter extends ItemStackHandler {
 
     public void save() {
         if (this.modified) {
-            this.stack.getOrCreateTag().put("filter", this.serializeNBT());
+            this.stack.set(Data.TYPE, new Data(this.content, this.isWhitelist));
             this.pipe.setChanged();
             this.modified = false;
         }
     }
 
     public void load() {
-        if (this.stack.hasTag())
-            this.deserializeNBT(this.stack.getTag().getCompound("filter"));
-    }
-
-    @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var nbt = super.serializeNBT(provider);
-        if (this.canModifyWhitelist)
-            nbt.putBoolean("whitelist", this.isWhitelist);
-        return nbt;
-    }
-
-    @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        super.deserializeNBT(provider, nbt);
-        if (this.canModifyWhitelist)
-            this.isWhitelist = nbt.getBoolean("whitelist");
-    }
-
-    @Override
-    protected void onContentsChanged(int slot) {
-        this.modified = true;
+        var content = this.stack.get(Data.TYPE);
+        if (content != null) {
+            this.content.setSize(content.items.getSlots());
+            for (var i = 0; i < this.content.getSlots(); i++)
+                this.content.setStackInSlot(i, content.items.getStackInSlot(i));
+            this.isWhitelist = content.whitelist;
+        }
     }
 
     public static ItemEquality[] getEqualityTypes(PipeBlockEntity pipe) {
@@ -163,6 +158,16 @@ public class ItemFilter extends ItemStackHandler {
 
         default void onFilterPopulated() {
         }
+
+    }
+
+    public record Data(ItemStackHandler items, boolean whitelist) {
+
+        public static final Codec<Data> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("items").forGetter(f -> f.items),
+            Codec.BOOL.fieldOf("whitelist").forGetter(f -> f.whitelist)
+        ).apply(i, Data::new));
+        public static final DataComponentType<Data> TYPE = DataComponentType.<Data>builder().persistent(Data.CODEC).cacheEncoding().build();
 
     }
 

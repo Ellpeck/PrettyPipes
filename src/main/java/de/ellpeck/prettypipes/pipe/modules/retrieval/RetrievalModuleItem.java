@@ -25,7 +25,7 @@ public class RetrievalModuleItem extends ModuleItem {
     public final int filterSlots;
 
     public RetrievalModuleItem(String name, ModuleTier tier) {
-        super(name);
+        super(name, new Properties());
         this.maxExtraction = tier.forTier(1, 8, 16);
         this.speed = tier.forTier(40, 20, 10);
         this.filterSlots = tier.forTier(3, 6, 9);
@@ -41,8 +41,8 @@ public class RetrievalModuleItem extends ModuleItem {
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         // loop through filters to see which items to pull
         Arrays.stream(directions).flatMap(d -> tile.getFilters(d).stream()).distinct().forEach(f -> {
-            for (var i = 0; i < f.getSlots(); i++) {
-                var filtered = f.getStackInSlot(i);
+            for (var i = 0; i < f.content.getSlots(); i++) {
+                var filtered = f.content.getStackInSlot(i);
                 if (filtered.isEmpty())
                     continue;
                 var copy = filtered.copy();

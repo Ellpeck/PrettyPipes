@@ -1,11 +1,13 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -66,18 +68,13 @@ public class DirectionSelector {
         if (!this.modified)
             return;
         this.modified = false;
-
-        var tag = new CompoundTag();
-        if (this.direction != null)
-            tag.putString("direction", this.direction.getName());
-        this.stack.getOrCreateTag().put("direction_selector", tag);
+        this.stack.set(Data.TYPE, new Data(this.direction.getName()));
     }
 
     public void load() {
-        if (this.stack.hasTag()) {
-            var tag = this.stack.getTag().getCompound("direction_selector");
-            this.direction = Direction.byName(tag.getString("direction"));
-        }
+        var data = this.stack.get(Data.TYPE);
+        if (data != null)
+            this.direction = Direction.byName(data.direction);
     }
 
     public Direction[] directions() {
@@ -102,6 +99,15 @@ public class DirectionSelector {
     public interface IDirectionContainer {
 
         DirectionSelector getSelector();
+
+    }
+
+    public record Data(String direction) {
+
+        public static final Codec<DirectionSelector.Data> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Codec.STRING.fieldOf("direction").forGetter(f -> f.direction)
+        ).apply(i, DirectionSelector.Data::new));
+        public static final DataComponentType<DirectionSelector.Data> TYPE = DataComponentType.<DirectionSelector.Data>builder().persistent(DirectionSelector.Data.CODEC).cacheEncoding().build();
 
     }
 

@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 public class FilterIncreaseModuleItem extends ModuleItem {
 
     public FilterIncreaseModuleItem() {
-        super("filter_increase_modifier");
+        super("filter_increase_modifier", new Properties());
     }
 
     @Override

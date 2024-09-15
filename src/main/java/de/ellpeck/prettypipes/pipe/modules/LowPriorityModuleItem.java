@@ -11,7 +11,7 @@ public class LowPriorityModuleItem extends ModuleItem {
     private final int priority;
 
     public LowPriorityModuleItem(String name, ModuleTier tier) {
-        super(name);
+        super(name, new Properties());
         this.priority = tier.forTier(-50, -100, -200);
     }
 

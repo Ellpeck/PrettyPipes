@@ -275,8 +275,8 @@ public class PipeItem implements IPipeItem {
         this.z = nbt.getFloat("z");
         this.path.clear();
         var list = nbt.getList("path", Tag.TAG_COMPOUND);
-        for (var i = 0; i < list.size(); i++)
-            this.path.add(NbtUtils.readBlockPos(list.getCompound(i)));
+        for (var tag : list)
+            this.path.add(Utility.readBlockPos(tag));
     }
 
     @Override
@@ -288,9 +288,9 @@ public class PipeItem implements IPipeItem {
     @OnlyIn(Dist.CLIENT)
     public void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source) {
         matrixStack.translate(
-                Mth.lerp(partialTicks, this.lastX, this.x),
-                Mth.lerp(partialTicks, this.lastY, this.y),
-                Mth.lerp(partialTicks, this.lastZ, this.z));
+            Mth.lerp(partialTicks, this.lastX, this.x),
+            Mth.lerp(partialTicks, this.lastY, this.y),
+            Mth.lerp(partialTicks, this.lastZ, this.z));
 
         if (this.stack.getItem() instanceof BlockItem) {
             var scale = 0.7F;
@@ -309,9 +309,9 @@ public class PipeItem implements IPipeItem {
             matrixStack.pushPose();
             if (amount > 1) {
                 matrixStack.translate(
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
             }
             Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemDisplayContext.GROUND, light, overlay, matrixStack, source, tile.getLevel(), 0);
             matrixStack.popPose();

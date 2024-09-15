@@ -9,7 +9,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -154,6 +156,15 @@ public final class Utility {
         if (inventory == null)
             return null;
         return new SidedInvWrapper(inventory, direction);
+    }
+
+    public static BlockPos readBlockPos(Tag tag) {
+        if (tag instanceof IntArrayTag i) {
+            int[] arr = i.getAsIntArray();
+            if (arr.length == 3)
+                return new BlockPos(arr[0], arr[1], arr[2]);
+        }
+        return null;
     }
 
     public interface IMergeItemStack {

@@ -35,7 +35,8 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
             }
 
         });
-        textField.setValue(String.valueOf(StackSizeModuleItem.getMaxStackSizeForModule(this.menu.moduleStack)));
+        var data = this.menu.moduleStack.getOrDefault(StackSizeModuleItem.Data.TYPE, StackSizeModuleItem.Data.DEFAULT);
+        textField.setValue(String.valueOf(data.maxStackSize()));
         textField.setMaxLength(4);
         textField.setResponder(s -> {
             if (s.isEmpty())
@@ -43,7 +44,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
             var amount = Integer.parseInt(s);
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, List.of(amount));
         });
-        Supplier<Component> buttonText = () -> Component.translatable("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
+        Supplier<Component> buttonText = () -> Component.translatable("info." + PrettyPipes.ID + ".limit_to_max_" + (data.limitToMaxStackSize() ? "on" : "off"));
         this.addRenderableWidget(Button.builder(buttonText.get(), b -> {
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON, List.of());
             b.setMessage(buttonText.get());

@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 public class RedstoneModuleItem extends ModuleItem {
 
     public RedstoneModuleItem() {
-        super("redstone_module");
+        super("redstone_module", new Properties());
     }
 
     @Override
@@ -25,4 +25,5 @@ public class RedstoneModuleItem extends ModuleItem {
     public boolean hasContainer(ItemStack module, PipeBlockEntity tile) {
         return false;
     }
+
 }

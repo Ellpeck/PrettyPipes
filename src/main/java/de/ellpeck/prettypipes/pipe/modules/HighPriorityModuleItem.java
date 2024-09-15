@@ -11,7 +11,7 @@ public class HighPriorityModuleItem extends ModuleItem {
     private final int priority;
 
     public HighPriorityModuleItem(String name, ModuleTier tier) {
-        super(name);
+        super(name, new Properties());
         this.priority = tier.forTier(50, 100, 200);
     }
 

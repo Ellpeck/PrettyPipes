@@ -92,11 +92,13 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
-            StackSizeModuleItem.setLimitToMaxStackSize(container.moduleStack, !StackSizeModuleItem.getLimitToMaxStackSize(container.moduleStack));
+            var moduleData = container.moduleStack.getOrDefault(StackSizeModuleItem.Data.TYPE, StackSizeModuleItem.Data.DEFAULT);
+            container.moduleStack.set(StackSizeModuleItem.Data.TYPE, new StackSizeModuleItem.Data(moduleData.maxStackSize(), !moduleData.limitToMaxStackSize()));
         }),
         STACK_SIZE_AMOUNT((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
-            StackSizeModuleItem.setMaxStackSize(container.moduleStack, data.getFirst());
+            var moduleData = container.moduleStack.getOrDefault(StackSizeModuleItem.Data.TYPE, StackSizeModuleItem.Data.DEFAULT);
+            container.moduleStack.set(StackSizeModuleItem.Data.TYPE, new StackSizeModuleItem.Data(data.getFirst(), moduleData.limitToMaxStackSize()));
         }),
         CRAFT_TERMINAL_REQUEST((pos, data, player) -> {
             var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), pos);

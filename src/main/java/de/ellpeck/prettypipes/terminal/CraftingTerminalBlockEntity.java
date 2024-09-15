@@ -113,7 +113,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
+        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> this.getRequestedCraftItem(i).copyWithCount(1), this::isGhostItem, s -> {
             var item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
         }, ItemTerminalBlockEntity.onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
@@ -173,7 +173,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 for (var i = 0; i < tile.craftItems.getSlots(); i++) {
                     var stack = tile.getRequestedCraftItem(i);
                     var count = tile.isGhostItem(i) ? 0 : stack.getCount();
-                    if (!ItemHandlerHelper.canItemStacksStack(stack, remain))
+                    if (!ItemStack.isSameItemSameComponents(stack, remain))
                         continue;
                     // ensure that a single non-stackable item can still enter a ghost slot
                     if (!stack.isStackable() && count >= 1)

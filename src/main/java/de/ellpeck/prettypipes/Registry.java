@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
+import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ModuleClearingRecipe;
@@ -199,7 +200,11 @@ public final class Registry {
 
         event.register(Registries.DATA_COMPONENT_TYPE, h -> {
             h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_module_contents"), CraftingModuleItem.Contents.TYPE);
-            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_filter_contents"), ItemFilter.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_filter_data"), ItemFilter.Data.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "stack_size_module_data"), StackSizeModuleItem.Data.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "direction_selector_data"), DirectionSelector.Data.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "filter_modifier_data"), FilterModifierModuleItem.Data.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "sorting_module_data"), SortingModuleItem.Data.TYPE);
         });
     }
 

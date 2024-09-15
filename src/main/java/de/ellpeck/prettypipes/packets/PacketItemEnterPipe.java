@@ -31,7 +31,7 @@ public record PacketItemEnterPipe(BlockPos tilePos, CompoundTag item) implements
         var mc = Minecraft.getInstance();
         if (mc.level == null)
             return;
-        var item = IPipeItem.load(message.item);
+        var item = IPipeItem.load(mc.level.registryAccess(), message.item);
         var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
         if (pipe != null)
             pipe.getItems().add(item);

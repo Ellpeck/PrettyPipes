@@ -147,16 +147,16 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         }
     }
 
-    public void requestItem(Player player, ItemStack stack, int nbtHash) {
+    public void requestItem(Player player, ItemStack stack, int componentsHash) {
         var network = PipeNetwork.get(this.level);
         network.startProfile("terminal_request_item");
         this.updateItems();
-        if (nbtHash != 0) {
+        if (componentsHash != 0) {
             var filter = stack;
             stack = this.networkItems.values().stream()
                 .map(NetworkItem::asStack)
-                // don't compare with nbt equality here or the whole hashing thing is pointless
-                .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
+                // don't compare with nbt equality here or the data hashing thing is pointless
+                .filter(s -> ItemEquality.compareItems(s, filter) && !s.isComponentsPatchEmpty() && s.getComponents().hashCode() == componentsHash)
                 .findFirst().orElse(filter);
             stack.setCount(filter.getCount());
         }

@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import de.ellpeck.prettypipes.Utility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -45,8 +46,8 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         this.pipes.clear();
         var list = nbt.getList("pipes", Tag.TAG_COMPOUND);
-        for (var i = 0; i < list.size(); i++)
-            this.pipes.add(NbtUtils.readBlockPos(list.getCompound(i)));
+        for (var tag : list)
+            this.pipes.add(Utility.readBlockPos(tag));
     }
 
 }

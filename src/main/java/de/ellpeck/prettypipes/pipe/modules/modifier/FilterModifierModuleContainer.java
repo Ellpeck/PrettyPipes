@@ -21,8 +21,8 @@ public class FilterModifierModuleContainer extends AbstractPipeContainer<FilterM
     public List<ResourceLocation> getTags() {
         Set<ResourceLocation> unsortedTags = new HashSet<>();
         for (var filter : this.tile.getFilters(null)) {
-            for (var i = 0; i < filter.getSlots(); i++) {
-                var stack = filter.getStackInSlot(i);
+            for (var i = 0; i < filter.content.getSlots(); i++) {
+                var stack = filter.content.getStackInSlot(i);
                 stack.getTags().forEach(t -> unsortedTags.add(t.location()));
             }
         }
