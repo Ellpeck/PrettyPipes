@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import de.ellpeck.prettypipes.entities.PipeFrameRenderer;
 import de.ellpeck.prettypipes.items.*;
 import de.ellpeck.prettypipes.misc.ItemEquality;
+import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.misc.ModuleClearingRecipe;
 import de.ellpeck.prettypipes.packets.*;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
@@ -81,7 +82,7 @@ import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
-import static net.neoforged.fml.common.EventBusSubscriber.*;
+import static net.neoforged.fml.common.EventBusSubscriber.Bus;
 
 @EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
@@ -194,6 +195,11 @@ public final class Registry {
 
         event.register(Registries.RECIPE_SERIALIZER, h -> {
             h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "module_clearing"), ModuleClearingRecipe.SERIALIZER);
+        });
+
+        event.register(Registries.DATA_COMPONENT_TYPE, h -> {
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_module_contents"), CraftingModuleItem.Contents.TYPE);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_filter_contents"), ItemFilter.TYPE);
         });
     }
 

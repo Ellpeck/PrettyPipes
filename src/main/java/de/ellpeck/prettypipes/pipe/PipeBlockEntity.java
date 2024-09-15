@@ -141,7 +141,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         this.loadWithComponents(nbt, provider);
         var items = this.getItems();
         items.clear();
-        items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load));
+        items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), d -> IPipeItem.load(provider, d)));
     }
 
     @Override

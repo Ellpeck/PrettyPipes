@@ -1,5 +1,7 @@
 package de.ellpeck.prettypipes;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
@@ -23,6 +25,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -30,9 +33,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 @SuppressWarnings("ALL")
 public final class Utility {
+
+    public static final Codec<ItemStackHandler> ITEM_STACK_HANDLER_CODEC = RecordCodecBuilder.create(builder -> builder.group(
+        Codec.INT.fieldOf("size").forGetter(h -> h.getSlots()),
+        Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(h -> IntStream.range(0, h.getSlots()).mapToObj(h::getStackInSlot).toList())
+    ).apply(builder, (size, items) -> {
+        var ret = new ItemStackHandler(size);
+        for (var i = 0; i < items.size(); i++)
+            ret.setStackInSlot(i, items.get(i));
+        return ret;
+    }));
 
     public static <T extends BlockEntity> T getBlockEntity(Class<T> type, BlockGetter world, BlockPos pos) {
         var tile = world.getBlockEntity(pos);

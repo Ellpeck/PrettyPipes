@@ -1,6 +1,9 @@
 package de.ellpeck.prettypipes.pipe.modules.craft;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
@@ -14,6 +17,7 @@ import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -29,14 +33,10 @@ import java.util.function.Consumer;
 
 public class CraftingModuleItem extends ModuleItem {
 
-    public final int inputSlots;
-    public final int outputSlots;
     private final int speed;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
-        super(name);
-        this.inputSlots = tier.forTier(1, 4, 9);
-        this.outputSlots = tier.forTier(1, 2, 4);
+        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)))));
         this.speed = tier.forTier(20, 10, 5);
     }
 
@@ -127,7 +127,7 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public List<ItemStack> getAllCraftables(ItemStack module, PipeBlockEntity tile) {
         List<ItemStack> ret = new ArrayList<>();
-        var output = this.getOutput(module);
+        var output = module.get(Contents.TYPE).output;
         for (var i = 0; i < output.getSlots(); i++) {
             var stack = output.getStackInSlot(i);
             if (!stack.isEmpty())
@@ -141,15 +141,14 @@ public class CraftingModuleItem extends ModuleItem {
         var network = PipeNetwork.get(tile.getLevel());
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
-        var input = this.getInput(module);
+        var content = module.get(Contents.TYPE);
 
         var craftable = 0;
-        var output = this.getOutput(module);
-        for (var i = 0; i < output.getSlots(); i++) {
-            var out = output.getStackInSlot(i);
+        for (var i = 0; i < content.output.getSlots(); i++) {
+            var out = content.output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, content.input.getSlots(), content.input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
@@ -174,7 +173,7 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
-        var input = this.getInput(module);
+        var input = module.get(Contents.TYPE).input;
         for (var i = 0; i < input.getSlots(); i++) {
             var in = input.getStackInSlot(i);
             if (in.isEmpty())
@@ -195,30 +194,8 @@ public class CraftingModuleItem extends ModuleItem {
         return remain;
     }
 
-    public ItemStackHandler getInput(ItemStack module) {
-        var handler = new ItemStackHandler(this.inputSlots);
-        if (module.hasTag())
-            handler.deserializeNBT(module.getTag().getCompound("input"));
-        return handler;
-    }
-
-    public ItemStackHandler getOutput(ItemStack module) {
-        var handler = new ItemStackHandler(this.outputSlots);
-        if (module.hasTag())
-            handler.deserializeNBT(module.getTag().getCompound("output"));
-        return handler;
-    }
-
-    public void save(ItemStackHandler input, ItemStackHandler output, ItemStack module) {
-        var tag = module.getOrCreateTag();
-        if (input != null)
-            tag.put("input", input.serializeNBT());
-        if (output != null)
-            tag.put("output", output.serializeNBT());
-    }
-
     private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
-        var output = this.getOutput(module);
+        var output = module.get(Contents.TYPE).output;
         var resultAmount = 0;
         for (var i = 0; i < output.getSlots(); i++) {
             var out = output.getStackInSlot(i);
@@ -233,4 +210,15 @@ public class CraftingModuleItem extends ModuleItem {
         deps.push(module);
         return deps;
     }
+
+    public record Contents(ItemStackHandler input, ItemStackHandler output) {
+
+        public static final Codec<Contents> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("input").forGetter(d -> d.input),
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output)
+        ).apply(i, Contents::new));
+        public static final DataComponentType<Contents> TYPE = DataComponentType.<Contents>builder().persistent(Contents.CODEC).cacheEncoding().build();
+
+    }
+
 }

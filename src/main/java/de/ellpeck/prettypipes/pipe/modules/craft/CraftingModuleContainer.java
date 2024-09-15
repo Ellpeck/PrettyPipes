@@ -19,9 +19,10 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
 
     @Override
     protected void addSlots() {
-        this.input = this.module.getInput(this.moduleStack);
+        var contents = this.moduleStack.get(CraftingModuleItem.Contents.TYPE);
+        this.input = contents.input();
         for (var i = 0; i < this.input.getSlots(); i++) {
-            this.addSlot(new FilterSlot(this.input, i, (176 - this.module.inputSlots * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
+            this.addSlot(new FilterSlot(this.input, i, (176 - this.input.getSlots() * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
                 @Override
                 public void setChanged() {
                     super.setChanged();
@@ -31,9 +32,9 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
             });
         }
 
-        this.output = this.module.getOutput(this.moduleStack);
+        this.output = contents.output();
         for (var i = 0; i < this.output.getSlots(); i++) {
-            this.addSlot(new FilterSlot(this.output, i, (176 - this.module.outputSlots * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
+            this.addSlot(new FilterSlot(this.output, i, (176 - this.output.getSlots() * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
                 @Override
                 public void setChanged() {
                     super.setChanged();
@@ -47,6 +48,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     public void removed(Player playerIn) {
         super.removed(playerIn);
         if (this.modified)
-            this.module.save(this.input, this.output, this.moduleStack);
+            this.moduleStack.set(CraftingModuleItem.Contents.TYPE, new CraftingModuleItem.Contents(this.input, this.output));
     }
+
 }

@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 public class ItemEquality {
 
     public static final ItemEquality DAMAGE = new ItemEquality((stack, filter) -> stack.getDamageValue() == filter.getDamageValue(), false, Type.DAMAGE);
-    public static final ItemEquality NBT = new ItemEquality((stack, filter) -> Objects.equals(stack.getTag(), filter.getTag()) && stack.areAttachmentsCompatible(filter), false, Type.NBT);
+    public static final ItemEquality NBT = new ItemEquality((stack, filter) -> Objects.equals(stack.getComponents(), filter.getComponents()), false, Type.NBT);
     public static final ItemEquality MOD = new ItemEquality((stack, filter) -> stack.getItem().getCreatorModId(stack).equals(filter.getItem().getCreatorModId(filter)), true, Type.MOD);
 
     public final Type type;
