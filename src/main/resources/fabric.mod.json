@@ -1,9 +1,0 @@
-{
-    "schemaVersion": 1,
-    "id": "prettypipes",
-    "version": "0.0.0",
-    "contributors": ["SoniEx2"],
-    "depends": {
-        "forge": "*"
-    }
-}
