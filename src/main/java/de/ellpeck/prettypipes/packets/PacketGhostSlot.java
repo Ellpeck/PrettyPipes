@@ -21,6 +21,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements CustomPacketPayload {
@@ -43,28 +44,27 @@ public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements Custo
             tile.setGhostItems(message.stacks);
     }
 
-    public record Entry(List<ItemStack> stacks, TagKey<Item> tag) {
+    public record Entry(Optional<List<ItemStack>> stacks, Optional<TagKey<Item>> tag) {
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Entry> CODEC = StreamCodec.composite(
-            ItemStack.OPTIONAL_LIST_STREAM_CODEC, Entry::stacks,
-            ByteBufCodecs.fromCodec(TagKey.codec(Registries.ITEM)), Entry::tag,
+            ByteBufCodecs.optional(ItemStack.OPTIONAL_LIST_STREAM_CODEC), Entry::stacks,
+            ByteBufCodecs.optional(ByteBufCodecs.fromCodec(TagKey.codec(Registries.ITEM))), Entry::tag,
             Entry::new);
 
         public static Entry fromStacks(Level level, List<ItemStack> stacks) {
             var tag = Entry.getTagForStacks(level, stacks);
             if (tag != null) {
-                return new Entry(null, tag);
+                return new Entry(Optional.empty(), Optional.of(tag));
             } else {
-                return new Entry(stacks, null);
+                return new Entry(Optional.of(stacks), Optional.empty());
             }
         }
 
         public List<ItemStack> getStacks(Level level) {
-            if (this.stacks != null)
-                return this.stacks;
-            return Streams.stream(level.registryAccess().registry(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag).iterator())
-                .filter(h -> h.value() != null & h.value() != Items.AIR)
-                .map(h -> new ItemStack(h.value())).collect(Collectors.toList());
+            return this.stacks.orElseGet(() ->
+                Streams.stream(level.registryAccess().registry(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag.orElseThrow()).iterator())
+                    .filter(h -> h.value() != null & h.value() != Items.AIR)
+                    .map(h -> new ItemStack(h.value())).collect(Collectors.toList()));
         }
 
         private static TagKey<Item> getTagForStacks(Level level, List<ItemStack> stacks) {

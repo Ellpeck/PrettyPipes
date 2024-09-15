@@ -9,7 +9,10 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.Level;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -28,7 +31,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     @Override
     protected void addOwnSlots(Player player) {
-        this.craftInventory = new WrappedCraftingInventory(this.getTile().craftItems, this, 3, 3);
+        this.craftInventory = new WrappedCraftingInventory(this.getTile().craftItems, this);
         this.craftResult = new ResultContainer() {
             @Override
             public void setChanged() {
@@ -46,14 +49,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     @Override
     public void slotsChanged(Container inventoryIn) {
         super.slotsChanged(inventoryIn);
-        if (!this.player.level().isClientSide) {
-            var ret = ItemStack.EMPTY;
-            var optional = this.player.level().getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, this.craftInventory.asCraftInput(), this.player.level());
-            if (optional.isPresent())
-                ret = optional.get().value().assemble(this.craftInventory.asCraftInput(), this.player.level().registryAccess());
-            this.craftResult.setItem(0, ret);
-            ((ServerPlayer) this.player).connection.send(new ClientboundContainerSetSlotPacket(this.containerId, 0, 0, ret));
-        }
+        CraftingTerminalContainer.slotChangedCraftingGrid(this, this.player.level(), this.player, this.craftInventory, this.craftResult, null);
     }
 
     @Override
@@ -78,6 +74,30 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     public CraftingTerminalBlockEntity getTile() {
         return (CraftingTerminalBlockEntity) this.tile;
+    }
+
+    // copied from CraftingMenu
+    protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftSlots, ResultContainer resultSlots, @Nullable RecipeHolder<CraftingRecipe> recipe) {
+        if (!level.isClientSide) {
+            var craftinginput = craftSlots.asCraftInput();
+            var serverplayer = (ServerPlayer) player;
+            var itemstack = ItemStack.EMPTY;
+            var optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftinginput, level, recipe);
+            if (optional.isPresent()) {
+                var recipeholder = optional.get();
+                var craftingrecipe = recipeholder.value();
+                if (resultSlots.setRecipeUsed(level, serverplayer, recipeholder)) {
+                    var itemstack1 = craftingrecipe.assemble(craftinginput, level.registryAccess());
+                    if (itemstack1.isItemEnabled(level.enabledFeatures())) {
+                        itemstack = itemstack1;
+                    }
+                }
+            }
+
+            resultSlots.setItem(0, itemstack);
+            menu.setRemoteSlot(0, itemstack);
+            serverplayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 0, itemstack));
+        }
     }
 
 }

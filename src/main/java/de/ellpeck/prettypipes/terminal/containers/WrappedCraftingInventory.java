@@ -1,17 +1,20 @@
 package de.ellpeck.prettypipes.terminal.containers;
 
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.StackedContents;
-import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class WrappedCraftingInventory extends TransientCraftingContainer {
+import java.util.List;
+import java.util.stream.IntStream;
+
+public class WrappedCraftingInventory implements CraftingContainer {
 
     private final ItemStackHandler items;
     private final CraftingTerminalContainer eventHandler;
 
-    public WrappedCraftingInventory(ItemStackHandler items, CraftingTerminalContainer eventHandlerIn, int width, int height) {
-        super(eventHandlerIn, width, height);
+    public WrappedCraftingInventory(ItemStackHandler items, CraftingTerminalContainer eventHandlerIn) {
         this.eventHandler = eventHandlerIn;
         this.items = items;
     }
@@ -47,8 +50,7 @@ public class WrappedCraftingInventory extends TransientCraftingContainer {
         var slotStack = this.items.getStackInSlot(index);
         var ret = !slotStack.isEmpty() && count > 0 ? slotStack.split(count) : ItemStack.EMPTY;
         if (!ret.isEmpty()) {
-            for (var player : this.eventHandler.getTile().getLookingPlayers())
-                player.containerMenu.slotsChanged(this);
+            this.eventHandler.slotsChanged(this);
         }
         return ret;
     }
@@ -56,8 +58,17 @@ public class WrappedCraftingInventory extends TransientCraftingContainer {
     @Override
     public void setItem(int index, ItemStack stack) {
         this.items.setStackInSlot(index, stack);
-        for (var player : this.eventHandler.getTile().getLookingPlayers())
-            player.containerMenu.slotsChanged(this);
+        this.eventHandler.slotsChanged(this);
+    }
+
+    @Override
+    public void setChanged() {
+        this.eventHandler.slotsChanged(this);
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return true;
     }
 
     @Override
@@ -71,4 +82,20 @@ public class WrappedCraftingInventory extends TransientCraftingContainer {
         for (var i = 0; i < this.items.getSlots(); i++)
             helper.accountStack(this.items.getStackInSlot(i));
     }
+
+    @Override
+    public int getWidth() {
+        return 3;
+    }
+
+    @Override
+    public int getHeight() {
+        return 3;
+    }
+
+    @Override
+    public List<ItemStack> getItems() {
+        return IntStream.range(0, this.getContainerSize()).mapToObj(this::getItem).toList();
+    }
+
 }

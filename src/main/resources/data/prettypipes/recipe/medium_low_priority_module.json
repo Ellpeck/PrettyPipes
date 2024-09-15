@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " C ",
+        "CMC",
+        " C "
+    ],
+    "key": {
+        "C": {
+            "tag": "c:cobblestones"
+        },
+        "M": {
+            "item": "prettypipes:low_low_priority_module"
+        }
+    },
+    "result": {
+        "id": "prettypipes:medium_low_priority_module"
+    }
+}
