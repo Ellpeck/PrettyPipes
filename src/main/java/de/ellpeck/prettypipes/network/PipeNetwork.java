@@ -12,12 +12,14 @@ import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -60,17 +62,17 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         this.dijkstra = new DijkstraShortestPath<>(this.graph);
     }
 
-    public PipeNetwork(CompoundTag nbt) {
+    public PipeNetwork(CompoundTag nbt, HolderLookup.Provider provider) {
         this();
         var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
         for (var i = 0; i < nodes.size(); i++)
             this.graph.addVertex(NbtUtils.readBlockPos(nodes.getCompound(i)));
         var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
         for (var i = 0; i < edges.size(); i++)
-            this.addEdge(new NetworkEdge(edges.getCompound(i)));
+            this.addEdge(new NetworkEdge(provider, edges.getCompound(i)));
         for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load))
             this.pipeItems.put(item.getCurrentPipe(), item);
-        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), NetworkLock::new))
+        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), t -> new NetworkLock(provider, t)))
             this.createNetworkLock(lock);
     }
 
@@ -108,14 +110,14 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider provider) {
         var nodes = new ListTag();
         for (var node : this.graph.vertexSet())
             nodes.add(NbtUtils.writeBlockPos(node));
         nbt.put("nodes", nodes);
         var edges = new ListTag();
         for (var edge : this.graph.edgeSet())
-            edges.add(edge.serializeNBT());
+            edges.add(edge.serializeNBT(provider));
         nbt.put("edges", edges);
         nbt.put("items", Utility.serializeAll(this.pipeItems.values()));
         nbt.put("locks", Utility.serializeAll(this.networkLocks.values()));
@@ -199,7 +201,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         var item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
         startPipe.addNewItem(item);
-        PacketDistributor.TRACKING_CHUNK.with(this.level.getChunkAt(startPipePos)).send(new PacketItemEnterPipe(startPipePos, item));
+        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(startPipePos), new PacketItemEnterPipe(startPipePos, item));
         return true;
     }
 

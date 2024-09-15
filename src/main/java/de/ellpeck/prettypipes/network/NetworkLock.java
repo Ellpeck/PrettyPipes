@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.util.INBTSerializable;
@@ -20,24 +21,24 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
         this.stack = stack;
     }
 
-    public NetworkLock(CompoundTag nbt) {
-        this.deserializeNBT(nbt);
+    public NetworkLock(HolderLookup.Provider provider, CompoundTag nbt) {
+        this.deserializeNBT(provider, nbt);
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
         var nbt = new CompoundTag();
         nbt.putUUID("id", this.lockId);
-        nbt.put("location", this.location.serializeNBT());
-        nbt.put("stack", this.stack.save(new CompoundTag()));
+        nbt.put("location", this.location.serializeNBT(provider));
+        nbt.put("stack", this.stack.save(provider));
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         this.lockId = nbt.getUUID("id");
-        this.location = new NetworkLocation(nbt.getCompound("location"));
-        this.stack = ItemStack.of(nbt.getCompound("stack"));
+        this.location = new NetworkLocation(provider, nbt.getCompound("location"));
+        this.stack = ItemStack.parseOptional(provider, nbt.getCompound("stack"));
     }
 
     @Override
@@ -56,4 +57,5 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
     public String toString() {
         return "NetworkLock{" + "location=" + this.location.pipePos + ", stack=" + this.stack + '}';
     }
+
 }

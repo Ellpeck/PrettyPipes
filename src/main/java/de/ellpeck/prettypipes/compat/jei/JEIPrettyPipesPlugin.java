@@ -16,10 +16,10 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
-import net.neoforged.bus.api.SubscribeEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +38,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
 
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(PrettyPipes.ID, "jei_plugin");
+        return ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "jei_plugin");
     }
 
     @Override
@@ -103,7 +103,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    public void onClientTick(ClientTickEvent event) {
         if (!PlayerPrefs.get().syncJei)
             return;
 

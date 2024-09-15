@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
@@ -30,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
+@SuppressWarnings("ALL")
 public final class Utility {
 
     public static <T extends BlockEntity> T getBlockEntity(Class<T> type, BlockGetter world, BlockPos pos) {
@@ -104,10 +106,10 @@ public final class Utility {
         return ItemStack.EMPTY;
     }
 
-    public static ListTag serializeAll(Collection<? extends INBTSerializable<CompoundTag>> items) {
+    public static ListTag serializeAll(HolderLookup.Provider provider, Collection<? extends INBTSerializable<CompoundTag>> items) {
         var list = new ListTag();
         for (INBTSerializable<CompoundTag> item : items)
-            list.add(item.serializeNBT());
+            list.add(item.serializeNBT(provider));
         return list;
     }
 
@@ -143,5 +145,7 @@ public final class Utility {
     public interface IMergeItemStack {
 
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);
+
     }
+
 }

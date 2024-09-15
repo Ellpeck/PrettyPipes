@@ -17,6 +17,7 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -228,18 +229,18 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("items", this.items.serializeNBT());
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
+        super.saveAdditional(compound, pRegistries);
+        compound.put("items", this.items.serializeNBT(pRegistries));
         compound.put("requests", Utility.serializeAll(this.existingRequests));
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.items.deserializeNBT(compound.getCompound("items"));
+    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
+        this.items.deserializeNBT(pRegistries, compound.getCompound("items"));
         this.existingRequests.clear();
-        this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), NetworkLock::new));
-        super.load(compound);
+        this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), l -> new NetworkLock(pRegistries, l)));
+        super.loadAdditional(compound, pRegistries);
     }
 
     @Override

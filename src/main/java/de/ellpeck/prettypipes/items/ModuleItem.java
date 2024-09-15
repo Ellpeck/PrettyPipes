@@ -13,12 +13,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
@@ -35,9 +33,9 @@ public abstract class ModuleItem extends Item implements IModule {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        super.appendHoverText(stack, worldIn, tooltip, flagIn);
-        Utility.addTooltip(this.name, tooltip);
+    public void appendHoverText(ItemStack pStack, TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
+        super.appendHoverText(pStack, pContext, pTooltipComponents, pTooltipFlag);
+        Utility.addTooltip(this.name, pTooltipComponents);
     }
 
     @Override
@@ -109,4 +107,5 @@ public abstract class ModuleItem extends Item implements IModule {
     public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return null;
     }
+
 }

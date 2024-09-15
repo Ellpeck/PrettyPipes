@@ -16,10 +16,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -98,7 +100,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
                 clients.add(new PacketGhostSlot.Entry(this.level, Collections.singletonList(this.ghostItems.getStackInSlot(i))));
-            PacketDistributor.TRACKING_CHUNK.with(this.level.getChunkAt(this.getBlockPos())).send(new PacketGhostSlot(this.getBlockPos(), clients));
+            PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(this.getBlockPos()), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
 

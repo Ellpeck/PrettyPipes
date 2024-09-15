@@ -7,12 +7,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -23,7 +22,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 public class ItemTerminalBlock extends BaseEntityBlock {
@@ -40,19 +38,19 @@ public class ItemTerminalBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
-        var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, worldIn, pos);
+    protected InteractionResult useWithoutItem(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, BlockHitResult pHitResult) {
+        var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, pLevel, pPos);
         if (tile == null)
             return InteractionResult.PASS;
         var reason = tile.getInvalidTerminalReason();
         if (reason != null) {
-            if (!worldIn.isClientSide)
-                player.sendSystemMessage(Component.translatable(reason).withStyle(ChatFormatting.RED));
+            if (!pLevel.isClientSide)
+                pPlayer.sendSystemMessage(Component.translatable(reason).withStyle(ChatFormatting.RED));
             return InteractionResult.SUCCESS;
         }
-        if (!worldIn.isClientSide) {
-            player.openMenu(tile, pos);
-            tile.updateItems(player);
+        if (!pLevel.isClientSide) {
+            pPlayer.openMenu(tile, pPos);
+            tile.updateItems(pPlayer);
         }
         return InteractionResult.SUCCESS;
     }
@@ -79,8 +77,8 @@ public class ItemTerminalBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        Utility.addTooltip(BuiltInRegistries.BLOCK.getKey(this).getPath(), tooltip);
+    public void appendHoverText(ItemStack pStack, Item.TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
+        Utility.addTooltip(BuiltInRegistries.BLOCK.getKey(this).getPath(), pTooltipComponents);
     }
 
     @org.jetbrains.annotations.Nullable

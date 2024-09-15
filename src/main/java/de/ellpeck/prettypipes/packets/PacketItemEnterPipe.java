@@ -28,7 +28,7 @@ public class PacketItemEnterPipe implements CustomPacketPayload {
         this.tilePos = buf.readBlockPos();
         this.item = buf.readNbt();
     }
-
+    
     @Override
     public void write(FriendlyByteBuf buf) {
         buf.writeBlockPos(this.tilePos);

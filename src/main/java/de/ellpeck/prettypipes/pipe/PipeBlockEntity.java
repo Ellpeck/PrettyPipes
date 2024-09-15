@@ -11,6 +11,7 @@ import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -92,9 +93,9 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("modules", this.modules.serializeNBT());
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
+        compound.put("modules", this.modules.serializeNBT(provider));
         compound.putInt("module_drop_check", this.moduleDropCheck);
         compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
         if (this.cover != null)
@@ -103,49 +104,49 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         for (var triple : this.craftResultRequests) {
             var nbt = new CompoundTag();
             nbt.putLong("dest_pipe", triple.getLeft().asLong());
-            nbt.put("item", triple.getRight().save(new CompoundTag()));
+            nbt.put("item", triple.getRight().save(provider));
             results.add(nbt);
         }
         compound.put("craft_results", results);
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.modules.deserializeNBT(compound.getCompound("modules"));
+    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        this.modules.deserializeNBT(provider, compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
         this.craftIngredientRequests.clear();
-        this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), NetworkLock::new));
+        this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), l -> new NetworkLock(provider, l)));
         this.craftResultRequests.clear();
         var results = compound.getList("craft_results", Tag.TAG_COMPOUND);
         for (var i = 0; i < results.size(); i++) {
             var nbt = results.getCompound(i);
             this.craftResultRequests.add(Pair.of(
                     BlockPos.of(nbt.getLong("dest_pipe")),
-                    ItemStack.of(nbt.getCompound("item"))));
+                    ItemStack.parseOptional(provider, nbt.getCompound("item"))));
         }
-        super.load(compound);
+        super.loadAdditional(compound, provider);
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
+    public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
-        var nbt = this.saveWithoutMetadata();
+        var nbt = this.saveWithoutMetadata(provider);
         nbt.put("items", Utility.serializeAll(this.getItems()));
         return nbt;
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag nbt) {
-        this.load(nbt);
+    public void handleUpdateTag(CompoundTag nbt, HolderLookup.Provider provider) {
+        this.loadWithComponents(nbt, provider);
         var items = this.getItems();
         items.clear();
         items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load));
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        this.load(pkt.getTag());
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider provider) {
+        this.loadWithComponents(pkt.getTag(), provider);
     }
 
     public List<IPipeItem> getItems() {

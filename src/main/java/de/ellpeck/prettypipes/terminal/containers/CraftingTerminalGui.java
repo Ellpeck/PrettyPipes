@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
     private Button requestButton;
 
     public CraftingTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
@@ -28,7 +28,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             var amount = ItemTerminalGui.requestModifier();
             // also allow holding backspace instead of alt for people whose alt key is inaccessible (linux?)
             var force = Screen.hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;
-            PacketDistributor.SERVER.noArg().send(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
+            PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, amount, force));
         }).bounds(this.leftPos + 8, this.topPos + 100, 50, 20).build());
         this.tick();
     }

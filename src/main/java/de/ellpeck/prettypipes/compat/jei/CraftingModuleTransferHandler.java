@@ -4,25 +4,21 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.packets.PacketCraftingModuleTransfer;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
-import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
+import mezz.jei.api.recipe.transfer.IUniversalRecipeTransferHandler;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Optional;
 
-public class CraftingModuleTransferHandler implements IRecipeTransferHandler<CraftingModuleContainer, RecipeHolder<CraftingRecipe>> {
+public class CraftingModuleTransferHandler implements IUniversalRecipeTransferHandler<CraftingModuleContainer> {
 
     @Override
     public Class<CraftingModuleContainer> getContainerClass() {
@@ -35,21 +31,16 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
     }
 
     @Override
-    public RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
-        return RecipeTypes.CRAFTING;
-    }
-
-    @Override
-    public @Nullable IRecipeTransferError transferRecipe(CraftingModuleContainer container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
+    public @Nullable IRecipeTransferError transferRecipe(CraftingModuleContainer container, Object recipe, IRecipeSlotsView recipeSlots, Player player, boolean maxTransfer, boolean doTransfer) {
         if (!doTransfer)
             return null;
         var inputs = new ArrayList<ItemStack>();
         var outputs = new ArrayList<ItemStack>();
-        for (var entry : slots.getSlotViews()) {
+        for (var entry : recipeSlots.getSlotViews()) {
             var allIngredients = entry.getIngredients(VanillaTypes.ITEM_STACK).toList();
             if (allIngredients.isEmpty())
                 continue;
-            var remain = allIngredients.get(0).copy();
+            var remain = allIngredients.getFirst().copy();
             var toAdd = entry.getRole() == RecipeIngredientRole.INPUT ? inputs : outputs;
             for (var stack : toAdd) {
                 if (ItemEquality.compareItems(stack, remain)) {
@@ -63,7 +54,7 @@ public class CraftingModuleTransferHandler implements IRecipeTransferHandler<Cra
             if (!remain.isEmpty())
                 toAdd.add(remain);
         }
-        PacketDistributor.SERVER.noArg().send(new PacketCraftingModuleTransfer(inputs, outputs));
+        PacketDistributor.sendToServer(new PacketCraftingModuleTransfer(inputs, outputs));
         return null;
     }
 

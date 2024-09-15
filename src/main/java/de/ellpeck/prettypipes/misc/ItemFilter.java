@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
@@ -130,16 +131,16 @@ public class ItemFilter extends ItemStackHandler {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
-        var nbt = super.serializeNBT();
+    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
+        var nbt = super.serializeNBT(provider);
         if (this.canModifyWhitelist)
             nbt.putBoolean("whitelist", this.isWhitelist);
         return nbt;
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        super.deserializeNBT(nbt);
+    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+        super.deserializeNBT(provider, nbt);
         if (this.canModifyWhitelist)
             this.isWhitelist = nbt.getBoolean("whitelist");
     }

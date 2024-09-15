@@ -20,7 +20,7 @@ import java.util.List;
 
 public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extends AbstractContainerScreen<T> {
 
-    protected static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pipe.png");
+    protected static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "textures/gui/pipe.png");
     private final List<Tab> tabs = new ArrayList<>();
     private final ItemStack[] lastItems = new ItemStack[this.menu.tile.modules.getSlots()];
 
@@ -144,7 +144,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 return false;
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return false;
-            PacketDistributor.SERVER.noArg().send(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, this.index));
+            PacketDistributor.sendToServer(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, this.index));
             AbstractPipeGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }

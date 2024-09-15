@@ -68,24 +68,26 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod.EventBusSubscriber;
-import net.neoforged.fml.common.Mod.EventBusSubscriber.Bus;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
+import static net.neoforged.fml.common.EventBusSubscriber.*;
+
 @EventBusSubscriber(bus = Bus.MOD)
 public final class Registry {
 
-    public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(new ResourceLocation(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
+    public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
 
     public static Item wrenchItem;
     public static Item pipeFrameItem;
@@ -119,19 +121,19 @@ public final class Registry {
     @SubscribeEvent
     public static void register(RegisterEvent event) {
         event.register(Registries.BLOCK, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock(Properties.of().strength(2).sound(SoundType.STONE).noOcclusion()));
-            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
-            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
-            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock(Properties.of().strength(3).sound(SoundType.STONE)));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeBlock = new PipeBlock(Properties.of().strength(2).sound(SoundType.STONE).noOcclusion()));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlock = new ItemTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlock = new CraftingTerminalBlock(Properties.of().strength(3).sound(SoundType.STONE)));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlock = new PressurizerBlock(Properties.of().strength(3).sound(SoundType.STONE)));
         });
 
         event.register(Registries.ITEM, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "wrench"), Registry.wrenchItem = new WrenchItem());
-            h.register(new ResourceLocation(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties()));
-            h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameItem = new PipeFrameItem());
-            h.register(new ResourceLocation(PrettyPipes.ID, "stack_size_module"), new StackSizeModuleItem());
-            h.register(new ResourceLocation(PrettyPipes.ID, "redstone_module"), new RedstoneModuleItem());
-            h.register(new ResourceLocation(PrettyPipes.ID, "filter_increase_modifier"), new FilterIncreaseModuleItem());
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "wrench"), Registry.wrenchItem = new WrenchItem());
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "blank_module"), new Item(new Item.Properties()));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameItem = new PipeFrameItem());
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "stack_size_module"), new StackSizeModuleItem());
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "redstone_module"), new RedstoneModuleItem());
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "filter_increase_modifier"), new FilterIncreaseModuleItem());
 
             Registry.registerTieredModule(h, "extraction_module", ExtractionModuleItem::new);
             Registry.registerTieredModule(h, "filter_module", FilterModuleItem::new);
@@ -143,11 +145,11 @@ public final class Registry {
 
             for (var type : ItemEquality.Type.values()) {
                 var name = type.name().toLowerCase(Locale.ROOT) + "_filter_modifier";
-                h.register(new ResourceLocation(PrettyPipes.ID, name), new FilterModifierModuleItem(name, type));
+                h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, name), new FilterModifierModuleItem(name, type));
             }
             for (var type : SortingModuleItem.Type.values()) {
                 var name = type.name().toLowerCase(Locale.ROOT) + "_sorting_modifier";
-                h.register(new ResourceLocation(PrettyPipes.ID, name), new SortingModuleItem(name, type));
+                h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, name), new SortingModuleItem(name, type));
             }
 
             BuiltInRegistries.BLOCK.entrySet().stream()
@@ -156,20 +158,20 @@ public final class Registry {
         });
 
         event.register(Registries.BLOCK_ENTITY_TYPE, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = BlockEntityType.Builder.of(PipeBlockEntity::new, Registry.pipeBlock).build(null));
-            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock).build(null));
-            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock).build(null));
-            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = BlockEntityType.Builder.of(PressurizerBlockEntity::new, Registry.pressurizerBlock).build(null));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = BlockEntityType.Builder.of(PipeBlockEntity::new, Registry.pipeBlock).build(null));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock).build(null));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock).build(null));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = BlockEntityType.Builder.of(PressurizerBlockEntity::new, Registry.pressurizerBlock).build(null));
         });
 
         event.register(Registries.ENTITY_TYPE, h ->
-                h.register(new ResourceLocation(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
+                h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
 
         event.register(Registries.MENU, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IMenuTypeExtension.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
-            h.register(new ResourceLocation(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new ItemTerminalContainer(Registry.itemTerminalContainer, windowId, inv.player, data.readBlockPos())));
-            h.register(new ResourceLocation(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new CraftingTerminalContainer(Registry.craftingTerminalContainer, windowId, inv.player, data.readBlockPos())));
-            h.register(new ResourceLocation(PrettyPipes.ID, "pressurizer"), Registry.pressurizerContainer = IMenuTypeExtension.create((windowId, inv, data) -> new PressurizerContainer(Registry.pressurizerContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IMenuTypeExtension.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new ItemTerminalContainer(Registry.itemTerminalContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalContainer = IMenuTypeExtension.create((windowId, inv, data) -> new CraftingTerminalContainer(Registry.craftingTerminalContainer, windowId, inv.player, data.readBlockPos())));
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerContainer = IMenuTypeExtension.create((windowId, inv, data) -> new PressurizerContainer(Registry.pressurizerContainer, windowId, inv.player, data.readBlockPos())));
 
             Registry.extractionModuleContainer = Registry.registerPipeContainer(h, "extraction_module");
             Registry.filterModuleContainer = Registry.registerPipeContainer(h, "filter_module");
@@ -181,7 +183,7 @@ public final class Registry {
         });
 
         event.register(BuiltInRegistries.CREATIVE_MODE_TAB.key(), h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
                     .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
                     .icon(() -> new ItemStack(Registry.wrenchItem))
                     .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
@@ -192,7 +194,7 @@ public final class Registry {
         });
 
         event.register(Registries.RECIPE_SERIALIZER, h -> {
-            h.register(new ResourceLocation(PrettyPipes.ID, "module_clearing"), ModuleClearingRecipe.SERIALIZER);
+            h.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "module_clearing"), ModuleClearingRecipe.SERIALIZER);
         });
     }
 
@@ -207,7 +209,7 @@ public final class Registry {
     }
 
     @SubscribeEvent
-    public static void registerPayloads(final RegisterPayloadHandlerEvent event) {
+    public static void registerPayloads(final RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(PrettyPipes.ID);
         registrar.play(PacketItemEnterPipe.ID, PacketItemEnterPipe::new, PacketItemEnterPipe::onMessage);
         registrar.play(PacketButton.ID, PacketButton::new, PacketButton::onMessage);
@@ -224,13 +226,13 @@ public final class Registry {
             var moduleStack = tile.modules.getStackInSlot(moduleIndex);
             return ((IModule) moduleStack.getItem()).getContainer(moduleStack, tile, windowId, inv, inv.player, moduleIndex);
         });
-        helper.register(new ResourceLocation(PrettyPipes.ID, name), type);
+        helper.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, name), type);
         return type;
     }
 
     private static void registerTieredModule(RegisterEvent.RegisterHelper<Item> helper, String name, BiFunction<String, ModuleTier, ModuleItem> item) {
         for (var tier : ModuleTier.values())
-            helper.register(new ResourceLocation(PrettyPipes.ID, tier.name().toLowerCase(Locale.ROOT) + "_" + name), item.apply(name, tier));
+            helper.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, tier.name().toLowerCase(Locale.ROOT) + "_" + name), item.apply(name, tier));
     }
 
     @EventBusSubscriber(bus = Bus.MOD, value = Dist.CLIENT)
@@ -240,18 +242,21 @@ public final class Registry {
         public static void setup(FMLClientSetupEvent event) {
             BlockEntityRenderers.register(Registry.pipeBlockEntity, PipeRenderer::new);
             EntityRenderers.register(Registry.pipeFrameEntity, PipeFrameRenderer::new);
+        }
 
-            MenuScreens.register(Registry.pipeContainer, MainPipeGui::new);
-            MenuScreens.register(Registry.itemTerminalContainer, ItemTerminalGui::new);
-            MenuScreens.register(Registry.pressurizerContainer, PressurizerGui::new);
-            MenuScreens.register(Registry.craftingTerminalContainer, CraftingTerminalGui::new);
-            MenuScreens.register(Registry.extractionModuleContainer, ExtractionModuleGui::new);
-            MenuScreens.register(Registry.filterModuleContainer, FilterModuleGui::new);
-            MenuScreens.register(Registry.retrievalModuleContainer, RetrievalModuleGui::new);
-            MenuScreens.register(Registry.stackSizeModuleContainer, StackSizeModuleGui::new);
-            MenuScreens.register(Registry.filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
-            MenuScreens.register(Registry.craftingModuleContainer, CraftingModuleGui::new);
-            MenuScreens.register(Registry.filterModifierModuleContainer, FilterModifierModuleGui::new);
+        @SubscribeEvent
+        public static void registerMenuScreens(RegisterMenuScreensEvent event) {
+            event.register(Registry.pipeContainer, MainPipeGui::new);
+            event.register(Registry.itemTerminalContainer, ItemTerminalGui::new);
+            event.register(Registry.pressurizerContainer, PressurizerGui::new);
+            event.register(Registry.craftingTerminalContainer, CraftingTerminalGui::new);
+            event.register(Registry.extractionModuleContainer, ExtractionModuleGui::new);
+            event.register(Registry.filterModuleContainer, FilterModuleGui::new);
+            event.register(Registry.retrievalModuleContainer, RetrievalModuleGui::new);
+            event.register(Registry.stackSizeModuleContainer, StackSizeModuleGui::new);
+            event.register(Registry.filterIncreaseModuleContainer, FilterIncreaseModuleGui::new);
+            event.register(Registry.craftingModuleContainer, CraftingModuleGui::new);
+            event.register(Registry.filterModifierModuleContainer, FilterModifierModuleGui::new);
         }
 
     }
