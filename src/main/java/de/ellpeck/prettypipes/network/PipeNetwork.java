@@ -64,8 +64,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public PipeNetwork(CompoundTag nbt, HolderLookup.Provider provider) {
         this();
-        var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
-        for (var node : nodes)
+        for (var node : nbt.getList("nodes", Tag.TAG_INT_ARRAY))
             this.graph.addVertex(Utility.readBlockPos(node));
         var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
         for (var i = 0; i < edges.size(); i++)

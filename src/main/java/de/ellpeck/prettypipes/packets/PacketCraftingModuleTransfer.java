@@ -19,8 +19,8 @@ public record PacketCraftingModuleTransfer(List<ItemStack> inputs, List<ItemStac
 
     public static final Type<PacketCraftingModuleTransfer> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "crafting_module_transfer"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PacketCraftingModuleTransfer> CODEC = StreamCodec.composite(
-        ByteBufCodecs.collection(ArrayList::new, ItemStack.STREAM_CODEC), PacketCraftingModuleTransfer::inputs,
-        ByteBufCodecs.collection(ArrayList::new, ItemStack.STREAM_CODEC), PacketCraftingModuleTransfer::outputs,
+        ItemStack.LIST_STREAM_CODEC, PacketCraftingModuleTransfer::inputs,
+        ItemStack.LIST_STREAM_CODEC, PacketCraftingModuleTransfer::outputs,
         PacketCraftingModuleTransfer::new);
 
     @Override

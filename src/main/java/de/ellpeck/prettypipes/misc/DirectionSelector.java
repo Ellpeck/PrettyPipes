@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import joptsimple.internal.Strings;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentType;
@@ -68,13 +69,13 @@ public class DirectionSelector {
         if (!this.modified)
             return;
         this.modified = false;
-        this.stack.set(Data.TYPE, new Data(this.direction.getName()));
+        this.stack.set(Data.TYPE, new Data(this.direction != null ? this.direction.getName() : ""));
     }
 
     public void load() {
         var data = this.stack.get(Data.TYPE);
         if (data != null)
-            this.direction = Direction.byName(data.direction);
+            this.direction = !Strings.isNullOrEmpty(data.direction) ? Direction.byName(data.direction) : null;
     }
 
     public Direction[] directions() {

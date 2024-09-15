@@ -103,7 +103,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @SubscribeEvent
-    public void onClientTick(ClientTickEvent event) {
+    public void onClientTick(ClientTickEvent.Pre event) {
         if (!PlayerPrefs.get().syncJei)
             return;
 

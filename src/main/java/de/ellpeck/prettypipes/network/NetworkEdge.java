@@ -45,8 +45,7 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     @Override
     public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         this.pipes.clear();
-        var list = nbt.getList("pipes", Tag.TAG_COMPOUND);
-        for (var tag : list)
+        for (var tag : nbt.getList("pipes", Tag.TAG_INT_ARRAY))
             this.pipes.add(Utility.readBlockPos(tag));
     }
 

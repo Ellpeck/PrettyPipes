@@ -274,8 +274,7 @@ public class PipeItem implements IPipeItem {
         this.y = nbt.getFloat("y");
         this.z = nbt.getFloat("z");
         this.path.clear();
-        var list = nbt.getList("path", Tag.TAG_COMPOUND);
-        for (var tag : list)
+        for (var tag : nbt.getList("path", Tag.TAG_INT_ARRAY))
             this.path.add(Utility.readBlockPos(tag));
     }
 

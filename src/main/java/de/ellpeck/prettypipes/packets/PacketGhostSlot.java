@@ -46,7 +46,7 @@ public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements Custo
     public record Entry(List<ItemStack> stacks, TagKey<Item> tag) {
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Entry> CODEC = StreamCodec.composite(
-            ByteBufCodecs.collection(ArrayList::new, ItemStack.STREAM_CODEC), Entry::stacks,
+            ItemStack.OPTIONAL_LIST_STREAM_CODEC, Entry::stacks,
             ByteBufCodecs.fromCodec(TagKey.codec(Registries.ITEM)), Entry::tag,
             Entry::new);
 

@@ -42,7 +42,7 @@ public final class Utility {
 
     public static final Codec<ItemStackHandler> ITEM_STACK_HANDLER_CODEC = RecordCodecBuilder.create(builder -> builder.group(
         Codec.INT.fieldOf("size").forGetter(h -> h.getSlots()),
-        Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(h -> IntStream.range(0, h.getSlots()).mapToObj(h::getStackInSlot).toList())
+        Codec.list(ItemStack.OPTIONAL_CODEC).fieldOf("items").forGetter(h -> IntStream.range(0, h.getSlots()).mapToObj(h::getStackInSlot).toList())
     ).apply(builder, (size, items) -> {
         var ret = new ItemStackHandler(size);
         for (var i = 0; i < items.size(); i++)
