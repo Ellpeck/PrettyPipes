@@ -167,6 +167,18 @@ public final class Utility {
         return null;
     }
 
+    public static void copyInto(ItemStackHandler handler, ItemStackHandler dest) {
+        dest.setSize(handler.getSlots());
+        for (var i = 0; i < handler.getSlots(); i++)
+            dest.setStackInSlot(i, handler.getStackInSlot(i).copy());
+    }
+
+    public static ItemStackHandler copy(ItemStackHandler handler) {
+        var ret = new ItemStackHandler();
+        copyInto(handler, ret);
+        return ret;
+    }
+
     public interface IMergeItemStack {
 
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);

@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.craft;
 
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.FilterSlot;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
@@ -20,7 +21,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     @Override
     protected void addSlots() {
         var contents = this.moduleStack.get(CraftingModuleItem.Contents.TYPE);
-        this.input = contents.input();
+        this.input = Utility.copy(contents.input());
         for (var i = 0; i < this.input.getSlots(); i++) {
             this.addSlot(new FilterSlot(this.input, i, (176 - this.input.getSlots() * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
                 @Override
@@ -32,7 +33,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
             });
         }
 
-        this.output = contents.output();
+        this.output = Utility.copy(contents.output());
         for (var i = 0; i < this.output.getSlots(); i++) {
             this.addSlot(new FilterSlot(this.output, i, (176 - this.output.getSlots() * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
                 @Override
@@ -47,8 +48,10 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     @Override
     public void removed(Player playerIn) {
         super.removed(playerIn);
-        if (this.modified)
+        if (this.modified) {
             this.moduleStack.set(CraftingModuleItem.Contents.TYPE, new CraftingModuleItem.Contents(this.input, this.output));
+            this.tile.setChanged();
+        }
     }
 
 }

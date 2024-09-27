@@ -138,9 +138,7 @@ public class ItemFilter {
     public void load() {
         var content = this.stack.get(Data.TYPE);
         if (content != null) {
-            this.content.setSize(content.items.getSlots());
-            for (var i = 0; i < this.content.getSlots(); i++)
-                this.content.setStackInSlot(i, content.items.getStackInSlot(i));
+            Utility.copyInto(content.items, this.content);
             this.isWhitelist = content.whitelist;
         }
     }
