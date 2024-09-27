@@ -80,6 +80,10 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
                         return ((IModule) stack.getItem()).getContainer(stack, tile, windowId, inv, player, data.getFirst());
                     }
 
+                    @Override
+                    public boolean shouldTriggerClientSideContainerClosingOnOpen() {
+                        return false;
+                    }
                 }, buf -> {
                     buf.writeBlockPos(pos);
                     buf.writeInt(data.getFirst());

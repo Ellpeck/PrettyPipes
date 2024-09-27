@@ -428,6 +428,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
+    public boolean shouldTriggerClientSideContainerClosingOnOpen() {
+        return false;
+    }
+
+    @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
         var state = this.level.getBlockState(pipePos.relative(direction));
         if (state.getValue(PipeBlock.DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
