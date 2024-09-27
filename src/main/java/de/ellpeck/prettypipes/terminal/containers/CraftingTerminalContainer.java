@@ -64,10 +64,17 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     @Override
     public void clicked(int slotId, int dragType, ClickType clickTypeIn, Player player) {
-        if (slotId > 0 && clickTypeIn == ClickType.PICKUP) {
-            var slot = this.slots.get(slotId);
-            if (slot.container == this.craftInventory && !slot.hasItem())
-                this.getTile().ghostItems.setStackInSlot(slot.getSlotIndex(), ItemStack.EMPTY);
+        if (slotId > 0) {
+            var ghostItems = this.getTile().ghostItems;
+            if (clickTypeIn == ClickType.PICKUP) {
+                var slot = this.slots.get(slotId);
+                if (slot.container == this.craftInventory && !slot.hasItem())
+                    ghostItems.setStackInSlot(slot.getSlotIndex(), ItemStack.EMPTY);
+            } else if (clickTypeIn == ClickType.QUICK_MOVE) {
+                // clear the entire grid when holding shift
+                for (var i = 0; i < ghostItems.getSlots(); i++)
+                    ghostItems.setStackInSlot(i, ItemStack.EMPTY);
+            }
         }
         super.clicked(slotId, dragType, clickTypeIn, player);
     }
