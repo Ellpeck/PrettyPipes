@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
+import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -40,6 +41,7 @@ import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -69,8 +71,10 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
-    public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
+    // crafting module slot, ingredient request network lock
+    public final Queue<Pair<Integer, NetworkLock>> craftIngredientRequests = new LinkedList<>();
+    // crafting module slot, destination pipe for the result, result item
+    public final List<Triple<Integer, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
@@ -97,13 +101,21 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         super.saveAdditional(compound, provider);
         compound.put("modules", this.modules.serializeNBT(provider));
         compound.putInt("module_drop_check", this.moduleDropCheck);
-        compound.put("requests", Utility.serializeAll(provider, this.craftIngredientRequests));
+        var requests = new ListTag();
+        for (var tuple : this.craftIngredientRequests) {
+            var nbt = new CompoundTag();
+            nbt.putInt("module_slot", tuple.getLeft());
+            nbt.put("lock", tuple.getRight().serializeNBT(provider));
+            requests.add(nbt);
+        }
+        compound.put("craft_requests", requests);
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
         var results = new ListTag();
         for (var triple : this.craftResultRequests) {
             var nbt = new CompoundTag();
-            nbt.putLong("dest_pipe", triple.getLeft().asLong());
+            nbt.putInt("module_slot", triple.getLeft());
+            nbt.putLong("dest_pipe", triple.getMiddle().asLong());
             nbt.put("item", triple.getRight().save(provider));
             results.add(nbt);
         }
@@ -116,12 +128,19 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
         this.craftIngredientRequests.clear();
-        this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), l -> new NetworkLock(provider, l)));
+        var requests = compound.getList("craft_requests", Tag.TAG_COMPOUND);
+        for (var i = 0; i < requests.size(); i++) {
+            var nbt = requests.getCompound(i);
+            this.craftIngredientRequests.add(Pair.of(
+                nbt.getInt("module_slot"),
+                new NetworkLock(provider, nbt.getCompound("lock"))));
+        }
         this.craftResultRequests.clear();
         var results = compound.getList("craft_results", Tag.TAG_COMPOUND);
         for (var i = 0; i < results.size(); i++) {
             var nbt = results.getCompound(i);
-            this.craftResultRequests.add(Pair.of(
+            this.craftResultRequests.add(Triple.of(
+                nbt.getInt("module_slot"),
                 BlockPos.of(nbt.getLong("dest_pipe")),
                 ItemStack.parseOptional(provider, nbt.getCompound("item"))));
         }
@@ -357,6 +376,14 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                 builder.accept(Pair.of(stack, module));
         }
         return builder.build();
+    }
+
+    public int getModuleSlot(ItemStack module) {
+        for (var i = 0; i < this.modules.getSlots(); i++) {
+            if (this.modules.getStackInSlot(i) == module)
+                return i;
+        }
+        return -1;
     }
 
     public void removeCover(Player player, InteractionHand hand) {

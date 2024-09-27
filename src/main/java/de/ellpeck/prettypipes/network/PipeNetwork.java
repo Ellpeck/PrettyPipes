@@ -284,7 +284,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         while (craftingPipes.hasNext()) {
             var pipe = craftingPipes.next();
             for (var request : pipe.craftResultRequests) {
-                var dest = request.getLeft();
+                var dest = request.getMiddle();
                 var stack = request.getRight();
                 // add up all the items that should go to the same location
                 var existing = items.stream()

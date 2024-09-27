@@ -25,6 +25,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,25 +70,29 @@ public class CraftingModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
+        var slot = tile.getModuleSlot(module);
         var network = PipeNetwork.get(tile.getLevel());
         // process crafting ingredient requests
         if (!tile.craftIngredientRequests.isEmpty()) {
             network.startProfile("crafting_ingredients");
             var request = tile.craftIngredientRequests.peek();
-            var equalityTypes = ItemFilter.getEqualityTypes(tile);
-            var dest = tile.getAvailableDestination(Direction.values(), request.stack, true, true);
-            if (dest != null) {
-                var requestRemain = network.requestExistingItem(request.location, tile.getBlockPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
-                network.resolveNetworkLock(request);
-                tile.craftIngredientRequests.remove();
+            if (request.getLeft() == slot) {
+                var lock = request.getRight();
+                var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
+                if (dest != null) {
+                    var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
+                    network.resolveNetworkLock(lock);
+                    tile.craftIngredientRequests.remove();
 
-                // if we couldn't fit all items into the destination, create another request for the rest
-                var remain = request.stack.copy();
-                remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                if (!remain.isEmpty()) {
-                    var remainRequest = new NetworkLock(request.location, remain);
-                    tile.craftIngredientRequests.add(remainRequest);
-                    network.createNetworkLock(remainRequest);
+                    // if we couldn't fit all items into the destination, create another request for the rest
+                    var remain = lock.stack.copy();
+                    remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                    if (!remain.isEmpty()) {
+                        var remainRequest = new NetworkLock(lock.location, remain);
+                        tile.craftIngredientRequests.add(Pair.of(slot, remainRequest));
+                        network.createNetworkLock(remainRequest);
+                    }
                 }
             }
             network.endProfile();
@@ -98,25 +103,27 @@ public class CraftingModuleItem extends ModuleItem {
             var items = network.getOrderedNetworkItems(tile.getBlockPos());
             var equalityTypes = ItemFilter.getEqualityTypes(tile);
             for (var request : tile.craftResultRequests) {
-                var remain = request.getRight().copy();
-                var destPipe = network.getPipe(request.getLeft());
-                if (destPipe != null) {
-                    var dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
-                    if (dest == null)
-                        continue;
-                    for (var item : items) {
-                        var requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
-                        remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                        if (remain.isEmpty())
-                            break;
-                    }
-                    if (remain.getCount() != request.getRight().getCount()) {
-                        tile.craftResultRequests.remove(request);
-                        // if we couldn't pull everything, log a new request
-                        if (!remain.isEmpty())
-                            tile.craftResultRequests.add(Pair.of(request.getLeft(), remain));
-                        network.endProfile();
-                        return;
+                if (request.getLeft() == slot) {
+                    var remain = request.getRight().copy();
+                    var destPipe = network.getPipe(request.getMiddle());
+                    if (destPipe != null) {
+                        var dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
+                        if (dest == null)
+                            continue;
+                        for (var item : items) {
+                            var requestRemain = network.requestExistingItem(item, request.getMiddle(), dest.getLeft(), null, dest.getRight(), equalityTypes);
+                            remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                            if (remain.isEmpty())
+                                break;
+                        }
+                        if (remain.getCount() != request.getRight().getCount()) {
+                            tile.craftResultRequests.remove(request);
+                            // if we couldn't pull everything, log a new request
+                            if (!remain.isEmpty())
+                                tile.craftResultRequests.add(Triple.of(slot, request.getMiddle(), remain));
+                            network.endProfile();
+                            return;
+                        }
                     }
                 }
             }
@@ -162,6 +169,7 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
             return stack;
+        var slot = tile.getModuleSlot(module);
 
         var network = PipeNetwork.get(tile.getLevel());
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
@@ -181,7 +189,8 @@ public class CraftingModuleItem extends ModuleItem {
             var copy = in.copy();
             copy.setCount(in.getCount() * toCraft);
             var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
-            tile.craftIngredientRequests.addAll(ret.getLeft());
+            for (var lock : ret.getLeft())
+                tile.craftIngredientRequests.add(Pair.of(slot, lock));
         }
 
         var remain = stack.copy();
@@ -189,7 +198,7 @@ public class CraftingModuleItem extends ModuleItem {
 
         var result = stack.copy();
         result.shrink(remain.getCount());
-        tile.craftResultRequests.add(Pair.of(destPipe, result));
+        tile.craftResultRequests.add(Triple.of(slot, destPipe, result));
 
         return remain;
     }

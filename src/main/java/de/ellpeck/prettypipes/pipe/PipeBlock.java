@@ -271,7 +271,7 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             if (worldIn.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
                 pipe.getItems().clear();
                 for (var lock : pipe.craftIngredientRequests)
-                    network.resolveNetworkLock(lock);
+                    network.resolveNetworkLock(lock.getRight());
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);
         }
