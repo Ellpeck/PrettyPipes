@@ -63,10 +63,12 @@ public class ItemFilter {
         List<AbstractWidget> buttons = new ArrayList<>();
         if (this.canModifyWhitelist) {
             var whitelistText = (Supplier<String>) () -> "info." + PrettyPipes.ID + "." + (this.isWhitelist ? "whitelist" : "blacklist");
+            var tooltip = (Supplier<Tooltip>) () -> Tooltip.create(Component.translatable(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY));
             buttons.add(Button.builder(Component.translatable(whitelistText.get()), button -> {
                 PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, List.of(0));
                 button.setMessage(Component.translatable(whitelistText.get()));
-            }).bounds(x - 20, y, 20, 20).tooltip(Tooltip.create(Component.translatable(whitelistText.get() + ".description").withStyle(ChatFormatting.GRAY))).build());
+                button.setTooltip(tooltip.get());
+            }).bounds(x - 20, y, 20, 20).tooltip(tooltip.get()).build());
         }
         if (this.canPopulateFromInventories) {
             buttons.add(Button.builder(Component.translatable("info." + PrettyPipes.ID + ".populate"), button -> PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.FILTER_CHANGE, List.of(1))).bounds(x - 42, y, 20, 20).tooltip(Tooltip.create(Component.translatable("info." + PrettyPipes.ID + ".populate.description").withStyle(ChatFormatting.GRAY))).build());
