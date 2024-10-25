@@ -48,4 +48,7 @@ public interface IModule {
     ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile);
 
     DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile);
+
+    ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction);
+
 }

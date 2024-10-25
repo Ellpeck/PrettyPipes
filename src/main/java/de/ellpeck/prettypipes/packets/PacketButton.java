@@ -6,6 +6,7 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
@@ -93,6 +94,18 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
         FILTER_CHANGE((pos, data, player) -> {
             if (player.containerMenu instanceof IFilteredContainer filtered)
                 filtered.getFilter().onButtonPacket(filtered, data.getFirst());
+        }),
+        ENSURE_ITEM_ORDER_BUTTON((pos, data, player) -> {
+            if (player.containerMenu instanceof CraftingModuleContainer container) {
+                container.ensureItemOrder = !container.ensureItemOrder;
+                container.modified = true;
+            }
+        }),
+        INSERT_SINGLES_BUTTON((pos, data, player) -> {
+            if (player.containerMenu instanceof CraftingModuleContainer container) {
+                container.insertSingles = !container.insertSingles;
+                container.modified = true;
+            }
         }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;

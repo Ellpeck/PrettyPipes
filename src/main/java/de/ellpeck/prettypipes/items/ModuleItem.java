@@ -108,4 +108,9 @@ public abstract class ModuleItem extends Item implements IModule {
         return null;
     }
 
+    @Override
+    public ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction) {
+        return stack;
+    }
+
 }

@@ -23,13 +23,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class CraftingModuleItem extends ModuleItem {
@@ -37,7 +36,7 @@ public class CraftingModuleItem extends ModuleItem {
     private final int speed;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
-        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)))));
+        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, false)));
         this.speed = tier.forTier(20, 10, 5);
     }
 
@@ -75,23 +74,29 @@ public class CraftingModuleItem extends ModuleItem {
         // process crafting ingredient requests
         if (!tile.craftIngredientRequests.isEmpty()) {
             network.startProfile("crafting_ingredients");
-            var request = tile.craftIngredientRequests.peek();
+            var request = tile.craftIngredientRequests.getFirst();
             if (request.getLeft() == slot) {
                 var lock = request.getRight();
                 var equalityTypes = ItemFilter.getEqualityTypes(tile);
                 var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
                 if (dest != null) {
-                    var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
-                    network.resolveNetworkLock(lock);
-                    tile.craftIngredientRequests.remove();
+                    var ensureItemOrder = module.get(Contents.TYPE).ensureItemOrder;
+                    // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
+                    if (!ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
+                        var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
+                        network.resolveNetworkLock(lock);
+                        tile.craftIngredientRequests.remove(request);
 
-                    // if we couldn't fit all items into the destination, create another request for the rest
-                    var remain = lock.stack.copy();
-                    remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                    if (!remain.isEmpty()) {
-                        var remainRequest = new NetworkLock(lock.location, remain);
-                        tile.craftIngredientRequests.add(Pair.of(slot, remainRequest));
-                        network.createNetworkLock(remainRequest);
+                        // if we couldn't fit all items into the destination, create another request for the rest
+                        var remain = lock.stack.copy();
+                        remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                        if (!remain.isEmpty()) {
+                            var remainRequest = new NetworkLock(lock.location, remain);
+                            // if we're ensuring item order, we need to insert the remaining request at the start so that it gets processed first
+                            var index = ensureItemOrder ? 0 : tile.craftResultRequests.size();
+                            tile.craftIngredientRequests.add(index, Pair.of(slot, remainRequest));
+                            network.createNetworkLock(remainRequest);
+                        }
                     }
                 }
             }
@@ -181,16 +186,20 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
-        var input = module.get(Contents.TYPE).input;
-        for (var i = 0; i < input.getSlots(); i++) {
-            var in = input.getStackInSlot(i);
-            if (in.isEmpty())
-                continue;
-            var copy = in.copy();
-            copy.setCount(in.getCount() * toCraft);
-            var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
-            for (var lock : ret.getLeft())
-                tile.craftIngredientRequests.add(Pair.of(slot, lock));
+        var contents = module.get(Contents.TYPE);
+        // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
+        for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
+            for (var i = 0; i < contents.input.getSlots(); i++) {
+                var in = contents.input.getStackInSlot(i);
+                if (in.isEmpty())
+                    continue;
+                var copy = in.copy();
+                if (!contents.ensureItemOrder)
+                    copy.setCount(in.getCount() * toCraft);
+                var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                for (var lock : ret.getLeft())
+                    tile.craftIngredientRequests.add(Pair.of(slot, lock));
+            }
         }
 
         var remain = stack.copy();
@@ -201,6 +210,22 @@ public class CraftingModuleItem extends ModuleItem {
         tile.craftResultRequests.add(Triple.of(slot, destPipe, result));
 
         return remain;
+    }
+
+    @Override
+    public ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction) {
+        if (module.get(Contents.TYPE).insertSingles) {
+            var handler = tile.getItemHandler(direction);
+            if (handler != null) {
+                while (!stack.isEmpty()) {
+                    var remain = ItemHandlerHelper.insertItem(handler, stack.copyWithCount(1), false);
+                    if (!remain.isEmpty())
+                        break;
+                    stack.shrink(1);
+                }
+            }
+        }
+        return stack;
     }
 
     private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
@@ -220,11 +245,13 @@ public class CraftingModuleItem extends ModuleItem {
         return deps;
     }
 
-    public record Contents(ItemStackHandler input, ItemStackHandler output) {
+    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean ensureItemOrder, boolean insertSingles) {
 
         public static final Codec<Contents> CODEC = RecordCodecBuilder.create(i -> i.group(
             Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("input").forGetter(d -> d.input),
-            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output)
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output),
+            Codec.BOOL.optionalFieldOf("ensure_item_order", false).forGetter(d -> d.ensureItemOrder),
+            Codec.BOOL.optionalFieldOf("insert_singles", false).forGetter(d -> d.insertSingles)
         ).apply(i, Contents::new));
         public static final DataComponentType<Contents> TYPE = DataComponentType.<Contents>builder().persistent(Contents.CODEC).cacheEncoding().build();
 

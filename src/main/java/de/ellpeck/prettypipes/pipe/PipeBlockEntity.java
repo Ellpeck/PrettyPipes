@@ -4,7 +4,6 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
-import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
@@ -39,6 +38,7 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -72,7 +72,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         }
     };
     // crafting module slot, ingredient request network lock
-    public final Queue<Pair<Integer, NetworkLock>> craftIngredientRequests = new LinkedList<>();
+    public final List<Pair<Integer, NetworkLock>> craftIngredientRequests = new ArrayList<>();
     // crafting module slot, destination pipe for the result, result item
     public final List<Triple<Integer, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
@@ -414,6 +414,23 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             }
             return p.getRight().getItemFilter(p.getLeft(), this);
         }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public ItemStack store(ItemStack stack, Direction direction) {
+        var modules = this.streamModules().iterator();
+        while (modules.hasNext()) {
+            var module = modules.next();
+            stack = module.getRight().store(module.getLeft(), this, stack, direction);
+            if (stack.isEmpty())
+                return stack;
+        }
+        var connectable = this.getPipeConnectable(direction);
+        if (connectable != null)
+            return connectable.insertItem(this.getBlockPos(), direction, stack, false);
+        var handler = this.getItemHandler(direction);
+        if (handler != null)
+            return ItemHandlerHelper.insertItemStacked(handler, stack, false);
+        return stack;
     }
 
     @Override

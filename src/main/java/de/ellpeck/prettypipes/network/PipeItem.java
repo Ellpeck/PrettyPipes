@@ -202,13 +202,7 @@ public class PipeItem implements IPipeItem {
 
     protected ItemStack store(PipeBlockEntity currPipe) {
         var dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
-        var connectable = currPipe.getPipeConnectable(dir);
-        if (connectable != null)
-            return connectable.insertItem(currPipe.getBlockPos(), dir, this.stack, false);
-        var handler = currPipe.getItemHandler(dir);
-        if (handler != null)
-            return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
-        return this.stack;
+        return currPipe.store(this.stack, dir);
     }
 
     protected PipeBlockEntity getNextTile(PipeBlockEntity currPipe, boolean progress) {
