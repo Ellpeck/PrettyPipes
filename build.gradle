@@ -4,6 +4,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.gradle.userdev' version '7.0.163'
+    id 'me.modmuss50.mod-publish-plugin' version "0.7.4"
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -169,5 +170,30 @@ idea {
     module {
         downloadSources = true
         downloadJavadoc = true
+    }
+}
+
+publishMods {
+    def cfToken = providers.environmentVariable("CF_TOKEN")
+    def mrToken = providers.environmentVariable("MR_TOKEN")
+    dryRun = !cfToken.isPresent() || !mrToken.isPresent()
+    changelog = providers.environmentVariable("CHANGELOG").orElse("")
+    version = mod_version
+    type = me.modmuss50.mpp.ReleaseType.valueOf(mod_release_state)
+    file = tasks.jarJar.archiveFile
+    modLoaders.add("neoforge")
+
+    modrinth {
+        accessToken = mrToken
+        projectId = "XExdLWCQ"
+        minecraftVersions.add(minecraft_version)
+        optional("jei")
+    }
+
+    curseforge {
+        accessToken = cfToken
+        projectId = "376737"
+        minecraftVersions.add(minecraft_version)
+        optional("jei")
     }
 }
