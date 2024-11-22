@@ -5,6 +5,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -12,11 +13,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class CraftingTerminalGui extends ItemTerminalGui {
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "textures/gui/crafting_terminal.png");
     private Button requestButton;
+    private Button sendBackButton;
 
     public CraftingTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);
@@ -32,6 +35,9 @@ public class CraftingTerminalGui extends ItemTerminalGui {
             var force = Screen.hasAltDown() || InputConstants.isKeyDown(this.minecraft.getWindow().getWindow(), 259) ? 1 : 0;
             PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_REQUEST, Arrays.asList(amount, force)));
         }).bounds(this.leftPos + 8, this.topPos + 100, 50, 20).build());
+        this.sendBackButton = this.addRenderableWidget(Button.builder(Component.literal(">"), button -> {
+            PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CRAFT_TERMINAL_SEND_BACK, List.of()));
+        }).bounds(this.leftPos + 47, this.topPos + 72, 12, 12).build());
         this.tick();
     }
 
@@ -40,12 +46,14 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         super.containerTick();
         var tile = this.getCraftingContainer().getTile();
         this.requestButton.active = false;
+        this.sendBackButton.active = false;
         for (var i = 0; i < tile.craftItems.getSlots(); i++) {
-            var stack = tile.getRequestedCraftItem(i);
-            if (!stack.isEmpty() && stack.getCount() < stack.getMaxStackSize()) {
+            var requestStack = tile.getRequestedCraftItem(i);
+            if (!requestStack.isEmpty() && requestStack.getCount() < requestStack.getMaxStackSize())
                 this.requestButton.active = true;
-                break;
-            }
+            var realStack = tile.craftItems.getStackInSlot(i);
+            if (!realStack.isEmpty())
+                this.sendBackButton.active = true;
         }
     }
 

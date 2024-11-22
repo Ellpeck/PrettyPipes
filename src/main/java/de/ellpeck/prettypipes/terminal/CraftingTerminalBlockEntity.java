@@ -26,6 +26,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.wrapper.RangedWrapper;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -137,6 +138,17 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
             player.sendSystemMessage(Component.translatable("info." + PrettyPipes.ID + ".hold_alt"));
         }
         network.endProfile();
+    }
+
+    public void sendItemsBack() {
+        var outputInventory = new RangedWrapper(this.items, 6, 12);
+        for (var i = 0; i < this.craftItems.getSlots(); i++) {
+            var stack = this.craftItems.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                var remain = ItemHandlerHelper.insertItemStacked(outputInventory, stack, false);
+                this.craftItems.setStackInSlot(i, remain);
+            }
+        }
     }
 
     @Override

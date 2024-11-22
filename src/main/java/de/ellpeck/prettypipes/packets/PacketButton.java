@@ -121,6 +121,10 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
             var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), pos);
             tile.requestCraftingItems(player, data.getFirst(), data.get(1) > 0);
         }),
+        CRAFT_TERMINAL_SEND_BACK((pos, data, player) -> {
+            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), pos);
+            tile.sendItemsBack();
+        }),
         CANCEL_CRAFTING((pos, data, player) -> {
             var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), pos);
             tile.cancelCrafting();
