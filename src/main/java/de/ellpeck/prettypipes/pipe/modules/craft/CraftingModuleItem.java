@@ -95,6 +95,7 @@ public class CraftingModuleItem extends ModuleItem {
                             var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
                             network.resolveNetworkLock(lock);
                             craftData.ingredientsToRequest.remove(lock);
+                            craftData.inProgress = true;
 
                             var traveling = lock.stack.copy();
                             traveling.shrink(requestRemain.getCount());
@@ -222,10 +223,12 @@ public class CraftingModuleItem extends ModuleItem {
         var slot = tile.getModuleSlot(module);
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var matchingCraft = tile.activeCrafts.stream()
-            .filter(c -> c.getLeft() == slot && c.getRight().isMatchingIngredient(stack, equalityTypes))
+            .filter(c -> c.getLeft() == slot && !c.getRight().getTravelingIngredient(stack, equalityTypes).isEmpty())
             .findAny().orElse(null);
         if (matchingCraft != null) {
-            matchingCraft.getRight().travelingIngredients.removeIf(s -> ItemEquality.compareItems(stack, s, equalityTypes));
+            var data = matchingCraft.getRight();
+            data.travelingIngredients.remove(data.getTravelingIngredient(stack, equalityTypes));
+
             if (module.get(Contents.TYPE).insertSingles) {
                 var handler = tile.getItemHandler(direction);
                 if (handler != null) {
@@ -237,6 +240,10 @@ public class CraftingModuleItem extends ModuleItem {
                     }
                 }
             }
+
+            // if we canceled the request and all input items are delivered (ie the machine actually got what it expected), remove it from the queue
+            if (data.canceled && data.travelingIngredients.size() <= 0 && data.ingredientsToRequest.size() <= 0)
+                tile.activeCrafts.remove(matchingCraft);
         }
         return stack;
     }
@@ -276,6 +283,9 @@ public class CraftingModuleItem extends ModuleItem {
         public List<ItemStack> travelingIngredients;
         public BlockPos resultDestPipe;
         public ItemStack resultStackRemain;
+        public boolean inProgress;
+        // we only remove canceled requests from the queue once their items are fully delivered to the crafting location, so that unfinished recipes don't get stuck in crafters etc.
+        public boolean canceled;
 
         public ActiveCraft(List<NetworkLock> ingredientsToRequest, List<ItemStack> travelingIngredients, BlockPos resultDestPipe, ItemStack resultStackRemain) {
             this.ingredientsToRequest = ingredientsToRequest;
@@ -295,6 +305,8 @@ public class CraftingModuleItem extends ModuleItem {
             ret.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
             ret.putLong("result_dest_pipe", this.resultDestPipe.asLong());
             ret.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
+            ret.putBoolean("in_progress", this.inProgress);
+            ret.putBoolean("canceled", this.canceled);
             return ret;
         }
 
@@ -304,14 +316,16 @@ public class CraftingModuleItem extends ModuleItem {
             this.travelingIngredients = Utility.deserializeAll(nbt.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
             this.resultDestPipe = BlockPos.of(nbt.getLong("result_dest_pipe"));
             this.resultStackRemain = ItemStack.parseOptional(provider, nbt.getCompound("result_stack_remain"));
+            this.inProgress = nbt.getBoolean("in_progress");
+            this.canceled = nbt.getBoolean("canceled");
         }
 
-        public boolean isMatchingIngredient(ItemStack stack, ItemEquality... equalityTypes) {
+        public ItemStack getTravelingIngredient(ItemStack stack, ItemEquality... equalityTypes) {
             for (var traveling : this.travelingIngredients) {
                 if (ItemEquality.compareItems(stack, traveling, equalityTypes))
-                    return true;
+                    return traveling;
             }
-            return false;
+            return ItemStack.EMPTY;
         }
 
     }

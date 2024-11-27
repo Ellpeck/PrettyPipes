@@ -277,7 +277,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         this.tileCache.remove(pos);
     }
 
-    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, ItemEquality... equalityTypes) {
+    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, boolean includeCanceled, ItemEquality... equalityTypes) {
         this.startProfile("get_currently_crafting");
         List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
         var craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
@@ -285,6 +285,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             var pipe = craftingPipes.next();
             for (var craft : pipe.activeCrafts) {
                 var data = craft.getRight();
+                if (!includeCanceled && data.canceled)
+                    continue;
                 // add up all the items that should go to the same location
                 var existing = items.stream()
                     .filter(s -> s.getLeft().equals(data.resultDestPipe) && ItemEquality.compareItems(s.getRight(), data.resultStackRemain, equalityTypes))
@@ -300,8 +302,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         return items;
     }
 
-    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, ItemEquality... equalityTypes) {
-        return this.getCurrentlyCrafting(destNode).stream()
+    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, boolean includeCanceled, ItemEquality... equalityTypes) {
+        return this.getCurrentlyCrafting(destNode, includeCanceled).stream()
             .filter(p -> p.getLeft().equals(destNode) && ItemEquality.compareItems(p.getRight(), stack, equalityTypes))
             .mapToInt(p -> p.getRight().getCount()).sum();
     }

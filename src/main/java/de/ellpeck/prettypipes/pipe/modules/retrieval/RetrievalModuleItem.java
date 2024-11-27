@@ -52,7 +52,7 @@ public class RetrievalModuleItem extends ModuleItem {
                     continue;
                 var remain = dest.getRight().copy();
                 // are we already waiting for crafting results? If so, don't request those again
-                remain.shrink(network.getCurrentlyCraftingAmount(tile.getBlockPos(), copy, equalityTypes));
+                remain.shrink(network.getCurrentlyCraftingAmount(tile.getBlockPos(), copy, true, equalityTypes));
                 if (network.requestItem(tile.getBlockPos(), dest.getLeft(), remain, equalityTypes).isEmpty())
                     break;
             }

@@ -136,7 +136,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         if (playersToSync.length > 0) {
             var clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
             var clientCraftables = PipeNetwork.get(this.level).getAllCraftables(pipe.getBlockPos()).stream().map(Pair::getRight).collect(Collectors.toList());
-            var currentlyCrafting = this.getCurrentlyCrafting().stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
+            var currentlyCrafting = this.getCurrentlyCrafting(false).stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
             for (var player : playersToSync) {
                 if (!(player.containerMenu instanceof ItemTerminalContainer container))
                     continue;
@@ -200,12 +200,12 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return items;
     }
 
-    private List<ItemStack> getCurrentlyCrafting() {
+    private List<ItemStack> getCurrentlyCrafting(boolean includeCanceled) {
         var network = PipeNetwork.get(this.level);
         var pipe = this.getConnectedPipe();
         if (pipe == null)
             return Collections.emptyList();
-        var crafting = network.getCurrentlyCrafting(pipe.getBlockPos());
+        var crafting = network.getCurrentlyCrafting(pipe.getBlockPos(), includeCanceled);
         return crafting.stream().map(Pair::getRight).collect(Collectors.toList());
     }
 
@@ -217,11 +217,17 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         for (var craftable : network.getAllCraftables(pipe.getBlockPos())) {
             var otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null) {
-                for (var craft : otherPipe.activeCrafts) {
-                    for (var lock : craft.getRight().ingredientsToRequest)
-                        network.resolveNetworkLock(lock);
-                }
-                otherPipe.activeCrafts.clear();
+                otherPipe.activeCrafts.removeIf(c -> {
+                    var data = c.getRight();
+                    if (data.inProgress) {
+                        data.canceled = true;
+                        return false;
+                    } else {
+                        for (var lock : data.ingredientsToRequest)
+                            network.resolveNetworkLock(lock);
+                        return true;
+                    }
+                });
             }
         }
         var lookingPlayers = this.getLookingPlayers();
