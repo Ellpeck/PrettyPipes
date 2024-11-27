@@ -71,6 +71,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
+    // TODO instead of having these loose lists, it would be nice to have a "ModuleData" system that allows modules to store an object of custom data on the pipe
     // crafting module slot, ingredient request network locks (one list for each recipe)
     public final List<Pair<Integer, List<NetworkLock>>> craftIngredientRequests = new ArrayList<>();
     // crafting module slot, destination pipe for the result, result item
