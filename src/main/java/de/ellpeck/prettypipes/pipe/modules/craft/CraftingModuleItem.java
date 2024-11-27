@@ -328,6 +328,17 @@ public class CraftingModuleItem extends ModuleItem {
             return ItemStack.EMPTY;
         }
 
+        public boolean markCanceledOrResolve(PipeNetwork network) {
+            if (this.inProgress) {
+                this.canceled = true;
+                return false;
+            } else {
+                for (var lock : this.ingredientsToRequest)
+                    network.resolveNetworkLock(lock);
+                return true;
+            }
+        }
+
     }
 
 }
