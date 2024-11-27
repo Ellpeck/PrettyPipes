@@ -118,8 +118,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         for (var edge : this.graph.edgeSet())
             edges.add(edge.serializeNBT(provider));
         nbt.put("edges", edges);
-        nbt.put("items", Utility.serializeAll(provider, this.pipeItems.values()));
-        nbt.put("locks", Utility.serializeAll(provider, this.networkLocks.values()));
+        nbt.put("items", Utility.serializeAll(this.pipeItems.values(), i -> i.serializeNBT(provider)));
+        nbt.put("locks", Utility.serializeAll(this.networkLocks.values(), l -> l.serializeNBT(provider)));
         return nbt;
     }
 
@@ -283,17 +283,16 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         var craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
         while (craftingPipes.hasNext()) {
             var pipe = craftingPipes.next();
-            for (var request : pipe.craftResultRequests) {
-                var dest = request.getMiddle();
-                var stack = request.getRight();
+            for (var craft : pipe.activeCrafts) {
+                var data = craft.getRight();
                 // add up all the items that should go to the same location
                 var existing = items.stream()
-                    .filter(s -> s.getLeft().equals(dest) && ItemEquality.compareItems(s.getRight(), stack, equalityTypes))
+                    .filter(s -> s.getLeft().equals(data.resultDestPipe) && ItemEquality.compareItems(s.getRight(), data.resultStackRemain, equalityTypes))
                     .findFirst();
                 if (existing.isPresent()) {
-                    existing.get().getRight().grow(stack.getCount());
+                    existing.get().getRight().grow(data.resultStackRemain.getCount());
                 } else {
-                    items.add(Pair.of(dest, stack.copy()));
+                    items.add(Pair.of(data.resultDestPipe, data.resultStackRemain.copy()));
                 }
             }
         }

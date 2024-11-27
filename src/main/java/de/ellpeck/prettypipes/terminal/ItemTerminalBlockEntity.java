@@ -217,12 +217,11 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         for (var craftable : network.getAllCraftables(pipe.getBlockPos())) {
             var otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null) {
-                for (var locks : otherPipe.craftIngredientRequests) {
-                    for (var lock : locks.getRight())
+                for (var craft : otherPipe.activeCrafts) {
+                    for (var lock : craft.getRight().ingredientsToRequest)
                         network.resolveNetworkLock(lock);
                 }
-                otherPipe.craftIngredientRequests.clear();
-                otherPipe.craftResultRequests.clear();
+                otherPipe.activeCrafts.clear();
             }
         }
         var lookingPlayers = this.getLookingPlayers();
@@ -234,7 +233,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public void saveAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
         super.saveAdditional(compound, pRegistries);
         compound.put("items", this.items.serializeNBT(pRegistries));
-        compound.put("requests", Utility.serializeAll(pRegistries, this.existingRequests));
+        compound.put("requests", Utility.serializeAll(this.existingRequests, i -> i.serializeNBT(pRegistries)));
     }
 
     @Override

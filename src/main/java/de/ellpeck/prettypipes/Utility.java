@@ -122,11 +122,21 @@ public final class Utility {
         return ItemStack.EMPTY;
     }
 
-    public static ListTag serializeAll(HolderLookup.Provider provider, Collection<? extends INBTSerializable<CompoundTag>> items) {
+    public static <T> ListTag serializeAll(Collection<T> items, Function<T, CompoundTag> serializer) {
         var list = new ListTag();
-        for (INBTSerializable<CompoundTag> item : items)
-            list.add(item.serializeNBT(provider));
+        for (var item : items)
+            list.add(serializer.apply(item));
         return list;
+    }
+
+    public static <T> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> deserializer) {
+        List<T> items = new ArrayList<>();
+        for (var i = 0; i < list.size(); i++) {
+            var item = deserializer.apply(list.getCompound(i));
+            if (item != null)
+                items.add(item);
+        }
+        return items;
     }
 
     public static void sendBlockEntityToClients(BlockEntity tile) {
@@ -135,16 +145,6 @@ public final class Utility {
         var packet = ClientboundBlockEntityDataPacket.create(tile, BlockEntity::saveWithoutMetadata);
         for (var e : entities)
             e.connection.send(packet);
-    }
-
-    public static <T extends INBTSerializable<CompoundTag>> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> supplier) {
-        List<T> items = new ArrayList<>();
-        for (var i = 0; i < list.size(); i++) {
-            var item = supplier.apply(list.getCompound(i));
-            if (item != null)
-                items.add(item);
-        }
-        return items;
     }
 
     public static IItemHandler getBlockItemHandler(Level world, BlockPos pos, Direction direction) {

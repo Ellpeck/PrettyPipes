@@ -8,6 +8,7 @@ import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -71,11 +72,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    // TODO instead of having these loose lists, it would be nice to have a "ModuleData" system that allows modules to store an object of custom data on the pipe
-    // crafting module slot, ingredient request network locks (one list for each recipe)
-    public final List<Pair<Integer, List<NetworkLock>>> craftIngredientRequests = new ArrayList<>();
-    // crafting module slot, destination pipe for the result, result item
-    public final List<Triple<Integer, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
+    public final List<Pair<Integer, CraftingModuleItem.ActiveCraft>> activeCrafts = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
@@ -102,25 +99,16 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         super.saveAdditional(compound, provider);
         compound.put("modules", this.modules.serializeNBT(provider));
         compound.putInt("module_drop_check", this.moduleDropCheck);
-        var requests = new ListTag();
-        for (var tuple : this.craftIngredientRequests) {
-            var nbt = new CompoundTag();
-            nbt.putInt("module_slot", tuple.getLeft());
-            nbt.put("locks", Utility.serializeAll(provider, tuple.getRight()));
-            requests.add(nbt);
-        }
-        compound.put("craft_requests", requests);
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
-        var results = new ListTag();
-        for (var triple : this.craftResultRequests) {
-            var nbt = new CompoundTag();
-            nbt.putInt("module_slot", triple.getLeft());
-            nbt.putLong("dest_pipe", triple.getMiddle().asLong());
-            nbt.put("item", triple.getRight().save(provider));
-            results.add(nbt);
+        var crafts = new ListTag();
+        for (var craft : this.activeCrafts) {
+            var tag = new CompoundTag();
+            tag.putInt("module_slot", craft.getLeft());
+            tag.put("data", craft.getRight().serializeNBT(provider));
+            crafts.add(tag);
         }
-        compound.put("craft_results", results);
+        compound.put("active_crafts", crafts);
     }
 
     @Override
@@ -128,22 +116,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         this.modules.deserializeNBT(provider, compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
-        this.craftIngredientRequests.clear();
-        var requests = compound.getList("craft_requests", Tag.TAG_COMPOUND);
-        for (var i = 0; i < requests.size(); i++) {
-            var nbt = requests.getCompound(i);
-            this.craftIngredientRequests.add(Pair.of(
-                nbt.getInt("module_slot"),
-                Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), c -> new NetworkLock(provider, c))));
-        }
-        this.craftResultRequests.clear();
-        var results = compound.getList("craft_results", Tag.TAG_COMPOUND);
-        for (var i = 0; i < results.size(); i++) {
-            var nbt = results.getCompound(i);
-            this.craftResultRequests.add(Triple.of(
-                nbt.getInt("module_slot"),
-                BlockPos.of(nbt.getLong("dest_pipe")),
-                ItemStack.parseOptional(provider, nbt.getCompound("item"))));
+        this.activeCrafts.clear();
+        var crafts = compound.getList("active_crafts", Tag.TAG_COMPOUND);
+        for (var i = 0; i < crafts.size(); i++) {
+            var tag = crafts.getCompound(i);
+            this.activeCrafts.add(Pair.of(tag.getInt("module_slot"), new CraftingModuleItem.ActiveCraft(provider, tag.getCompound("data"))));
         }
         super.loadAdditional(compound, provider);
     }
@@ -152,7 +129,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
         var nbt = this.saveWithoutMetadata(provider);
-        nbt.put("items", Utility.serializeAll(provider, this.getItems()));
+        nbt.put("items", Utility.serializeAll(this.getItems(), i -> i.serializeNBT(provider)));
         return nbt;
     }
 
