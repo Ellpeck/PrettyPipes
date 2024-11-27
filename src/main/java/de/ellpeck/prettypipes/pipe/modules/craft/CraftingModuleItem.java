@@ -76,7 +76,8 @@ public class CraftingModuleItem extends ModuleItem {
             network.startProfile("crafting_ingredients");
             var request = tile.craftIngredientRequests.getFirst();
             if (request.getLeft() == slot) {
-                var lock = request.getRight();
+                var locks = request.getRight();
+                var lock = locks.getFirst();
                 var equalityTypes = ItemFilter.getEqualityTypes(tile);
                 var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
                 if (dest != null) {
@@ -85,7 +86,7 @@ public class CraftingModuleItem extends ModuleItem {
                     if (!ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
                         var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
                         network.resolveNetworkLock(lock);
-                        tile.craftIngredientRequests.remove(request);
+                        locks.remove(lock);
 
                         // if we couldn't fit all items into the destination, create another request for the rest
                         var remain = lock.stack.copy();
@@ -94,9 +95,12 @@ public class CraftingModuleItem extends ModuleItem {
                             var remainRequest = new NetworkLock(lock.location, remain);
                             // if we're ensuring item order, we need to insert the remaining request at the start so that it gets processed first
                             var index = ensureItemOrder ? 0 : tile.craftResultRequests.size();
-                            tile.craftIngredientRequests.add(index, Pair.of(slot, remainRequest));
+                            locks.add(index, remainRequest);
                             network.createNetworkLock(remainRequest);
                         }
+
+                        if (locks.isEmpty())
+                            tile.craftIngredientRequests.remove(request);
                     }
                 }
             }
@@ -186,6 +190,7 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
+        var locks = new ArrayList<NetworkLock>();
         var contents = module.get(Contents.TYPE);
         // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
         for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
@@ -197,10 +202,10 @@ public class CraftingModuleItem extends ModuleItem {
                 if (!contents.ensureItemOrder)
                     copy.setCount(in.getCount() * toCraft);
                 var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
-                for (var lock : ret.getLeft())
-                    tile.craftIngredientRequests.add(Pair.of(slot, lock));
+                locks.addAll(ret.getLeft());
             }
         }
+        tile.craftIngredientRequests.add(Pair.of(slot, locks));
 
         var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);

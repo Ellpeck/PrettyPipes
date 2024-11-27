@@ -71,8 +71,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    // crafting module slot, ingredient request network lock
-    public final List<Pair<Integer, NetworkLock>> craftIngredientRequests = new ArrayList<>();
+    // crafting module slot, ingredient request network locks (one list for each recipe)
+    public final List<Pair<Integer, List<NetworkLock>>> craftIngredientRequests = new ArrayList<>();
     // crafting module slot, destination pipe for the result, result item
     public final List<Triple<Integer, BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
@@ -105,7 +105,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         for (var tuple : this.craftIngredientRequests) {
             var nbt = new CompoundTag();
             nbt.putInt("module_slot", tuple.getLeft());
-            nbt.put("lock", tuple.getRight().serializeNBT(provider));
+            nbt.put("locks", Utility.serializeAll(provider, tuple.getRight()));
             requests.add(nbt);
         }
         compound.put("craft_requests", requests);
@@ -133,7 +133,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             var nbt = requests.getCompound(i);
             this.craftIngredientRequests.add(Pair.of(
                 nbt.getInt("module_slot"),
-                new NetworkLock(provider, nbt.getCompound("lock"))));
+                Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), c -> new NetworkLock(provider, c))));
         }
         this.craftResultRequests.clear();
         var results = compound.getList("craft_results", Tag.TAG_COMPOUND);

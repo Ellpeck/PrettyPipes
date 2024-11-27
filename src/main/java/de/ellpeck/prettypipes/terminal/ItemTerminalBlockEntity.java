@@ -217,8 +217,10 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         for (var craftable : network.getAllCraftables(pipe.getBlockPos())) {
             var otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null) {
-                for (var lock : otherPipe.craftIngredientRequests)
-                    network.resolveNetworkLock(lock.getRight());
+                for (var locks : otherPipe.craftIngredientRequests) {
+                    for (var lock : locks.getRight())
+                        network.resolveNetworkLock(lock);
+                }
                 otherPipe.craftIngredientRequests.clear();
                 otherPipe.craftResultRequests.clear();
             }
