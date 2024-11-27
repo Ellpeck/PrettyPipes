@@ -94,7 +94,7 @@ public class CraftingModuleItem extends ModuleItem {
                         if (!remain.isEmpty()) {
                             var remainRequest = new NetworkLock(lock.location, remain);
                             // if we're ensuring item order, we need to insert the remaining request at the start so that it gets processed first
-                            var index = ensureItemOrder ? 0 : tile.craftResultRequests.size();
+                            var index = ensureItemOrder ? 0 : locks.size();
                             locks.add(index, remainRequest);
                             network.createNetworkLock(remainRequest);
                         }
