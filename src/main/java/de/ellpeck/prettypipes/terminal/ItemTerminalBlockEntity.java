@@ -5,10 +5,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.network.NetworkItem;
-import de.ellpeck.prettypipes.network.NetworkLocation;
-import de.ellpeck.prettypipes.network.NetworkLock;
-import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.network.*;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
@@ -35,6 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -172,9 +170,10 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         var item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        var ret = ItemTerminalBlockEntity.requestItemLater(this.level, this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
+        var network = PipeNetwork.get(this.level);
+        var ret = network.requestLocksAndCrafts(this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
-        return stack.getCount() - ret.getRight().getCount();
+        return stack.getCount() - ret.getMiddle().getCount();
     }
 
     public Player[] getLookingPlayers() {
@@ -267,38 +266,6 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     @Override
     public boolean allowsModules(BlockPos pipePos, Direction direction) {
         return true;
-    }
-
-    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(Level world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
-        List<NetworkLock> requests = new ArrayList<>();
-        var remain = stack.copy();
-        var network = PipeNetwork.get(world);
-        // check for existing items
-        for (var location : locations) {
-            var amount = location.getItemAmount(world, stack, equalityTypes);
-            if (amount <= 0)
-                continue;
-            amount -= network.getLockedAmount(location.getPos(), stack, null, equalityTypes);
-            if (amount > 0) {
-                if (remain.getCount() < amount)
-                    amount = remain.getCount();
-                remain.shrink(amount);
-                while (amount > 0) {
-                    var copy = stack.copy();
-                    copy.setCount(Math.min(stack.getMaxStackSize(), amount));
-                    var lock = new NetworkLock(location, copy);
-                    network.createNetworkLock(lock);
-                    requests.add(lock);
-                    amount -= copy.getCount();
-                }
-                if (remain.isEmpty())
-                    break;
-            }
-        }
-        // check for craftable items
-        if (!remain.isEmpty())
-            remain = network.requestCraftedItem(destPipe, unavailableConsumer, remain, dependencyChain, equalityTypes);
-        return Pair.of(requests, remain);
     }
 
     public static Consumer<ItemStack> onItemUnavailable(Player player, boolean ignore) {

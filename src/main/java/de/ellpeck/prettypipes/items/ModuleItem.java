@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.items;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
+import de.ellpeck.prettypipes.network.ActiveCraft;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
@@ -16,7 +17,9 @@ import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
@@ -89,8 +92,8 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
-        return stack;
+    public Pair<ItemStack, Collection<ActiveCraft>> craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+        return Pair.of(stack, List.of());
     }
 
     @Override

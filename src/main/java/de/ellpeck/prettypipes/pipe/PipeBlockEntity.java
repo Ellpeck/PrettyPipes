@@ -5,10 +5,9 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.network.NetworkLock;
+import de.ellpeck.prettypipes.network.ActiveCraft;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
-import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -42,7 +41,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -72,7 +70,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    public final List<Pair<Integer, CraftingModuleItem.ActiveCraft>> activeCrafts = new ArrayList<>();
+    public final List<Pair<Integer, ActiveCraft>> activeCrafts = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
@@ -120,7 +118,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         var crafts = compound.getList("active_crafts", Tag.TAG_COMPOUND);
         for (var i = 0; i < crafts.size(); i++) {
             var tag = crafts.getCompound(i);
-            this.activeCrafts.add(Pair.of(tag.getInt("module_slot"), new CraftingModuleItem.ActiveCraft(provider, tag.getCompound("data"))));
+            this.activeCrafts.add(Pair.of(tag.getInt("module_slot"), new ActiveCraft(provider, tag.getCompound("data"))));
         }
         super.loadAdditional(compound, provider);
     }
@@ -296,15 +294,18 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return total;
     }
 
-    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+    public Pair<ItemStack, Collection<ActiveCraft>> craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+        var crafts = new ArrayList<ActiveCraft>();
         var modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             var module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, dependencyChain);
+            var started = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, dependencyChain);
+            stack = started.getLeft();
+            crafts.addAll(started.getRight());
             if (stack.isEmpty())
                 break;
         }
-        return stack;
+        return Pair.of(stack, crafts);
     }
 
     public IItemHandler getItemHandler(Direction dir) {

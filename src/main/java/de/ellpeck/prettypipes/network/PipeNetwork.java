@@ -26,6 +26,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.ListenableGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.event.GraphEdgeChangeEvent;
@@ -213,21 +214,58 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                 return remain;
         }
         // check craftable items
-        return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes);
+        return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes).getLeft();
     }
 
-    public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+    public Triple<List<NetworkLock>, ItemStack, Collection<ActiveCraft>> requestLocksAndCrafts(BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+        List<NetworkLock> requests = new ArrayList<>();
+        var remain = stack.copy();
+        // check for existing items
+        for (var location : locations) {
+            var amount = location.getItemAmount(this.level, stack, equalityTypes);
+            if (amount <= 0)
+                continue;
+            amount -= this.getLockedAmount(location.getPos(), stack, null, equalityTypes);
+            if (amount > 0) {
+                if (remain.getCount() < amount)
+                    amount = remain.getCount();
+                remain.shrink(amount);
+                while (amount > 0) {
+                    var copy = stack.copy();
+                    copy.setCount(Math.min(stack.getMaxStackSize(), amount));
+                    var lock = new NetworkLock(location, copy);
+                    this.createNetworkLock(lock);
+                    requests.add(lock);
+                    amount -= copy.getCount();
+                }
+                if (remain.isEmpty())
+                    break;
+            }
+        }
+        if (!remain.isEmpty()) {
+            // check for craftable items
+            var started = this.requestCraftedItem(destPipe, unavailableConsumer, remain, dependencyChain, equalityTypes);
+            return Triple.of(requests, started.getLeft(), started.getRight());
+        } else {
+            return Triple.of(requests, remain, List.of());
+        }
+    }
+
+    public Pair<ItemStack, Collection<ActiveCraft>> requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+        var crafts = new ArrayList<ActiveCraft>();
         for (var craftable : this.getAllCraftables(destPipe)) {
             if (!ItemEquality.compareItems(stack, craftable.getRight(), equalityTypes))
                 continue;
             var pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
                 continue;
-            stack = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
+            var started = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
+            stack = started.getLeft();
+            crafts.addAll(started.getRight());
             if (stack.isEmpty())
                 break;
         }
-        return stack;
+        return Pair.of(stack, crafts);
     }
 
     public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, ItemStack stack, ItemEquality... equalityTypes) {
