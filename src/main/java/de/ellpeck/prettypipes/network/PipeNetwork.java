@@ -104,13 +104,12 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     @Override
     public String toString() {
-        return "PipeNetwork{" +
-            "\ngraph=" + this.graph +
-            ",\nnodeToConnectedNodes=" + this.nodeToConnectedNodes +
-            ",\ntileCache=" + this.tileCache.keySet() +
-            ",\npipeItems=" + this.pipeItems +
-            ",\nnetworkLocks=" + this.networkLocks +
-            ",\nactiveCrafts=" + this.activeCrafts + '}';
+        return "graph:\n\tnodes: " + this.graph.edgeSet() + "\n\tedges: " + this.graph.edgeSet() +
+            "\nnodeToConnectedNodes:\n" + PipeNetwork.toNewlineDelimitedString(this.nodeToConnectedNodes.entrySet()) +
+            "\ntileCache:\n" + PipeNetwork.toNewlineDelimitedString(this.tileCache.keySet()) +
+            "\npipeItems:\n" + PipeNetwork.toNewlineDelimitedString(this.pipeItems.entries()) +
+            "\nnetworkLocks:\n" + PipeNetwork.toNewlineDelimitedString(this.networkLocks.entries()) +
+            "\nactiveCrafts:\n" + PipeNetwork.toNewlineDelimitedString(this.activeCrafts.entries());
     }
 
     @Override
@@ -592,6 +591,10 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             }
             return PipeNetwork.clientNetwork;
         }
+    }
+
+    private static String toNewlineDelimitedString(Collection<?> collection) {
+        return collection.stream().map(c -> "\t" + c.toString()).collect(Collectors.joining("\n"));
     }
 
 }
