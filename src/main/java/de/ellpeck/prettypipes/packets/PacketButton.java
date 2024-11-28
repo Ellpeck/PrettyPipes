@@ -127,7 +127,7 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
         }),
         CANCEL_CRAFTING((pos, data, player) -> {
             var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, player.level(), pos);
-            tile.cancelCrafting();
+            tile.cancelCrafting(data.getFirst() == 1);
         }),
         TAG_FILTER((pos, data, player) -> {
             var container = (FilterModifierModuleContainer) player.containerMenu;

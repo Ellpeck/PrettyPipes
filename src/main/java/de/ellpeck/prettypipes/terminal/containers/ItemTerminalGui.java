@@ -161,7 +161,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
         if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of()));
+                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of(hasShiftDown() ? 1 : 0)));
                 return true;
             }
         }
@@ -235,7 +235,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 } else if (search.startsWith("#")) {
                     // search item description
                     var hoverText = s.getLeft().getTooltipLines(Item.TooltipContext.of(this.minecraft.level), this.minecraft.player,
-                            this.minecraft.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+                        this.minecraft.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
                     toCompare = hoverText.stream().map(Component::getString).collect(Collectors.joining("\n"));
                     search = search.substring(1);
                 } else {
@@ -364,8 +364,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     public Stream<ItemTerminalWidget> streamWidgets() {
         return this.renderables.stream()
-                .filter(w -> w instanceof ItemTerminalWidget)
-                .map(w -> (ItemTerminalWidget) w);
+            .filter(w -> w instanceof ItemTerminalWidget)
+            .map(w -> (ItemTerminalWidget) w);
     }
 
     public static int requestModifier() {

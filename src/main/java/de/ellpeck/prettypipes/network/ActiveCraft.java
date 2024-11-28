@@ -63,6 +63,19 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         this.canceled = nbt.getBoolean("canceled");
     }
 
+    @Override
+    public String toString() {
+        return "ActiveCraft{" +
+            "pipe=" + this.pipe +
+            ", moduleSlot=" + this.moduleSlot +
+            ", travelingIngredients=" + this.travelingIngredients +
+            ", ingredientsToRequest=" + this.ingredientsToRequest +
+            ", resultDestPipe=" + this.resultDestPipe +
+            ", resultStackRemain=" + this.resultStackRemain +
+            ", inProgress=" + this.inProgress +
+            ", canceled=" + this.canceled + '}';
+    }
+
     public ItemStack getTravelingIngredient(ItemStack stack, ItemEquality... equalityTypes) {
         for (var traveling : this.travelingIngredients) {
             if (ItemEquality.compareItems(stack, traveling, equalityTypes))
@@ -71,14 +84,14 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         return ItemStack.EMPTY;
     }
 
-    public boolean markCanceledOrResolve(PipeNetwork network) {
-        if (this.inProgress) {
-            this.canceled = true;
-            return false;
-        } else {
+    public boolean markCanceledOrResolve(PipeNetwork network, boolean force) {
+        if (force || !this.inProgress) {
             for (var lock : this.ingredientsToRequest)
                 network.resolveNetworkLock(lock);
             return true;
+        } else {
+            this.canceled = true;
+            return false;
         }
     }
 

@@ -133,7 +133,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         if (playersToSync.length > 0) {
             var clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
             var clientCraftables = PipeNetwork.get(this.level).getAllCraftables(pipe.getBlockPos()).stream().map(Pair::getRight).collect(Collectors.toList());
-            var currentlyCrafting = this.getCurrentlyCrafting(false).stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
+            var currentlyCrafting = this.getCurrentlyCrafting(true).stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
             for (var player : playersToSync) {
                 if (!(player.containerMenu instanceof ItemTerminalContainer container))
                     continue;
@@ -207,7 +207,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return crafting.stream().map(Pair::getRight).collect(Collectors.toList());
     }
 
-    public void cancelCrafting() {
+    public void cancelCrafting(boolean force) {
         var network = PipeNetwork.get(this.level);
         var pipe = this.getConnectedPipe();
         if (pipe == null)
@@ -215,7 +215,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         for (var craftable : network.getAllCraftables(pipe.getBlockPos())) {
             var otherPipe = network.getPipe(craftable.getLeft());
             if (otherPipe != null)
-                otherPipe.getActiveCrafts().removeIf(c -> c.markCanceledOrResolve(network));
+                otherPipe.getActiveCrafts().removeIf(c -> c.markCanceledOrResolve(network, force));
         }
         var lookingPlayers = this.getLookingPlayers();
         if (lookingPlayers.length > 0)

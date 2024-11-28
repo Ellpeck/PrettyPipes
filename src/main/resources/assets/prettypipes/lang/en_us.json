@@ -94,7 +94,7 @@
     "info.prettypipes.energy": "%s / %s FE",
     "info.prettypipes.crafting": "Awaiting",
     "info.prettypipes.cancel_all": "Cancel",
-    "info.prettypipes.cancel_all.desc": "Stops waiting for current crafting outputs\nOngoing crafting operations are still completed",
+    "info.prettypipes.cancel_all.desc": "Stops waiting for current crafting outputs\nOngoing crafting operations are still completed\nHold Shift to include ongoing crafting operations,\nwhich may cause partial recipes to stay behind",
     "info.prettypipes.no_pipe_connected": "The terminal needs to be connected to a pipe network",
     "info.prettypipes.too_many_pipes_connected": "The terminal can only be connected to a single pipe at a time",
     "dir.prettypipes.up": "Up",

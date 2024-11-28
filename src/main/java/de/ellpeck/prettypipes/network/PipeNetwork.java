@@ -109,7 +109,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             ",\nnodeToConnectedNodes=" + this.nodeToConnectedNodes +
             ",\ntileCache=" + this.tileCache.keySet() +
             ",\npipeItems=" + this.pipeItems +
-            ",\nnetworkLocks=" + this.networkLocks + '}';
+            ",\nnetworkLocks=" + this.networkLocks +
+            ",\nactiveCrafts=" + this.activeCrafts + '}';
     }
 
     @Override
@@ -460,7 +461,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     }
 
     public void cancelCrafts() {
-        this.activeCrafts.entries().removeIf(c -> c.getValue().markCanceledOrResolve(this));
+        this.activeCrafts.entries().removeIf(c -> c.getValue().markCanceledOrResolve(this, true));
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {
