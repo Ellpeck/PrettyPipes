@@ -70,11 +70,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    public final List<Pair<Integer, ActiveCraft>> activeCrafts = new ArrayList<>();
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
-    protected List<IPipeItem> items;
+    private List<IPipeItem> itemCache;
+    private List<ActiveCraft> activeCraftCache;
     private int lastItemAmount;
     private int priority;
     private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
@@ -99,14 +99,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         compound.putInt("module_drop_check", this.moduleDropCheck);
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
-        var crafts = new ListTag();
-        for (var craft : this.activeCrafts) {
-            var tag = new CompoundTag();
-            tag.putInt("module_slot", craft.getLeft());
-            tag.put("data", craft.getRight().serializeNBT(provider));
-            crafts.add(tag);
-        }
-        compound.put("active_crafts", crafts);
     }
 
     @Override
@@ -114,12 +106,6 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         this.modules.deserializeNBT(provider, compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
-        this.activeCrafts.clear();
-        var crafts = compound.getList("active_crafts", Tag.TAG_COMPOUND);
-        for (var i = 0; i < crafts.size(); i++) {
-            var tag = crafts.getCompound(i);
-            this.activeCrafts.add(Pair.of(tag.getInt("module_slot"), new ActiveCraft(provider, tag.getCompound("data"))));
-        }
         super.loadAdditional(compound, provider);
     }
 
@@ -145,9 +131,15 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public List<IPipeItem> getItems() {
-        if (this.items == null)
-            this.items = PipeNetwork.get(this.level).getItemsInPipe(this.worldPosition);
-        return this.items;
+        if (this.itemCache == null)
+            this.itemCache = PipeNetwork.get(this.level).getItemsInPipe(this.worldPosition);
+        return this.itemCache;
+    }
+
+    public List<ActiveCraft> getActiveCrafts() {
+        if (this.activeCraftCache == null)
+            this.activeCraftCache = PipeNetwork.get(this.level).getActiveCrafts(this.worldPosition);
+        return this.activeCraftCache;
     }
 
     public void addNewItem(IPipeItem item) {

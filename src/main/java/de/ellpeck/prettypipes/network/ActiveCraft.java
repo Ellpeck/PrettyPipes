@@ -15,6 +15,8 @@ import java.util.List;
 
 public class ActiveCraft implements INBTSerializable<CompoundTag> {
 
+    public BlockPos pipe;
+    public int moduleSlot;
     public List<ItemStack> travelingIngredients = new ArrayList<>();
     public List<NetworkLock> ingredientsToRequest;
     public BlockPos resultDestPipe;
@@ -23,7 +25,9 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     // we only remove canceled requests from the queue once their items are fully delivered to the crafting location, so that unfinished recipes don't get stuck in crafters etc.
     public boolean canceled;
 
-    public ActiveCraft(List<NetworkLock> ingredientsToRequest, BlockPos resultDestPipe, ItemStack resultStackRemain) {
+    public ActiveCraft(BlockPos pipe, int moduleSlot, List<NetworkLock> ingredientsToRequest, BlockPos resultDestPipe, ItemStack resultStackRemain) {
+        this.pipe = pipe;
+        this.moduleSlot = moduleSlot;
         this.ingredientsToRequest = ingredientsToRequest;
         this.resultDestPipe = resultDestPipe;
         this.resultStackRemain = resultStackRemain;
@@ -36,6 +40,8 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     @Override
     public @UnknownNullability CompoundTag serializeNBT(HolderLookup.Provider provider) {
         var ret = new CompoundTag();
+        ret.putLong("pipe", this.pipe.asLong());
+        ret.putInt("module_slot", this.moduleSlot);
         ret.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> n.serializeNBT(provider)));
         ret.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
         ret.putLong("result_dest_pipe", this.resultDestPipe.asLong());
@@ -47,6 +53,8 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
 
     @Override
     public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+        this.pipe = BlockPos.of(nbt.getLong("pipe"));
+        this.moduleSlot = nbt.getInt("module_slot");
         this.ingredientsToRequest = Utility.deserializeAll(nbt.getList("ingredients_to_request", Tag.TAG_COMPOUND), t -> new NetworkLock(provider, t));
         this.travelingIngredients = Utility.deserializeAll(nbt.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
         this.resultDestPipe = BlockPos.of(nbt.getLong("result_dest_pipe"));
