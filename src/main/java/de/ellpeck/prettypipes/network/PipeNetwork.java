@@ -217,7 +217,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes).getLeft();
     }
 
-    public Triple<List<NetworkLock>, ItemStack, Collection<ActiveCraft>> requestLocksAndCrafts(BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+    public Triple<List<NetworkLock>, ItemStack, Collection<ActiveCraft>> requestLocksAndStartCrafting(BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
         List<NetworkLock> requests = new ArrayList<>();
         var remain = stack.copy();
         // check for existing items

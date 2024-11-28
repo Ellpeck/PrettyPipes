@@ -15,7 +15,6 @@ import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
-import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentType;
@@ -197,11 +196,14 @@ public class CraftingModuleItem extends ModuleItem {
                 var copy = in.copy();
                 if (!contents.ensureItemOrder)
                     copy.setCount(in.getCount() * toCraft);
-                var ret = network.requestLocksAndCrafts(tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 locks.addAll(ret.getLeft());
                 crafts.addAll(ret.getRight());
             }
         }
+        // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted inbetween dependencies
+        // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
+        crafts.forEach(c -> c.inProgress = true);
 
         var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);

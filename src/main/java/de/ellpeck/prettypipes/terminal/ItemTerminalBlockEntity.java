@@ -32,7 +32,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -171,7 +170,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         var item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
         var network = PipeNetwork.get(this.level);
-        var ret = network.requestLocksAndCrafts(this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
+        var ret = network.requestLocksAndStartCrafting(this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
         return stack.getCount() - ret.getMiddle().getCount();
     }
