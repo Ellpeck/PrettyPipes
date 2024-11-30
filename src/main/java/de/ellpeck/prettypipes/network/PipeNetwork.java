@@ -217,7 +217,6 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             if (remain.isEmpty())
                 return remain;
         }
-        System.out.println(remain);
         // check craftable items
         return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes).getLeft();
     }
