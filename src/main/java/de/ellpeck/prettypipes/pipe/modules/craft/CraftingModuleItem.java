@@ -84,25 +84,11 @@ public class CraftingModuleItem extends ModuleItem {
                         var ensureItemOrder = module.get(Contents.TYPE).ensureItemOrder;
                         // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
                         if (!ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
-                            var requestRemain = network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
+                            network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
                             network.resolveNetworkLock(lock);
                             craft.ingredientsToRequest.remove(lock);
+                            craft.travelingIngredients.add(lock.stack.copy());
                             craft.inProgress = true;
-
-                            var traveling = lock.stack.copy();
-                            traveling.shrink(requestRemain.getCount());
-                            craft.travelingIngredients.add(traveling);
-
-                            // if we couldn't fit all items into the destination, create another request for the rest
-                            var remain = lock.stack.copy();
-                            remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                            if (!remain.isEmpty()) {
-                                var remainRequest = new NetworkLock(lock.location, remain);
-                                // if we're ensuring item order, we need to insert the remaining request at the start so that it gets processed first
-                                var index = ensureItemOrder ? 0 : craft.ingredientsToRequest.size();
-                                craft.ingredientsToRequest.add(index, remainRequest);
-                                network.createNetworkLock(remainRequest);
-                            }
                         }
                     }
                     network.endProfile();
@@ -218,11 +204,10 @@ public class CraftingModuleItem extends ModuleItem {
         var slot = tile.getModuleSlot(module);
         var contents = module.get(Contents.TYPE);
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
-        var crafts = tile.getActiveCrafts();
-        var craft = crafts.stream()
-            .filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty())
-            .findAny().orElse(null);
-        if (craft != null) {
+        var allCrafts = tile.getActiveCrafts();
+        var ourCrafts = allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).iterator();
+        while (ourCrafts.hasNext()) {
+            var craft = ourCrafts.next();
             craft.travelingIngredients.remove(craft.getTravelingIngredient(stack, equalityTypes));
 
             if (contents.insertSingles) {
@@ -245,7 +230,7 @@ public class CraftingModuleItem extends ModuleItem {
 
                 // if we canceled the request and all input items are delivered (ie the machine actually got what it expected), remove it from the queue
                 if (craft.canceled)
-                    crafts.remove(craft);
+                    allCrafts.remove(craft);
             }
         }
         return stack;

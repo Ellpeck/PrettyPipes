@@ -217,6 +217,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             if (remain.isEmpty())
                 return remain;
         }
+        System.out.println(remain);
         // check craftable items
         return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes).getLeft();
     }
@@ -286,11 +287,9 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         amount -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
         if (amount <= 0)
             return stack;
-        var remain = stack.copy();
         // make sure we only extract less than or equal to the requested amount
-        if (remain.getCount() < amount)
-            amount = remain.getCount();
-        remain.shrink(amount);
+        if (stack.getCount() < amount)
+            amount = stack.getCount();
         for (int slot : location.getStackSlots(this.level, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             var handler = location.getItemHandler(this.level);
@@ -302,7 +301,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                     break;
             }
         }
-        return remain;
+        // we reduce the amount by what we managed to extract & insert in the for loop, so the amount down here will be what we couldn't
+        return stack.copyWithCount(amount);
     }
 
     public PipeBlockEntity getPipe(BlockPos pos) {
