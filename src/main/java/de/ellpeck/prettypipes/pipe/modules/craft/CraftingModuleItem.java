@@ -91,7 +91,7 @@ public class CraftingModuleItem extends ModuleItem {
                         }
                     }
                     network.endProfile();
-                } else if (craft.travelingIngredients.size() <= 0) {
+                } else if (craft.travelingIngredients.isEmpty()) {
                     // pull requested crafting results from the network once they are stored
                     network.startProfile("crafting_results");
                     var items = network.getOrderedNetworkItems(tile.getBlockPos());
@@ -219,7 +219,7 @@ public class CraftingModuleItem extends ModuleItem {
                 }
             }
 
-            if (craft.travelingIngredients.size() <= 0 && craft.ingredientsToRequest.size() <= 0) {
+            if (craft.travelingIngredients.isEmpty() && craft.ingredientsToRequest.isEmpty()) {
                 if (contents.emitRedstone) {
                     tile.redstoneTicks = 5;
                     tile.getLevel().updateNeighborsAt(tile.getBlockPos(), tile.getBlockState().getBlock());
