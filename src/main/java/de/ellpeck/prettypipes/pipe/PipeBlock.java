@@ -263,7 +263,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
             if (worldIn.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
+                Utility.dropInventory(pipe, pipe.modules);
+                for (var item : pipe.getItems())
+                    item.drop(worldIn, item.getContent());
                 pipe.getItems().clear();
+                if (pipe.cover != null)
+                    pipe.removeCover();
                 for (var craft : pipe.getActiveCrafts()) {
                     for (var lock : craft.ingredientsToRequest)
                         network.resolveNetworkLock(lock);
@@ -271,12 +276,6 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);
         }
-    }
-
-    @Override
-    public BlockState playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
-        PipeBlock.dropItems(worldIn, pos, player);
-        return super.playerWillDestroy(worldIn, pos, state, player);
     }
 
     @Override
@@ -318,17 +317,6 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return BaseEntityBlock.createTickerHelper(type, Registry.pipeBlockEntity, PipeBlockEntity::tick);
-    }
-
-    public static void dropItems(Level worldIn, BlockPos pos, Player player) {
-        var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
-        if (tile != null) {
-            Utility.dropInventory(tile, tile.modules);
-            for (var item : tile.getItems())
-                item.drop(worldIn, item.getContent());
-            if (tile.cover != null)
-                tile.removeCover(player, InteractionHand.MAIN_HAND);
-        }
     }
 
 }

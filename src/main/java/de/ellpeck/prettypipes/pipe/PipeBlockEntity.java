@@ -353,10 +353,10 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return -1;
     }
 
-    public void removeCover(Player player, InteractionHand hand) {
+    public void removeCover() {
         if (this.level.isClientSide)
             return;
-        var drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null, player, player.getItemInHand(hand));
+        var drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null);
         for (var drop : drops)
             Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ(), drop);
         this.cover = null;

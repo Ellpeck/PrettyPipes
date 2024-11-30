@@ -45,11 +45,10 @@ public class WrenchItem extends Item {
             if (!world.isClientSide) {
                 if (tile.cover != null) {
                     // remove the cover
-                    tile.removeCover(player, context.getHand());
+                    tile.removeCover();
                     Utility.sendBlockEntityToClients(tile);
                 } else {
                     // remove the pipe
-                    PipeBlock.dropItems(world, pos, player);
                     Block.dropResources(state, world, pos, tile, null, ItemStack.EMPTY);
                     world.removeBlock(pos, false);
                 }
