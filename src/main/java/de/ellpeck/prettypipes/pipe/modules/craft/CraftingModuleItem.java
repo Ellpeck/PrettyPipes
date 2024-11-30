@@ -74,16 +74,15 @@ public class CraftingModuleItem extends ModuleItem {
         if (!crafts.isEmpty()) {
             var craft = crafts.getFirst();
             if (craft.moduleSlot == slot) {
-                // process crafting ingredient requests
                 if (!craft.ingredientsToRequest.isEmpty()) {
+                    // process crafting ingredient requests
                     network.startProfile("crafting_ingredients");
                     var lock = craft.ingredientsToRequest.getFirst();
                     var equalityTypes = ItemFilter.getEqualityTypes(tile);
                     var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
                     if (dest != null) {
-                        var ensureItemOrder = module.get(Contents.TYPE).ensureItemOrder;
                         // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
-                        if (!ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
+                        if (!module.get(Contents.TYPE).ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
                             network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
                             network.resolveNetworkLock(lock);
                             craft.ingredientsToRequest.remove(lock);
@@ -92,10 +91,8 @@ public class CraftingModuleItem extends ModuleItem {
                         }
                     }
                     network.endProfile();
-                }
-
-                // pull requested crafting results from the network once they are stored
-                if (!craft.resultStackRemain.isEmpty()) {
+                } else if (craft.travelingIngredients.size() <= 0) {
+                    // pull requested crafting results from the network once they are stored
                     network.startProfile("crafting_results");
                     var items = network.getOrderedNetworkItems(tile.getBlockPos());
                     var equalityTypes = ItemFilter.getEqualityTypes(tile);
