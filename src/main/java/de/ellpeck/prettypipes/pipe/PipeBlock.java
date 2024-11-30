@@ -298,6 +298,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         return Math.min(15, pipe.getItems().size());
     }
 
+    @Override
+    protected int getSignal(BlockState blockState, BlockGetter blockAccess, BlockPos pos, Direction side) {
+        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, blockAccess, pos);
+        return pipe.redstoneTicks > 0 ? 15 : 0;
+    }
+
     @org.jetbrains.annotations.Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {

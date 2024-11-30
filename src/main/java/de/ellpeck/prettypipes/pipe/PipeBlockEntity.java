@@ -70,14 +70,18 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
+
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
+    public int redstoneTicks;
+
+    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
+
     private List<IPipeItem> itemCache;
     private List<ActiveCraft> activeCraftCache;
     private int lastItemAmount;
     private int priority;
-    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
     public PipeBlockEntity(BlockPos pos, BlockState state) {
         super(Registry.pipeBlockEntity, pos, state);
@@ -99,6 +103,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         compound.putInt("module_drop_check", this.moduleDropCheck);
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
+        compound.putInt("priority", this.priority);
     }
 
     @Override
@@ -106,6 +111,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         this.modules.deserializeNBT(provider, compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
+        this.priority = compound.getInt("priority");
         super.loadAdditional(compound, provider);
     }
 
@@ -404,6 +410,10 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return stack;
     }
 
+    public void setRedstoneTicks(int ticks) {
+        this.redstoneTicks = ticks;
+    }
+
     @Override
     public Component getDisplayName() {
         return Component.translatable("container." + PrettyPipes.ID + ".pipe");
@@ -432,6 +442,12 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         // invalidate our pressurizer reference if it was removed
         if (pipe.pressurizer != null && pipe.pressurizer.isRemoved())
             pipe.pressurizer = null;
+
+        if (pipe.redstoneTicks > 0) {
+            pipe.redstoneTicks--;
+            if (pipe.redstoneTicks <= 0)
+                level.updateNeighborsAt(pos, state.getBlock());
+        }
 
         if (!pipe.level.isAreaLoaded(pipe.worldPosition, 1))
             return;

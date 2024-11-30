@@ -17,6 +17,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     public ItemStackHandler output;
     public boolean ensureItemOrder;
     public boolean insertSingles;
+    public boolean emitRedstone;
     public boolean modified;
 
     public CraftingModuleContainer(MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
@@ -28,6 +29,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
         var contents = this.moduleStack.get(CraftingModuleItem.Contents.TYPE);
         this.ensureItemOrder = contents.ensureItemOrder();
         this.insertSingles = contents.insertSingles();
+        this.emitRedstone = contents.emitRedstone();
 
         this.input = Utility.copy(contents.input());
         for (var i = 0; i < this.input.getSlots(); i++) {
@@ -57,7 +59,7 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     public void removed(Player playerIn) {
         super.removed(playerIn);
         if (this.modified) {
-            this.moduleStack.set(CraftingModuleItem.Contents.TYPE, new CraftingModuleItem.Contents(this.input, this.output, this.ensureItemOrder, this.insertSingles));
+            this.moduleStack.set(CraftingModuleItem.Contents.TYPE, new CraftingModuleItem.Contents(this.input, this.output, this.ensureItemOrder, this.insertSingles, this.emitRedstone));
             this.tile.setChanged();
         }
     }

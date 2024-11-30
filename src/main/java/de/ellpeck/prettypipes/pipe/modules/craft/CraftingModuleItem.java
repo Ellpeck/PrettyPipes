@@ -35,7 +35,7 @@ public class CraftingModuleItem extends ModuleItem {
     private final int speed;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
-        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, false)));
+        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, false, false)));
         this.speed = tier.forTier(20, 10, 5);
     }
 
@@ -172,6 +172,7 @@ public class CraftingModuleItem extends ModuleItem {
         if (craftableAmount <= 0)
             return Pair.of(stack, List.of());
         var slot = tile.getModuleSlot(module);
+        var contents = module.get(Contents.TYPE);
 
         var network = PipeNetwork.get(tile.getLevel());
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
@@ -183,11 +184,10 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
-        var locks = new ArrayList<NetworkLock>();
-        var crafts = new ArrayList<ActiveCraft>();
-        var contents = module.get(Contents.TYPE);
+        var allCrafts = new ArrayList<ActiveCraft>();
         // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
         for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
+            var locks = new ArrayList<NetworkLock>();
             for (var i = 0; i < contents.input.getSlots(); i++) {
                 var in = contents.input.getStackInSlot(i);
                 if (in.isEmpty())
@@ -196,29 +196,27 @@ public class CraftingModuleItem extends ModuleItem {
                 if (!contents.ensureItemOrder)
                     copy.setCount(in.getCount() * toCraft);
                 var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted inbetween dependencies
+                // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
+                ret.getRight().forEach(a -> a.inProgress = true);
                 locks.addAll(ret.getLeft());
-                crafts.addAll(ret.getRight());
+                allCrafts.addAll(ret.getRight());
             }
+            var result = stack.copyWithCount(contents.ensureItemOrder ? resultAmount : resultAmount * toCraft);
+            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, destPipe, result);
+            tile.getActiveCrafts().add(activeCraft);
+            allCrafts.add(activeCraft);
         }
-        // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted inbetween dependencies
-        // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
-        crafts.forEach(c -> c.inProgress = true);
 
         var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);
-        var result = stack.copy();
-        result.shrink(remain.getCount());
-
-        var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, destPipe, result);
-        tile.getActiveCrafts().add(activeCraft);
-        crafts.add(activeCraft);
-
-        return Pair.of(remain, crafts);
+        return Pair.of(remain, allCrafts);
     }
 
     @Override
     public ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction) {
         var slot = tile.getModuleSlot(module);
+        var contents = module.get(Contents.TYPE);
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var crafts = tile.getActiveCrafts();
         var craft = crafts.stream()
@@ -227,7 +225,7 @@ public class CraftingModuleItem extends ModuleItem {
         if (craft != null) {
             craft.travelingIngredients.remove(craft.getTravelingIngredient(stack, equalityTypes));
 
-            if (module.get(Contents.TYPE).insertSingles) {
+            if (contents.insertSingles) {
                 var handler = tile.getItemHandler(direction);
                 if (handler != null) {
                     while (!stack.isEmpty()) {
@@ -239,9 +237,16 @@ public class CraftingModuleItem extends ModuleItem {
                 }
             }
 
-            // if we canceled the request and all input items are delivered (ie the machine actually got what it expected), remove it from the queue
-            if (craft.canceled && craft.travelingIngredients.size() <= 0 && craft.ingredientsToRequest.size() <= 0)
-                crafts.remove(craft);
+            if (craft.travelingIngredients.size() <= 0 && craft.ingredientsToRequest.size() <= 0) {
+                if (contents.emitRedstone) {
+                    tile.redstoneTicks = 5;
+                    tile.getLevel().updateNeighborsAt(tile.getBlockPos(), tile.getBlockState().getBlock());
+                }
+
+                // if we canceled the request and all input items are delivered (ie the machine actually got what it expected), remove it from the queue
+                if (craft.canceled)
+                    crafts.remove(craft);
+            }
         }
         return stack;
     }
@@ -264,13 +269,14 @@ public class CraftingModuleItem extends ModuleItem {
         return deps;
     }
 
-    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean ensureItemOrder, boolean insertSingles) {
+    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean ensureItemOrder, boolean insertSingles, boolean emitRedstone) {
 
         public static final Codec<Contents> CODEC = RecordCodecBuilder.create(i -> i.group(
             Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("input").forGetter(d -> d.input),
             Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output),
             Codec.BOOL.optionalFieldOf("ensure_item_order", false).forGetter(d -> d.ensureItemOrder),
-            Codec.BOOL.optionalFieldOf("insert_singles", false).forGetter(d -> d.insertSingles)
+            Codec.BOOL.optionalFieldOf("insert_singles", false).forGetter(d -> d.insertSingles),
+            Codec.BOOL.optionalFieldOf("emit_redstone", false).forGetter(d -> d.emitRedstone)
         ).apply(i, Contents::new));
         public static final DataComponentType<Contents> TYPE = DataComponentType.<Contents>builder().persistent(Contents.CODEC).cacheEncoding().build();
 

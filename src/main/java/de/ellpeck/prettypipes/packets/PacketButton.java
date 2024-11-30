@@ -107,6 +107,12 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
                 container.modified = true;
             }
         }),
+        EMIT_REDSTONE_BUTTON((pos, data, player) -> {
+            if (player.containerMenu instanceof CraftingModuleContainer container) {
+                container.emitRedstone = !container.emitRedstone;
+                container.modified = true;
+            }
+        }),
         STACK_SIZE_MODULE_BUTTON((pos, data, player) -> {
             var container = (AbstractPipeContainer<?>) player.containerMenu;
             var moduleData = container.moduleStack.getOrDefault(StackSizeModuleItem.Data.TYPE, StackSizeModuleItem.Data.DEFAULT);

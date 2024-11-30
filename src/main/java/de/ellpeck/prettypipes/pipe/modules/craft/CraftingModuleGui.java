@@ -41,6 +41,13 @@ public class CraftingModuleGui extends AbstractPipeGui<CraftingModuleContainer> 
             button.setMessage(Component.translatable(singleText.get()));
         }).bounds(this.leftPos + this.imageWidth - 7 - 20 - 22, this.topPos + 17 + 32 + 18 * 2 + 2, 20, 20).tooltip(
             Tooltip.create(Component.translatable("info." + PrettyPipes.ID + ".insert_singles.description").withStyle(ChatFormatting.GRAY))).build());
+
+        var redstoneText = (Supplier<String>) () -> "info." + PrettyPipes.ID + ".emit_redstone_" + (this.menu.emitRedstone ? "on" : "off");
+        this.addRenderableWidget(Button.builder(Component.translatable(redstoneText.get()), button -> {
+            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.EMIT_REDSTONE_BUTTON, List.of());
+            button.setMessage(Component.translatable(redstoneText.get()));
+        }).bounds(this.leftPos + 7, this.topPos + 17 + 32 + 18 * 2 + 2, 20, 20).tooltip(
+            Tooltip.create(Component.translatable("info." + PrettyPipes.ID + ".emit_redstone.description").withStyle(ChatFormatting.GRAY))).build());
     }
 
 }
