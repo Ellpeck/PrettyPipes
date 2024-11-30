@@ -147,17 +147,6 @@ public final class Utility {
             e.connection.send(packet);
     }
 
-    public static IItemHandler getBlockItemHandler(Level world, BlockPos pos, Direction direction) {
-        var state = world.getBlockState(pos);
-        var block = state.getBlock();
-        if (!(block instanceof WorldlyContainerHolder holder))
-            return null;
-        var inventory = holder.getContainer(state, world, pos);
-        if (inventory == null)
-            return null;
-        return new SidedInvWrapper(inventory, direction);
-    }
-
     public static BlockPos readBlockPos(Tag tag) {
         if (tag instanceof IntArrayTag i) {
             int[] arr = i.getAsIntArray();

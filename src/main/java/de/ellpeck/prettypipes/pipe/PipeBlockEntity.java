@@ -307,27 +307,17 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        var handler = this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
-        if (handler != null)
-            return handler;
-        return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());
+        return this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
     }
 
-    public <T, C> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
+    public <T> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
         if (!this.isConnected(dir))
             return null;
-        var pos = this.worldPosition.relative(dir);
-        var tile = this.level.getBlockEntity(pos);
-        if (tile != null)
-            return this.level.getCapability(cap, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
-        return null;
+        return this.level.getCapability(cap, this.worldPosition.relative(dir), null, null, dir.getOpposite());
     }
 
     public IPipeConnectable getPipeConnectable(Direction dir) {
-        var tile = this.level.getBlockEntity(this.worldPosition.relative(dir));
-        if (tile != null)
-            return this.level.getCapability(Registry.pipeConnectableCapability, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
-        return null;
+        return this.level.getCapability(Registry.pipeConnectableCapability, this.worldPosition.relative(dir), null, null, dir.getOpposite());
     }
 
     public boolean canHaveModules() {

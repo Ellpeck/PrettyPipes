@@ -199,26 +199,20 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         return state;
     }
 
-    protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState state) {
+    protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState pipeState) {
         var offset = pos.relative(direction);
         if (!world.isLoaded(offset))
             return ConnectionType.DISCONNECTED;
         var opposite = direction.getOpposite();
-        var tile = world.getBlockEntity(offset);
-        if (tile != null) {
-            var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, tile.getBlockState(), tile, opposite);
-            if (connectable != null)
-                return connectable.getConnectionType(pos, direction);
-            var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, tile.getBlockState(), tile, opposite);
-            if (handler != null)
-                return ConnectionType.CONNECTED;
-        }
-        var blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
-        if (blockHandler != null)
+        var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, null, null, opposite);
+        if (connectable != null)
+            return connectable.getConnectionType(pos, direction);
+        var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, null, null, opposite);
+        if (handler != null)
             return ConnectionType.CONNECTED;
         var offState = world.getBlockState(offset);
         if (PipeBlock.hasLegsTo(world, offState, offset, direction)) {
-            if (PipeBlock.DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
+            if (PipeBlock.DIRECTIONS.values().stream().noneMatch(d -> pipeState.getValue(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
         }
         return ConnectionType.DISCONNECTED;
