@@ -92,6 +92,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             if (!widget.isPresent())
                 return;
             var stack = widget.get().stack.copy();
+            if (stack.isEmpty())
+                return;
             stack.setCount(1);
             PacketDistributor.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
