@@ -40,9 +40,7 @@ public record PacketCraftingModuleTransfer(List<ItemStack> inputs, List<ItemStac
 
     private static void copy(ItemStackHandler container, List<ItemStack> contents) {
         for (var i = 0; i < container.getSlots(); i++)
-            container.setStackInSlot(i, ItemStack.EMPTY);
-        for (var stack : contents)
-            ItemHandlerHelper.insertItem(container, stack, false);
+            container.setStackInSlot(i, i < contents.size() ? contents.get(i) : ItemStack.EMPTY);
     }
 
 }

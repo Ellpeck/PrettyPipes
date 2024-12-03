@@ -44,6 +44,7 @@ public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements Custo
             tile.setGhostItems(message.stacks);
     }
 
+    // TODO the crafting module should probably also use a system like this to allow recipes that have multiple options & to also pick the items we have most of (like the terminal does in setGhostItems)
     public record Entry(Optional<List<ItemStack>> stacks, Optional<TagKey<Item>> tag) {
 
         public static final StreamCodec<RegistryFriendlyByteBuf, Entry> CODEC = StreamCodec.composite(
