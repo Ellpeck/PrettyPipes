@@ -23,7 +23,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     @Override
     protected void init() {
         super.init();
-        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, Component.translatable("info." + PrettyPipes.ID + ".max_stack_size")) {
+        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 20 + 32 + 10, 40, 20, Component.translatable("info." + PrettyPipes.ID + ".max_stack_size")) {
             @Override
             public void insertText(String textToWrite) {
                 var ret = new StringBuilder();
@@ -48,13 +48,13 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
         this.addRenderableWidget(Button.builder(buttonText.get(), b -> {
             PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON, List.of());
             b.setMessage(buttonText.get());
-        }).bounds(this.leftPos + 7, this.topPos + 17 + 32 + 10 + 22, 120, 20).build());
+        }).bounds(this.leftPos + 7, this.topPos + 20 + 32 + 10 + 22, 120, 20).build());
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752, false);
+        graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 8, 20 + 32, 4210752, false);
 
     }
 
