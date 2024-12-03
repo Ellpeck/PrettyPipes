@@ -280,28 +280,27 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         if (location.getPos().equals(destInventory))
             return stack;
         // make sure we don't pull any locked items
-        var amount = location.getItemAmount(this.level, stack, equalityTypes);
-        if (amount <= 0)
+        var available = location.getItemAmount(this.level, stack, equalityTypes);
+        if (available <= 0)
             return stack;
-        amount -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
-        if (amount <= 0)
+        available -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
+        if (available <= 0)
             return stack;
-        // make sure we only extract less than or equal to the requested amount
-        if (stack.getCount() < amount)
-            amount = stack.getCount();
+        var toExtract = Math.min(stack.getCount(), available);
+        var extractedSoFar = 0;
         for (int slot : location.getStackSlots(this.level, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             var handler = location.getItemHandler(this.level);
-            var extracted = handler.extractItem(slot, amount, true);
+            var extracted = handler.extractItem(slot, toExtract - extractedSoFar, true);
             if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> itemSupplier.apply(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
-                amount -= extracted.getCount();
-                if (amount <= 0)
+                extractedSoFar += extracted.getCount();
+                if (extractedSoFar >= toExtract)
                     break;
             }
         }
         // we reduce the amount by what we managed to extract & insert in the for loop, so the amount down here will be what we couldn't
-        return stack.copyWithCount(amount);
+        return stack.copyWithCount(stack.getCount() - extractedSoFar);
     }
 
     public PipeBlockEntity getPipe(BlockPos pos) {
