@@ -210,9 +210,7 @@ public class CraftingModuleItem extends ModuleItem {
         var contents = module.get(Contents.TYPE);
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var allCrafts = tile.getActiveCrafts();
-        var ourCrafts = allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).iterator();
-        while (ourCrafts.hasNext()) {
-            var craft = ourCrafts.next();
+        for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).toList()) {
             craft.travelingIngredients.remove(craft.getTravelingIngredient(stack, equalityTypes));
 
             if (contents.insertSingles) {
