@@ -177,23 +177,29 @@ public class CraftingModuleItem extends ModuleItem {
         var allCrafts = new ArrayList<ActiveCraft>();
         // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
         for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
+            var crafts = new ArrayList<ItemStack>();
             var locks = new ArrayList<NetworkLock>();
             for (var i = 0; i < contents.input.getSlots(); i++) {
                 var in = contents.input.getStackInSlot(i);
                 if (in.isEmpty())
                     continue;
-                var copy = in.copy();
+                var request = in.copy();
                 if (!contents.ensureItemOrder)
-                    copy.setCount(in.getCount() * toCraft);
-                var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                    request.setCount(in.getCount() * toCraft);
+                var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, request, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted inbetween dependencies
                 // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
                 ret.getRight().forEach(a -> a.inProgress = true);
                 locks.addAll(ret.getLeft());
                 allCrafts.addAll(ret.getRight());
+                // the items we started crafting are the ones we didn't request normally (ie ones we didn't create locks for)
+                var startedCrafting = request.copyWithCount(request.getCount() - ret.getLeft().stream().mapToInt(l -> l.stack.getCount()).sum());
+                if (!startedCrafting.isEmpty())
+                    crafts.add(startedCrafting);
             }
             var crafted = contents.ensureItemOrder ? resultAmount : resultAmount * toCraft;
-            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
+            // items we started craft dependencies for are ones that will be sent to us (so we're waiting for them immediately!)
+            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, crafts, destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
             tile.getActiveCrafts().add(activeCraft);
             allCrafts.add(activeCraft);
             leftOfRequest -= crafted;
@@ -211,7 +217,10 @@ public class CraftingModuleItem extends ModuleItem {
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var allCrafts = tile.getActiveCrafts();
         for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).toList()) {
-            craft.travelingIngredients.remove(craft.getTravelingIngredient(stack, equalityTypes));
+            var traveling = craft.getTravelingIngredient(stack, equalityTypes);
+            traveling.shrink(stack.getCount());
+            if (traveling.isEmpty())
+                craft.travelingIngredients.remove(traveling);
 
             if (contents.insertSingles) {
                 var handler = tile.getItemHandler(direction);

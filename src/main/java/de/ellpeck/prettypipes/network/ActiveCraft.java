@@ -17,18 +17,19 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
 
     public BlockPos pipe;
     public int moduleSlot;
-    public List<ItemStack> travelingIngredients = new ArrayList<>();
     public List<NetworkLock> ingredientsToRequest;
+    public List<ItemStack> travelingIngredients;
     public BlockPos resultDestPipe;
     public ItemStack resultStackRemain;
     public boolean inProgress;
     // we only remove canceled requests from the queue once their items are fully delivered to the crafting location, so that unfinished recipes don't get stuck in crafters etc.
     public boolean canceled;
 
-    public ActiveCraft(BlockPos pipe, int moduleSlot, List<NetworkLock> ingredientsToRequest, BlockPos resultDestPipe, ItemStack resultStackRemain) {
+    public ActiveCraft(BlockPos pipe, int moduleSlot, List<NetworkLock> ingredientsToRequest, List<ItemStack> travelingIngredients, BlockPos resultDestPipe, ItemStack resultStackRemain) {
         this.pipe = pipe;
         this.moduleSlot = moduleSlot;
         this.ingredientsToRequest = ingredientsToRequest;
+        this.travelingIngredients = travelingIngredients;
         this.resultDestPipe = resultDestPipe;
         this.resultStackRemain = resultStackRemain;
     }
