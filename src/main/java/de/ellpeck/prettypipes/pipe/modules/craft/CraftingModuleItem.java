@@ -92,25 +92,31 @@ public class CraftingModuleItem extends ModuleItem {
                     }
                     network.endProfile();
                 } else if (craft.travelingIngredients.isEmpty()) {
-                    // pull requested crafting results from the network once they are stored
-                    network.startProfile("crafting_results");
-                    var items = network.getOrderedNetworkItems(tile.getBlockPos());
-                    var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                    var destPipe = network.getPipe(craft.resultDestPipe);
-                    if (destPipe != null) {
-                        var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
-                        if (dest != null) {
-                            for (var item : items) {
-                                var requestRemain = network.requestExistingItem(item, craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
-                                craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                                if (craft.resultStackRemain.isEmpty()) {
-                                    crafts.remove(craft);
-                                    break;
+                    if (craft.resultStackRemain.isEmpty()) {
+                        // the result stack is empty from the start if this was a partial craft whose results shouldn't be delivered anywhere
+                        // (ie someone requested 3 sticks with ensureItemOrder, but the recipe always makes 4, so the 4th recipe has no destination)
+                        crafts.remove(craft);
+                    } else {
+                        // pull requested crafting results from the network once they are stored
+                        network.startProfile("crafting_results");
+                        var items = network.getOrderedNetworkItems(tile.getBlockPos());
+                        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                        var destPipe = network.getPipe(craft.resultDestPipe);
+                        if (destPipe != null) {
+                            var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
+                            if (dest != null) {
+                                for (var item : items) {
+                                    var requestRemain = network.requestExistingItem(item, craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
+                                    craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                                    if (craft.resultStackRemain.isEmpty()) {
+                                        crafts.remove(craft);
+                                        break;
+                                    }
                                 }
                             }
                         }
+                        network.endProfile();
                     }
-                    network.endProfile();
                 }
             }
         }
@@ -167,6 +173,7 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
+        var leftOfRequest = stack.getCount();
         var allCrafts = new ArrayList<ActiveCraft>();
         // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
         for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
@@ -185,10 +192,11 @@ public class CraftingModuleItem extends ModuleItem {
                 locks.addAll(ret.getLeft());
                 allCrafts.addAll(ret.getRight());
             }
-            var result = stack.copyWithCount(contents.ensureItemOrder ? resultAmount : resultAmount * toCraft);
-            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, destPipe, result);
+            var crafted = contents.ensureItemOrder ? resultAmount : resultAmount * toCraft;
+            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
             tile.getActiveCrafts().add(activeCraft);
             allCrafts.add(activeCraft);
+            leftOfRequest -= crafted;
         }
 
         var remain = stack.copy();
