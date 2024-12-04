@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.pipe.modules.craft;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
@@ -36,7 +37,7 @@ public class CraftingModuleItem extends ModuleItem {
     private final int speed;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
-        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, false, false)));
+        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, InsertionType.ALL, false)));
         this.speed = tier.forTier(20, 10, 5);
     }
 
@@ -87,7 +88,7 @@ public class CraftingModuleItem extends ModuleItem {
                         var dest = tile.getAvailableDestination(Direction.values(), toRequest, true, true);
                         if (dest != null) {
                             // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
-                            if (!module.get(Contents.TYPE).ensureItemOrder || craft.travelingIngredients.isEmpty()) {
+                            if (module.get(Contents.TYPE).insertionType != InsertionType.PER_ITEM || craft.travelingIngredients.isEmpty()) {
                                 var equalityTypes = ItemFilter.getEqualityTypes(tile);
                                 var requested = ingredient.map(l -> {
                                     // we can ignore the return value here since we're using a lock, so we know that the item is already waiting for us there
@@ -217,15 +218,15 @@ public class CraftingModuleItem extends ModuleItem {
 
         var leftOfRequest = stack.getCount();
         var allCrafts = new ArrayList<ActiveCraft>();
-        // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
-        for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
+        // if we're inserting individual items or per craft, we need to split up the request into multiple crafts
+        for (var c = contents.insertionType != InsertionType.ALL ? toCraft : 1; c > 0; c--) {
             var toRequest = new ArrayList<Either<NetworkLock, ItemStack>>();
             for (var i = 0; i < contents.input.getSlots(); i++) {
                 var in = contents.input.getStackInSlot(i);
                 if (in.isEmpty())
                     continue;
                 var request = in.copy();
-                if (!contents.ensureItemOrder)
+                if (contents.insertionType == InsertionType.ALL)
                     request.setCount(in.getCount() * toCraft);
                 var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, request, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 for (var lock : ret.getLeft())
@@ -243,7 +244,7 @@ public class CraftingModuleItem extends ModuleItem {
                     allCrafts.add(dep);
                 }
             }
-            var crafted = contents.ensureItemOrder ? resultAmount : resultAmount * toCraft;
+            var crafted = contents.insertionType != InsertionType.ALL ? resultAmount : resultAmount * toCraft;
             // items we started craft dependencies for are ones that will be sent to us (so we're waiting for them immediately!)
             var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, toRequest, new ArrayList<>(), destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
             tile.getActiveCrafts().add(activeCraft);
@@ -272,7 +273,7 @@ public class CraftingModuleItem extends ModuleItem {
             if (traveling.isEmpty())
                 craft.travelingIngredients.remove(traveling);
 
-            if (contents.insertSingles) {
+            if (contents.insertUnstacked) {
                 var handler = tile.getItemHandler(direction);
                 if (handler != null) {
                     while (!stack.isEmpty()) {
@@ -316,17 +317,28 @@ public class CraftingModuleItem extends ModuleItem {
         return deps;
     }
 
-    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean ensureItemOrder, boolean insertSingles, boolean emitRedstone) {
+    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean emitRedstone, InsertionType insertionType, boolean insertUnstacked) {
 
         public static final Codec<Contents> CODEC = RecordCodecBuilder.create(i -> i.group(
             Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("input").forGetter(d -> d.input),
             Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output),
-            Codec.BOOL.optionalFieldOf("ensure_item_order", false).forGetter(d -> d.ensureItemOrder),
-            Codec.BOOL.optionalFieldOf("insert_singles", false).forGetter(d -> d.insertSingles),
-            Codec.BOOL.optionalFieldOf("emit_redstone", false).forGetter(d -> d.emitRedstone)
+            Codec.BOOL.optionalFieldOf("emit_redstone", false).forGetter(d -> d.emitRedstone),
+            Codec.STRING.xmap(InsertionType::valueOf, InsertionType::name).optionalFieldOf("insertion_type", InsertionType.ALL).forGetter(d -> d.insertionType),
+            Codec.BOOL.optionalFieldOf("insert_unstacked", false).forGetter(d -> d.insertUnstacked)
         ).apply(i, Contents::new));
         public static final DataComponentType<Contents> TYPE = DataComponentType.<Contents>builder().persistent(Contents.CODEC).cacheEncoding().build();
 
+    }
+
+    public enum InsertionType {
+
+        ALL,
+        PER_ITEM,
+        PER_CRAFT;
+
+        public String translationKey() {
+            return "info." + PrettyPipes.ID + ".insertion_type." + this.name().toLowerCase(Locale.ROOT);
+        }
     }
 
 }

@@ -7,6 +7,7 @@ import de.ellpeck.prettypipes.misc.ItemFilter.IFilteredContainer;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleContainer;
+import de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleContainer;
 import de.ellpeck.prettypipes.pipe.modules.modifier.FilterModifierModuleItem;
 import de.ellpeck.prettypipes.pipe.modules.stacksize.StackSizeModuleItem;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static de.ellpeck.prettypipes.misc.DirectionSelector.IDirectionContainer;
+import static de.ellpeck.prettypipes.pipe.modules.craft.CraftingModuleItem.*;
 
 public record PacketButton(BlockPos pos, int result, List<Integer> data) implements CustomPacketPayload {
 
@@ -95,15 +97,15 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
             if (player.containerMenu instanceof IFilteredContainer filtered)
                 filtered.getFilter().onButtonPacket(filtered, data.getFirst());
         }),
-        ENSURE_ITEM_ORDER_BUTTON((pos, data, player) -> {
+        INSERTION_TYPE_BUTTON((pos, data, player) -> {
             if (player.containerMenu instanceof CraftingModuleContainer container) {
-                container.ensureItemOrder = !container.ensureItemOrder;
+                container.insertionType = InsertionType.values()[(container.insertionType.ordinal() + 1) % InsertionType.values().length];
                 container.modified = true;
             }
         }),
-        INSERT_SINGLES_BUTTON((pos, data, player) -> {
+        INSERT_UNSTACKED_BUTTON((pos, data, player) -> {
             if (player.containerMenu instanceof CraftingModuleContainer container) {
-                container.insertSingles = !container.insertSingles;
+                container.insertUnstacked = !container.insertUnstacked;
                 container.modified = true;
             }
         }),
