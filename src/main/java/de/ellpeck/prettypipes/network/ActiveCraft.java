@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.network;
 
+import com.mojang.datafixers.util.Either;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import net.minecraft.core.BlockPos;
@@ -10,14 +11,13 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.UnknownNullability;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ActiveCraft implements INBTSerializable<CompoundTag> {
 
     public BlockPos pipe;
     public int moduleSlot;
-    public List<NetworkLock> ingredientsToRequest;
+    public List<Either<NetworkLock, ItemStack>> ingredientsToRequest;
     public List<ItemStack> travelingIngredients;
     public BlockPos resultDestPipe;
     public ItemStack resultStackRemain;
@@ -26,7 +26,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     // we only remove canceled requests from the queue once their items are fully delivered to the crafting location, so that unfinished recipes don't get stuck in crafters etc.
     public boolean canceled;
 
-    public ActiveCraft(BlockPos pipe, int moduleSlot, List<NetworkLock> ingredientsToRequest, List<ItemStack> travelingIngredients, BlockPos resultDestPipe, ItemStack resultStackRemain) {
+    public ActiveCraft(BlockPos pipe, int moduleSlot, List<Either<NetworkLock, ItemStack>> ingredientsToRequest, List<ItemStack> travelingIngredients, BlockPos resultDestPipe, ItemStack resultStackRemain) {
         this.pipe = pipe;
         this.moduleSlot = moduleSlot;
         this.ingredientsToRequest = ingredientsToRequest;
@@ -44,7 +44,11 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         var ret = new CompoundTag();
         ret.putLong("pipe", this.pipe.asLong());
         ret.putInt("module_slot", this.moduleSlot);
-        ret.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> n.serializeNBT(provider)));
+        ret.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> {
+            var tag = new CompoundTag();
+            n.ifLeft(l -> tag.put("lock", l.serializeNBT(provider))).ifRight(s -> tag.put("stack", s.save(provider)));
+            return tag;
+        }));
         ret.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
         ret.putLong("result_dest_pipe", this.resultDestPipe.asLong());
         ret.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
@@ -58,7 +62,8 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
         this.pipe = BlockPos.of(nbt.getLong("pipe"));
         this.moduleSlot = nbt.getInt("module_slot");
-        this.ingredientsToRequest = Utility.deserializeAll(nbt.getList("ingredients_to_request", Tag.TAG_COMPOUND), t -> new NetworkLock(provider, t));
+        this.ingredientsToRequest = Utility.deserializeAll(nbt.getList("ingredients_to_request", Tag.TAG_COMPOUND), t ->
+            t.contains("lock") ? Either.left(new NetworkLock(provider, t.getCompound("lock"))) : Either.right(ItemStack.parseOptional(provider, t.getCompound("stack"))));
         this.travelingIngredients = Utility.deserializeAll(nbt.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
         this.resultDestPipe = BlockPos.of(nbt.getLong("result_dest_pipe"));
         this.resultStackRemain = ItemStack.parseOptional(provider, nbt.getCompound("result_stack_remain"));
@@ -92,7 +97,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     public boolean markCanceledOrResolve(PipeNetwork network, boolean force) {
         if (force || !this.inProgress) {
             for (var lock : this.ingredientsToRequest)
-                network.resolveNetworkLock(lock);
+                lock.ifLeft(network::resolveNetworkLock);
             return true;
         } else {
             this.canceled = true;

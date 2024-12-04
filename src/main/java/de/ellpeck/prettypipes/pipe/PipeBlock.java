@@ -271,7 +271,7 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
                     pipe.removeCover();
                 for (var craft : pipe.getActiveCrafts()) {
                     for (var lock : craft.ingredientsToRequest)
-                        network.resolveNetworkLock(lock);
+                        lock.ifLeft(network::resolveNetworkLock);
                 }
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);

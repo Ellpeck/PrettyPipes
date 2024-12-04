@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.craft;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.Registry;
@@ -81,23 +82,38 @@ public class CraftingModuleItem extends ModuleItem {
                 if (!craft.ingredientsToRequest.isEmpty()) {
                     if (craft.moduleSlot == slot) {
                         network.startProfile("crafting_ingredients");
-                        var lock = craft.ingredientsToRequest.getFirst();
-                        var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                        var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
+                        var ingredient = craft.ingredientsToRequest.getFirst();
+                        var toRequest = ingredient.map(l -> l.stack, s -> s).copy();
+                        var dest = tile.getAvailableDestination(Direction.values(), toRequest, true, true);
                         if (dest != null) {
                             // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
                             if (!module.get(Contents.TYPE).ensureItemOrder || craft.travelingIngredients.isEmpty()) {
-                                network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
-                                network.resolveNetworkLock(lock);
-                                craft.ingredientsToRequest.remove(lock);
-                                craft.travelingIngredients.add(lock.stack.copy());
-                                craft.inProgress = true;
+                                var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                                var requested = ingredient.map(l -> {
+                                    // we can ignore the return value here since we're using a lock, so we know that the item is already waiting for us there
+                                    network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes);
+                                    network.resolveNetworkLock(l);
+                                    return toRequest;
+                                }, s -> {
+                                    var remain = network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes);
+                                    var ret = s.copyWithCount(s.getCount() - remain.getCount());
+                                    s.setCount(remain.getCount());
+                                    return ret;
+                                });
+                                if (!requested.isEmpty()) {
+                                    if (toRequest.getCount() - requested.getCount() <= 0)
+                                        craft.ingredientsToRequest.remove(ingredient);
+                                    craft.travelingIngredients.add(requested);
+                                    craft.inProgress = true;
+                                }
                             }
                         }
                         network.endProfile();
                     }
                     foundMainCraft = true;
-                } else if (!craft.resultFound && craft.travelingIngredients.isEmpty()) {
+                } else if (!craft.travelingIngredients.isEmpty()) {
+                    foundMainCraft = true;
+                } else if (!craft.resultFound) {
                     if (craft.moduleSlot == slot) {
                         // check whether the crafting results have arrived in storage
                         if (craft.resultStackRemain.isEmpty()) {
@@ -125,20 +141,17 @@ public class CraftingModuleItem extends ModuleItem {
 
             // pull requested crafting results from the network once they are stored
             if (craft.resultFound && craft.moduleSlot == slot) {
-                var items = network.getOrderedNetworkItems(tile.getBlockPos());
-                var equalityTypes = ItemFilter.getEqualityTypes(tile);
                 network.startProfile("pull_crafting_results");
                 var destPipe = network.getPipe(craft.resultDestPipe);
                 if (destPipe != null) {
                     var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
                     if (dest != null) {
-                        for (var item : items) {
-                            var requestRemain = network.requestExistingItem(item, craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
-                            craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                            if (craft.resultStackRemain.isEmpty()) {
-                                crafts.remove();
-                                break;
-                            }
+                        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                        var requestRemain = network.requestExistingItem(craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
+                        craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                        if (craft.resultStackRemain.isEmpty()) {
+                            crafts.remove();
+                            break;
                         }
                     }
                 }
@@ -202,8 +215,7 @@ public class CraftingModuleItem extends ModuleItem {
         var allCrafts = new ArrayList<ActiveCraft>();
         // if we're ensuring item order, all items for a single recipe should be sent in order first before starting on the next one!
         for (var c = contents.ensureItemOrder ? toCraft : 1; c > 0; c--) {
-            var crafts = new ArrayList<ItemStack>();
-            var locks = new ArrayList<NetworkLock>();
+            var toRequest = new ArrayList<Either<NetworkLock, ItemStack>>();
             for (var i = 0; i < contents.input.getSlots(); i++) {
                 var in = contents.input.getStackInSlot(i);
                 if (in.isEmpty())
@@ -212,19 +224,24 @@ public class CraftingModuleItem extends ModuleItem {
                 if (!contents.ensureItemOrder)
                     request.setCount(in.getCount() * toCraft);
                 var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, request, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
-                // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted inbetween dependencies
-                // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
-                ret.getRight().forEach(a -> a.inProgress = true);
-                locks.addAll(ret.getLeft());
-                allCrafts.addAll(ret.getRight());
-                // the items we started crafting are the ones we didn't request normally (ie ones we didn't create locks for)
-                var startedCrafting = request.copyWithCount(request.getCount() - ret.getLeft().stream().mapToInt(l -> l.stack.getCount()).sum());
-                if (!startedCrafting.isEmpty())
-                    crafts.add(startedCrafting);
+                for (var lock : ret.getLeft())
+                    toRequest.add(Either.left(lock));
+                for (var dep : ret.getRight()) {
+                    // if the dependency doesn't have a result stack, it means it's an extraneous craft and we don't need to mark it as a dependency!
+                    if (dep.resultStackRemain.isEmpty())
+                        continue;
+                    // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted intermediate dependencies
+                    // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
+                    dep.inProgress = true;
+                    // we don't want dependencies to send their crafted items to us automatically (instead, we request them ourselves to maintain ordering)
+                    toRequest.add(Either.right(dep.resultStackRemain));
+                    dep.resultStackRemain = ItemStack.EMPTY;
+                    allCrafts.add(dep);
+                }
             }
             var crafted = contents.ensureItemOrder ? resultAmount : resultAmount * toCraft;
             // items we started craft dependencies for are ones that will be sent to us (so we're waiting for them immediately!)
-            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, locks, crafts, destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
+            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, toRequest, new ArrayList<>(), destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
             tile.getActiveCrafts().add(activeCraft);
             allCrafts.add(activeCraft);
             leftOfRequest -= crafted;
