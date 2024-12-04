@@ -175,6 +175,7 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public int getCraftableAmount(ItemStack module, PipeBlockEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         var network = PipeNetwork.get(tile.getLevel());
+        network.startProfile("get_craftable_amount");
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var content = module.get(Contents.TYPE);
@@ -189,6 +190,7 @@ public class CraftingModuleItem extends ModuleItem {
                     craftable += out.getCount() * availableCrafts;
             }
         }
+        network.endProfile();
         return craftable;
     }
 
@@ -198,12 +200,14 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
             return Pair.of(stack, List.of());
-        var slot = tile.getModuleSlot(module);
-        var contents = module.get(Contents.TYPE);
 
         var network = PipeNetwork.get(tile.getLevel());
-        var items = network.getOrderedNetworkItems(tile.getBlockPos());
+        network.startProfile("craft");
 
+        var items = network.getOrderedNetworkItems(tile.getBlockPos());
+        var slot = tile.getModuleSlot(module);
+        var contents = module.get(Contents.TYPE);
+        
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
         // calculate how many crafting *operations* to do (as opposed to how many *items* to craft)
@@ -246,6 +250,7 @@ public class CraftingModuleItem extends ModuleItem {
             allCrafts.add(activeCraft);
             leftOfRequest -= crafted;
         }
+        network.endProfile();
 
         var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);
