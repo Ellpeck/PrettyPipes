@@ -84,27 +84,25 @@ public class CraftingModuleItem extends ModuleItem {
                     if (craft.moduleSlot == slot) {
                         network.startProfile("crafting_ingredients");
                         var ingredient = craft.ingredientsToRequest.getFirst();
-                        var toRequest = ingredient.map(l -> l.stack, s -> s).copy();
+                        var toRequest = ingredient.map(l -> l.stack, s -> s);
                         var dest = tile.getAvailableDestination(Direction.values(), toRequest, true, true);
                         if (dest != null) {
                             // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
                             if (module.get(Contents.TYPE).insertionType != InsertionType.PER_ITEM || craft.travelingIngredients.isEmpty()) {
                                 var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                                var requested = ingredient.map(l -> {
-                                    // we can ignore the return value here since we're using a lock, so we know that the item is already waiting for us there
-                                    network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes);
-                                    network.resolveNetworkLock(l);
-                                    return toRequest;
-                                }, s -> {
-                                    var remain = network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes);
-                                    var ret = s.copyWithCount(s.getCount() - remain.getCount());
-                                    s.setCount(remain.getCount());
+                                var remain = ingredient.map(l -> {
+                                    var ret = network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes);
+                                    if (ret.getCount() != l.stack.getCount())
+                                        network.resolveNetworkLock(l);
                                     return ret;
-                                });
-                                if (!requested.isEmpty()) {
-                                    if (toRequest.getCount() - requested.getCount() <= 0)
-                                        craft.ingredientsToRequest.remove(ingredient);
-                                    craft.travelingIngredients.add(requested);
+                                }, s -> network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes));
+                                // dest may be able to accept less than toRequest, so the amount that remains there also needs to be taken into account
+                                remain.grow(toRequest.getCount() - dest.getRight().getCount());
+                                if (remain.getCount() != dest.getRight().getCount()) {
+                                    if (!remain.isEmpty())
+                                        craft.ingredientsToRequest.add(craft.ingredientsToRequest.indexOf(ingredient), Either.right(remain));
+                                    craft.ingredientsToRequest.remove(ingredient);
+                                    craft.travelingIngredients.add(toRequest.copyWithCount(toRequest.getCount() - remain.getCount()));
                                     craft.inProgress = true;
                                 }
                             }
