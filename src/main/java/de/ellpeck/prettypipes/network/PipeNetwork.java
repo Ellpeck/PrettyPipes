@@ -410,11 +410,11 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     }
 
     public void createNetworkLock(NetworkLock lock) {
-        this.networkLocks.put(lock.location != null ? lock.location.getPos() : null, lock);
+        this.networkLocks.put(lock.location.getPos(), lock);
     }
 
     public void resolveNetworkLock(NetworkLock lock) {
-        this.networkLocks.remove(lock.location != null ? lock.location.getPos() : null, lock);
+        this.networkLocks.remove(lock.location.getPos(), lock);
     }
 
     public List<NetworkLock> getNetworkLocks(BlockPos pos) {
@@ -422,7 +422,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     }
 
     public int getLockedAmount(BlockPos pos, ItemStack stack, NetworkLock ignoredLock, ItemEquality... equalityTypes) {
-        return Streams.concat(this.getNetworkLocks(pos).stream(), this.getNetworkLocks(null).stream())
+        return this.getNetworkLocks(pos).stream()
             .filter(l -> !l.equals(ignoredLock) && ItemEquality.compareItems(l.stack, stack, equalityTypes))
             .mapToInt(l -> l.stack.getCount()).sum();
     }
