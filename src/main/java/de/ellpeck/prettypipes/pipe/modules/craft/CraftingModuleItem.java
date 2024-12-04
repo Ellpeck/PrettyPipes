@@ -90,15 +90,13 @@ public class CraftingModuleItem extends ModuleItem {
                             // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
                             if (module.get(Contents.TYPE).insertionType != InsertionType.PER_ITEM || craft.travelingIngredients.isEmpty()) {
                                 var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                                var remain = ingredient.map(l -> {
-                                    var ret = network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes);
-                                    if (ret.getCount() != l.stack.getCount())
-                                        network.resolveNetworkLock(l);
-                                    return ret;
-                                }, s -> network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes));
+                                var remain = ingredient.map(
+                                    l -> network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes),
+                                    s -> network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes)).copy();
                                 // dest may be able to accept less than toRequest, so the amount that remains there also needs to be taken into account
                                 remain.grow(toRequest.getCount() - dest.getRight().getCount());
                                 if (remain.getCount() != dest.getRight().getCount()) {
+                                    ingredient.ifLeft(network::resolveNetworkLock);
                                     if (!remain.isEmpty())
                                         craft.ingredientsToRequest.add(craft.ingredientsToRequest.indexOf(ingredient), Either.right(remain));
                                     craft.ingredientsToRequest.remove(ingredient);
