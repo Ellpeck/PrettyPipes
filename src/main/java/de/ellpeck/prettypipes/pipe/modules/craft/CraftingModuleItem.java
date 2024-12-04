@@ -207,7 +207,7 @@ public class CraftingModuleItem extends ModuleItem {
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
         var slot = tile.getModuleSlot(module);
         var contents = module.get(Contents.TYPE);
-        
+
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
         // calculate how many crafting *operations* to do (as opposed to how many *items* to craft)
@@ -264,6 +264,9 @@ public class CraftingModuleItem extends ModuleItem {
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var allCrafts = tile.getActiveCrafts();
         for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).toList()) {
+            // TODO currently, we always shrink by the size of stack, even if the container can't actually accept the entire stack
+            //  some containers' getAvailableDestination method returns an incorrect value (because it's a heuristic), so parts of this stack might be sent back,
+            //  in which case we have to add it back to the collection of items we need to request (as an item stack since we won't have the lock anymore)
             var traveling = craft.getTravelingIngredient(stack, equalityTypes);
             traveling.shrink(stack.getCount());
             if (traveling.isEmpty())
