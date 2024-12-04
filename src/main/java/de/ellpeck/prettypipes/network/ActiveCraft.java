@@ -22,6 +22,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
     public BlockPos resultDestPipe;
     public ItemStack resultStackRemain;
     public boolean inProgress;
+    public boolean resultFound;
     // we only remove canceled requests from the queue once their items are fully delivered to the crafting location, so that unfinished recipes don't get stuck in crafters etc.
     public boolean canceled;
 
@@ -48,6 +49,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         ret.putLong("result_dest_pipe", this.resultDestPipe.asLong());
         ret.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
         ret.putBoolean("in_progress", this.inProgress);
+        ret.putBoolean("result_found", this.resultFound);
         ret.putBoolean("canceled", this.canceled);
         return ret;
     }
@@ -61,6 +63,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         this.resultDestPipe = BlockPos.of(nbt.getLong("result_dest_pipe"));
         this.resultStackRemain = ItemStack.parseOptional(provider, nbt.getCompound("result_stack_remain"));
         this.inProgress = nbt.getBoolean("in_progress");
+        this.resultFound = nbt.getBoolean("result_found");
         this.canceled = nbt.getBoolean("canceled");
     }
 
@@ -74,6 +77,7 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
             ", resultDestPipe=" + this.resultDestPipe +
             ", resultStackRemain=" + this.resultStackRemain +
             ", inProgress=" + this.inProgress +
+            ", resultFound=" + this.resultFound +
             ", canceled=" + this.canceled + '}';
     }
 

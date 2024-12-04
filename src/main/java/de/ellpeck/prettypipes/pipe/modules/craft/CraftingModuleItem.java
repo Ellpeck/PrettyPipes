@@ -70,54 +70,79 @@ public class CraftingModuleItem extends ModuleItem {
             return;
         var slot = tile.getModuleSlot(module);
         var network = PipeNetwork.get(tile.getLevel());
-        var crafts = tile.getActiveCrafts();
-        if (!crafts.isEmpty()) {
-            var craft = crafts.getFirst();
-            if (craft.moduleSlot == slot) {
+        var foundMainCraft = false;
+        var crafts = tile.getActiveCrafts().iterator();
+        while (crafts.hasNext()) {
+            var craft = crafts.next();
+
+            // handle main crafting, which only one recipe (in the whole pipe!) should be able to do at a time so that items between recipes don't mix
+            if (!foundMainCraft) {
+                // process crafting ingredient requests
                 if (!craft.ingredientsToRequest.isEmpty()) {
-                    // process crafting ingredient requests
-                    network.startProfile("crafting_ingredients");
-                    var lock = craft.ingredientsToRequest.getFirst();
-                    var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                    var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
-                    if (dest != null) {
-                        // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
-                        if (!module.get(Contents.TYPE).ensureItemOrder || network.getPipeItemsOnTheWay(dest.getLeft()).findAny().isEmpty()) {
-                            network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
-                            network.resolveNetworkLock(lock);
-                            craft.ingredientsToRequest.remove(lock);
-                            craft.travelingIngredients.add(lock.stack.copy());
-                            craft.inProgress = true;
-                        }
-                    }
-                    network.endProfile();
-                } else if (craft.travelingIngredients.isEmpty()) {
-                    if (craft.resultStackRemain.isEmpty()) {
-                        // the result stack is empty from the start if this was a partial craft whose results shouldn't be delivered anywhere
-                        // (ie someone requested 3 sticks with ensureItemOrder, but the recipe always makes 4, so the 4th recipe has no destination)
-                        crafts.remove(craft);
-                    } else {
-                        // pull requested crafting results from the network once they are stored
-                        network.startProfile("crafting_results");
-                        var items = network.getOrderedNetworkItems(tile.getBlockPos());
+                    if (craft.moduleSlot == slot) {
+                        network.startProfile("crafting_ingredients");
+                        var lock = craft.ingredientsToRequest.getFirst();
                         var equalityTypes = ItemFilter.getEqualityTypes(tile);
-                        var destPipe = network.getPipe(craft.resultDestPipe);
-                        if (destPipe != null) {
-                            var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
-                            if (dest != null) {
-                                for (var item : items) {
-                                    var requestRemain = network.requestExistingItem(item, craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
-                                    craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                                    if (craft.resultStackRemain.isEmpty()) {
-                                        crafts.remove(craft);
-                                        break;
-                                    }
-                                }
+                        var dest = tile.getAvailableDestination(Direction.values(), lock.stack, true, true);
+                        if (dest != null) {
+                            // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
+                            if (!module.get(Contents.TYPE).ensureItemOrder || craft.travelingIngredients.isEmpty()) {
+                                network.requestExistingItem(lock.location, tile.getBlockPos(), dest.getLeft(), lock, dest.getRight(), equalityTypes);
+                                network.resolveNetworkLock(lock);
+                                craft.ingredientsToRequest.remove(lock);
+                                craft.travelingIngredients.add(lock.stack.copy());
+                                craft.inProgress = true;
                             }
                         }
                         network.endProfile();
                     }
+                    foundMainCraft = true;
+                } else if (!craft.resultFound && craft.travelingIngredients.isEmpty()) {
+                    if (craft.moduleSlot == slot) {
+                        // check whether the crafting results have arrived in storage
+                        if (craft.resultStackRemain.isEmpty()) {
+                            // the result stack is empty from the start if this was a partial craft whose results shouldn't be delivered anywhere
+                            // (ie someone requested 3 sticks with ensureItemOrder, but the recipe always makes 4, so the 4th recipe has no destination)
+                            crafts.remove();
+                        } else {
+                            // check if the result is in storage
+                            var items = network.getOrderedNetworkItems(tile.getBlockPos());
+                            var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                            network.startProfile("check_crafting_results");
+                            var remain = craft.resultStackRemain.copy();
+                            for (var item : items) {
+                                remain.shrink(item.getItemAmount(tile.getLevel(), remain, equalityTypes) - network.getLockedAmount(item.getPos(), remain, null, equalityTypes));
+                                if (remain.isEmpty())
+                                    break;
+                            }
+                            craft.resultFound = remain.isEmpty();
+                            network.endProfile();
+                        }
+                    }
+                    foundMainCraft = true;
                 }
+            }
+
+            // pull requested crafting results from the network once they are stored
+            if (craft.resultFound && craft.moduleSlot == slot) {
+                var items = network.getOrderedNetworkItems(tile.getBlockPos());
+                var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                network.startProfile("pull_crafting_results");
+                var destPipe = network.getPipe(craft.resultDestPipe);
+                if (destPipe != null) {
+                    var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
+                    if (dest != null) {
+                        for (var item : items) {
+                            var requestRemain = network.requestExistingItem(item, craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
+                            craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                            if (craft.resultStackRemain.isEmpty()) {
+                                crafts.remove();
+                                break;
+                            }
+                        }
+                    }
+                }
+                network.endProfile();
             }
         }
     }
@@ -234,7 +259,7 @@ public class CraftingModuleItem extends ModuleItem {
                 }
             }
 
-            if (craft.travelingIngredients.isEmpty() && craft.ingredientsToRequest.isEmpty()) {
+            if (craft.ingredientsToRequest.isEmpty() && craft.travelingIngredients.isEmpty()) {
                 if (contents.emitRedstone) {
                     tile.redstoneTicks = 5;
                     tile.getLevel().updateNeighborsAt(tile.getBlockPos(), tile.getBlockState().getBlock());
