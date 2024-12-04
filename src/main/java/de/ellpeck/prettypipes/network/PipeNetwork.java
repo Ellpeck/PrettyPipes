@@ -333,6 +333,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             for (var craft : pipe.getActiveCrafts()) {
                 if (!includeCanceled && craft.canceled)
                     continue;
+                if (craft.resultStackRemain.isEmpty())
+                    continue;
                 // add up all the items that should go to the same location
                 var existing = items.stream()
                     .filter(s -> s.getLeft().equals(craft.resultDestPipe) && ItemEquality.compareItems(s.getRight(), craft.resultStackRemain, equalityTypes))
