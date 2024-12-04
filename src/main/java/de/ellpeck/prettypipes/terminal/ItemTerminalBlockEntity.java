@@ -31,6 +31,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.wrapper.RangedWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -258,7 +259,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         var pos = pipePos.relative(direction);
         var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, this.level, pos);
         if (tile != null)
-            return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
+            return ItemHandlerHelper.insertItemStacked(new RangedWrapper(tile.items, 0, 6), stack, simulate);
         return stack;
     }
 

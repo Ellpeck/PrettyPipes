@@ -205,7 +205,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 }
             }
             while (lowestSlot >= 0);
-            return ItemHandlerHelper.insertItemStacked(tile.items, remain, simulate);
+            return ItemHandlerHelper.insertItemStacked(new RangedWrapper(tile.items, 0, 6), remain, simulate);
         }
         return remain;
     }
