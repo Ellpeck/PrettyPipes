@@ -95,11 +95,11 @@ public class CraftingModuleItem extends ModuleItem {
                                     s -> network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes)).copy();
                                 // dest may be able to accept less than toRequest, so the amount that remains there also needs to be taken into account
                                 remain.grow(toRequest.getCount() - dest.getRight().getCount());
-                                if (remain.getCount() != dest.getRight().getCount()) {
+                                if (remain.getCount() != toRequest.getCount()) {
                                     ingredient.ifLeft(network::resolveNetworkLock);
+                                    craft.ingredientsToRequest.removeFirst();
                                     if (!remain.isEmpty())
-                                        craft.ingredientsToRequest.add(craft.ingredientsToRequest.indexOf(ingredient), Either.right(remain));
-                                    craft.ingredientsToRequest.remove(ingredient);
+                                        craft.ingredientsToRequest.addFirst(Either.right(remain));
                                     craft.travelingIngredients.add(toRequest.copyWithCount(toRequest.getCount() - remain.getCount()));
                                     craft.inProgress = true;
                                 }
