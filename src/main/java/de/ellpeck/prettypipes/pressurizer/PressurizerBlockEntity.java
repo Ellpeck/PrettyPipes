@@ -8,6 +8,7 @@ import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
@@ -51,30 +52,30 @@ public class PressurizerBlockEntity extends BlockEntity implements MenuProvider,
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
         compound.putInt("energy", this.getEnergy());
     }
 
     @Override
-    public void load(CompoundTag nbt) {
+    public void loadAdditional(CompoundTag nbt, HolderLookup.Provider provider) {
         this.storage.setEnergyStored(nbt.getInt("energy"));
-        super.load(nbt);
+        super.loadAdditional(nbt, provider);
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
+        return this.saveWithoutMetadata(provider);
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        this.load(tag);
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider provider) {
+        this.loadWithComponents(tag, provider);
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        this.load(pkt.getTag());
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider provider) {
+        this.loadWithComponents(pkt.getTag(), provider);
     }
 
     @Override

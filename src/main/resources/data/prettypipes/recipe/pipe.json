@@ -1,0 +1,26 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " R ",
+        "IGI",
+        " C "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "I": {
+            "item": "minecraft:iron_bars"
+        },
+        "G": {
+            "tag": "c:glass_blocks"
+        },
+        "C": {
+            "item": "minecraft:copper_ingot"
+        }
+    },
+    "result": {
+        "id": "prettypipes:pipe",
+        "count": 4
+    }
+}

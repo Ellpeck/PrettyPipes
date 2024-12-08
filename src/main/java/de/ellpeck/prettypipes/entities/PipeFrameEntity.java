@@ -5,7 +5,7 @@ import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -41,9 +41,9 @@ public class PipeFrameEntity extends ItemFrame implements IEntityWithComplexSpaw
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(PipeFrameEntity.AMOUNT, -1);
+    protected void defineSynchedData(SynchedEntityData.Builder pBuilder) {
+        super.defineSynchedData(pBuilder);
+        pBuilder.define(PipeFrameEntity.AMOUNT, -1);
     }
 
     @Override
@@ -154,14 +154,15 @@ public class PipeFrameEntity extends ItemFrame implements IEntityWithComplexSpaw
     }
 
     @Override
-    public void writeSpawnData(FriendlyByteBuf buffer) {
+    public void writeSpawnData(RegistryFriendlyByteBuf buffer) {
         buffer.writeBlockPos(this.pos);
         buffer.writeInt(this.direction.ordinal());
     }
 
     @Override
-    public void readSpawnData(FriendlyByteBuf additionalData) {
+    public void readSpawnData(RegistryFriendlyByteBuf additionalData) {
         this.pos = additionalData.readBlockPos();
         this.direction = Direction.values()[additionalData.readInt()];
     }
+
 }

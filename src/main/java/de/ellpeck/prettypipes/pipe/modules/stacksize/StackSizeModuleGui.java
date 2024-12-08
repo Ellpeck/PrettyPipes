@@ -11,6 +11,7 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer> {
@@ -22,7 +23,7 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     @Override
     protected void init() {
         super.init();
-        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 17 + 32 + 10, 40, 20, Component.translatable("info." + PrettyPipes.ID + ".max_stack_size")) {
+        var textField = this.addRenderableWidget(new EditBox(this.font, this.leftPos + 7, this.topPos + 20 + 32 + 10, 40, 20, Component.translatable("info." + PrettyPipes.ID + ".max_stack_size")) {
             @Override
             public void insertText(String textToWrite) {
                 var ret = new StringBuilder();
@@ -34,25 +35,27 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
             }
 
         });
-        textField.setValue(String.valueOf(StackSizeModuleItem.getMaxStackSizeForModule(this.menu.moduleStack)));
+        Supplier<StackSizeModuleItem.Data> data = () -> this.menu.moduleStack.getOrDefault(StackSizeModuleItem.Data.TYPE, StackSizeModuleItem.Data.DEFAULT);
+        textField.setValue(String.valueOf(data.get().maxStackSize()));
         textField.setMaxLength(4);
         textField.setResponder(s -> {
             if (s.isEmpty())
                 return;
             var amount = Integer.parseInt(s);
-            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, amount);
+            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_AMOUNT, List.of(amount));
         });
-        Supplier<Component> buttonText = () -> Component.translatable("info." + PrettyPipes.ID + ".limit_to_max_" + (StackSizeModuleItem.getLimitToMaxStackSize(this.menu.moduleStack) ? "on" : "off"));
+        Supplier<Component> buttonText = () -> Component.translatable("info." + PrettyPipes.ID + ".limit_to_max_" + (data.get().limitToMaxStackSize() ? "on" : "off"));
         this.addRenderableWidget(Button.builder(buttonText.get(), b -> {
-            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON);
+            PacketButton.sendAndExecute(this.menu.tile.getBlockPos(), ButtonResult.STACK_SIZE_MODULE_BUTTON, List.of());
             b.setMessage(buttonText.get());
-        }).bounds(this.leftPos + 7, this.topPos + 17 + 32 + 10 + 22, 120, 20).build());
+        }).bounds(this.leftPos + 7, this.topPos + 20 + 32 + 10 + 22, 120, 20).build());
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 7, 17 + 32, 4210752, false);
+        graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 8, 20 + 32, 4210752, false);
 
     }
+
 }

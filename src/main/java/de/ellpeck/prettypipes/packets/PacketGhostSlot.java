@@ -7,7 +7,9 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -15,99 +17,55 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class PacketGhostSlot implements CustomPacketPayload {
+public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements CustomPacketPayload {
 
-    public static final ResourceLocation ID = new ResourceLocation(PrettyPipes.ID, "ghost_slot");
-
-    private final BlockPos pos;
-    private final List<Entry> stacks;
-
-    public PacketGhostSlot(BlockPos pos, List<Entry> stacks) {
-        this.pos = pos;
-        this.stacks = stacks;
-    }
-
-    public PacketGhostSlot(FriendlyByteBuf buf) {
-        this.pos = buf.readBlockPos();
-        this.stacks = new ArrayList<>();
-        for (var i = buf.readInt(); i > 0; i--)
-            this.stacks.add(new Entry(buf));
-    }
+    public static final Type<PacketGhostSlot> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "ghost_slot"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, PacketGhostSlot> CODEC = StreamCodec.composite(
+        BlockPos.STREAM_CODEC, PacketGhostSlot::pos,
+        ByteBufCodecs.collection(ArrayList::new, Entry.CODEC), PacketGhostSlot::stacks,
+        PacketGhostSlot::new);
 
     @Override
-    public void write(FriendlyByteBuf buf) {
-        buf.writeBlockPos(this.pos);
-        buf.writeInt(this.stacks.size());
-        for (var entry : this.stacks)
-            entry.write(buf);
+    public Type<? extends CustomPacketPayload> type() {
+        return PacketGhostSlot.TYPE;
     }
 
-    @Override
-    public ResourceLocation id() {
-        return PacketGhostSlot.ID;
+    public static void onMessage(PacketGhostSlot message, IPayloadContext ctx) {
+        var player = ctx.player();
+        var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), message.pos);
+        if (tile != null)
+            tile.setGhostItems(message.stacks);
     }
 
-    public static void onMessage(PacketGhostSlot message, PlayPayloadContext ctx) {
-        ctx.workHandler().execute(() -> {
-            var player = ctx.player().orElseThrow();
-            var tile = Utility.getBlockEntity(CraftingTerminalBlockEntity.class, player.level(), message.pos);
-            if (tile != null)
-                tile.setGhostItems(message.stacks);
-        });
-    }
+    // TODO the crafting module should probably also use a system like this to allow recipes that have multiple options & to also pick the items we have most of (like the terminal does in setGhostItems)
+    public record Entry(Optional<List<ItemStack>> stacks, Optional<TagKey<Item>> tag) {
 
-    public static class Entry {
+        public static final StreamCodec<RegistryFriendlyByteBuf, Entry> CODEC = StreamCodec.composite(
+            ByteBufCodecs.optional(ItemStack.OPTIONAL_LIST_STREAM_CODEC), Entry::stacks,
+            ByteBufCodecs.optional(ByteBufCodecs.fromCodec(TagKey.codec(Registries.ITEM))), Entry::tag,
+            Entry::new);
 
-        private final List<ItemStack> stacks;
-        private final TagKey<Item> tag;
-
-        public Entry(Level level, List<ItemStack> stacks) {
+        public static Entry fromStacks(Level level, List<ItemStack> stacks) {
             var tag = Entry.getTagForStacks(level, stacks);
             if (tag != null) {
-                this.stacks = null;
-                this.tag = tag;
+                return new Entry(Optional.empty(), Optional.of(tag));
             } else {
-                this.stacks = stacks;
-                this.tag = null;
-            }
-        }
-
-        public Entry(FriendlyByteBuf buf) {
-            if (buf.readBoolean()) {
-                this.tag = null;
-                this.stacks = new ArrayList<>();
-                for (var i = buf.readInt(); i > 0; i--)
-                    this.stacks.add(buf.readItem());
-            } else {
-                this.stacks = null;
-                this.tag = TagKey.create(Registries.ITEM, new ResourceLocation(buf.readUtf()));
+                return new Entry(Optional.of(stacks), Optional.empty());
             }
         }
 
         public List<ItemStack> getStacks(Level level) {
-            if (this.stacks != null)
-                return this.stacks;
-            return Streams.stream(level.registryAccess().registry(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag).iterator())
+            return this.stacks.orElseGet(() ->
+                Streams.stream(level.registryAccess().registry(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag.orElseThrow()).iterator())
                     .filter(h -> h.value() != null & h.value() != Items.AIR)
-                    .map(h -> new ItemStack(h.value())).collect(Collectors.toList());
-        }
-
-        public void write(FriendlyByteBuf buf) {
-            if (this.stacks != null) {
-                buf.writeBoolean(true);
-                buf.writeInt(this.stacks.size());
-                for (var stack : this.stacks)
-                    buf.writeItem(stack);
-            } else {
-                buf.writeBoolean(false);
-                buf.writeUtf(this.tag.location().toString());
-            }
+                    .map(h -> new ItemStack(h.value())).collect(Collectors.toList()));
         }
 
         private static TagKey<Item> getTagForStacks(Level level, List<ItemStack> stacks) {

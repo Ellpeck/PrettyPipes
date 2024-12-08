@@ -31,7 +31,7 @@ public class PipeFrameRenderer extends ItemFrameRenderer<PipeFrameEntity> {
         var matrix4f = matrixStackIn.last().pose();
         matrixStackIn.translate(0, 0.285F, 0.415F);
         matrixStackIn.scale(-0.02F, -0.02F, 0.02F);
-        font.drawInBatch(amountStrg, x, 0, 0xFFFFFF, true, matrix4f, bufferIn, Font.DisplayMode.NORMAL, 0, packedLightIn);
+        font.drawInBatch(amountStrg, x, 0, 0xFFFFFF, false, matrix4f, bufferIn, Font.DisplayMode.NORMAL, 0, packedLightIn);
 
         matrixStackIn.popPose();
     }

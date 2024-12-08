@@ -5,10 +5,7 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.EquatableItemStack;
 import de.ellpeck.prettypipes.misc.ItemEquality;
-import de.ellpeck.prettypipes.network.NetworkItem;
-import de.ellpeck.prettypipes.network.NetworkLocation;
-import de.ellpeck.prettypipes.network.NetworkLock;
-import de.ellpeck.prettypipes.network.PipeNetwork;
+import de.ellpeck.prettypipes.network.*;
 import de.ellpeck.prettypipes.packets.PacketNetworkItems;
 import de.ellpeck.prettypipes.pipe.ConnectionType;
 import de.ellpeck.prettypipes.pipe.IPipeConnectable;
@@ -17,6 +14,7 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalContainer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -33,6 +31,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.wrapper.RangedWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -108,8 +107,8 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public String getInvalidTerminalReason() {
         var network = PipeNetwork.get(this.level);
         var pipes = Arrays.stream(Direction.values())
-                .map(d -> network.getPipe(this.worldPosition.relative(d)))
-                .filter(Objects::nonNull).count();
+            .map(d -> network.getPipe(this.worldPosition.relative(d)))
+            .filter(Objects::nonNull).count();
         if (pipes <= 0)
             return "info." + PrettyPipes.ID + ".no_pipe_connected";
         if (pipes > 1)
@@ -135,7 +134,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         if (playersToSync.length > 0) {
             var clientItems = this.networkItems.values().stream().map(NetworkItem::asStack).collect(Collectors.toList());
             var clientCraftables = PipeNetwork.get(this.level).getAllCraftables(pipe.getBlockPos()).stream().map(Pair::getRight).collect(Collectors.toList());
-            var currentlyCrafting = this.getCurrentlyCrafting().stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
+            var currentlyCrafting = this.getCurrentlyCrafting(true).stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
             for (var player : playersToSync) {
                 if (!(player.containerMenu instanceof ItemTerminalContainer container))
                     continue;
@@ -146,17 +145,17 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         }
     }
 
-    public void requestItem(Player player, ItemStack stack, int nbtHash) {
+    public void requestItem(Player player, ItemStack stack, int componentsHash) {
         var network = PipeNetwork.get(this.level);
         network.startProfile("terminal_request_item");
         this.updateItems();
-        if (nbtHash != 0) {
+        if (componentsHash != 0) {
             var filter = stack;
             stack = this.networkItems.values().stream()
-                    .map(NetworkItem::asStack)
-                    // don't compare with nbt equality here or the whole hashing thing is pointless
-                    .filter(s -> ItemEquality.compareItems(s, filter) && s.hasTag() && s.getTag().hashCode() == nbtHash)
-                    .findFirst().orElse(filter);
+                .map(NetworkItem::asStack)
+                // don't compare with nbt equality here or the data hashing thing is pointless
+                .filter(s -> ItemEquality.compareItems(s, filter) && !s.isComponentsPatchEmpty() && s.getComponents().hashCode() == componentsHash)
+                .findFirst().orElse(filter);
             stack.setCount(filter.getCount());
         }
         var requested = this.requestItemImpl(stack, ItemTerminalBlockEntity.onItemUnavailable(player, false));
@@ -171,9 +170,10 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
         var item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
-        var ret = ItemTerminalBlockEntity.requestItemLater(this.level, this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
+        var network = PipeNetwork.get(this.level);
+        var ret = network.requestLocksAndStartCrafting(this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
         this.existingRequests.addAll(ret.getLeft());
-        return stack.getCount() - ret.getRight().getCount();
+        return stack.getCount() - ret.getMiddle().getCount();
     }
 
     public Player[] getLookingPlayers() {
@@ -199,28 +199,24 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         return items;
     }
 
-    private List<ItemStack> getCurrentlyCrafting() {
+    private List<ItemStack> getCurrentlyCrafting(boolean includeCanceled) {
         var network = PipeNetwork.get(this.level);
         var pipe = this.getConnectedPipe();
         if (pipe == null)
             return Collections.emptyList();
-        var crafting = network.getCurrentlyCrafting(pipe.getBlockPos());
+        var crafting = network.getCurrentlyCrafting(pipe.getBlockPos(), includeCanceled);
         return crafting.stream().map(Pair::getRight).collect(Collectors.toList());
     }
 
-    public void cancelCrafting() {
+    public void cancelCrafting(boolean force) {
         var network = PipeNetwork.get(this.level);
         var pipe = this.getConnectedPipe();
         if (pipe == null)
             return;
         for (var craftable : network.getAllCraftables(pipe.getBlockPos())) {
             var otherPipe = network.getPipe(craftable.getLeft());
-            if (otherPipe != null) {
-                for (var lock : otherPipe.craftIngredientRequests)
-                    network.resolveNetworkLock(lock);
-                otherPipe.craftIngredientRequests.clear();
-                otherPipe.craftResultRequests.clear();
-            }
+            if (otherPipe != null)
+                otherPipe.getActiveCrafts().removeIf(c -> c.markCanceledOrResolve(network, force));
         }
         var lookingPlayers = this.getLookingPlayers();
         if (lookingPlayers.length > 0)
@@ -228,18 +224,18 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("items", this.items.serializeNBT());
-        compound.put("requests", Utility.serializeAll(this.existingRequests));
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
+        super.saveAdditional(compound, pRegistries);
+        compound.put("items", this.items.serializeNBT(pRegistries));
+        compound.put("requests", Utility.serializeAll(this.existingRequests, i -> i.serializeNBT(pRegistries)));
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.items.deserializeNBT(compound.getCompound("items"));
+    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
+        this.items.deserializeNBT(pRegistries, compound.getCompound("items"));
         this.existingRequests.clear();
-        this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), NetworkLock::new));
-        super.load(compound);
+        this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), l -> new NetworkLock(pRegistries, l)));
+        super.loadAdditional(compound, pRegistries);
     }
 
     @Override
@@ -263,45 +259,13 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
         var pos = pipePos.relative(direction);
         var tile = Utility.getBlockEntity(ItemTerminalBlockEntity.class, this.level, pos);
         if (tile != null)
-            return ItemHandlerHelper.insertItemStacked(tile.items, stack, simulate);
+            return ItemHandlerHelper.insertItemStacked(new RangedWrapper(tile.items, 0, 6), stack, simulate);
         return stack;
     }
 
     @Override
     public boolean allowsModules(BlockPos pipePos, Direction direction) {
         return true;
-    }
-
-    public static Pair<List<NetworkLock>, ItemStack> requestItemLater(Level world, BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
-        List<NetworkLock> requests = new ArrayList<>();
-        var remain = stack.copy();
-        var network = PipeNetwork.get(world);
-        // check for existing items
-        for (var location : locations) {
-            var amount = location.getItemAmount(world, stack, equalityTypes);
-            if (amount <= 0)
-                continue;
-            amount -= network.getLockedAmount(location.getPos(), stack, null, equalityTypes);
-            if (amount > 0) {
-                if (remain.getCount() < amount)
-                    amount = remain.getCount();
-                remain.shrink(amount);
-                while (amount > 0) {
-                    var copy = stack.copy();
-                    copy.setCount(Math.min(stack.getMaxStackSize(), amount));
-                    var lock = new NetworkLock(location, copy);
-                    network.createNetworkLock(lock);
-                    requests.add(lock);
-                    amount -= copy.getCount();
-                }
-                if (remain.isEmpty())
-                    break;
-            }
-        }
-        // check for craftable items
-        if (!remain.isEmpty())
-            remain = network.requestCraftedItem(destPipe, unavailableConsumer, remain, dependencyChain, equalityTypes);
-        return Pair.of(requests, remain);
     }
 
     public static Consumer<ItemStack> onItemUnavailable(Player player, boolean ignore) {

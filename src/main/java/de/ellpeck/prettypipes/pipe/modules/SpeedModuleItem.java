@@ -11,7 +11,7 @@ public class SpeedModuleItem extends ModuleItem {
     private final float speedIncrease;
 
     public SpeedModuleItem(String name, ModuleTier tier) {
-        super(name);
+        super(name, new Properties());
         this.speedIncrease = tier.forTier(0.05F, 0.1F, 0.2F);
     }
 
@@ -29,4 +29,5 @@ public class SpeedModuleItem extends ModuleItem {
     public float getItemSpeedIncrease(ItemStack module, PipeBlockEntity tile) {
         return this.speedIncrease;
     }
+
 }

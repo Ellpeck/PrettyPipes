@@ -1,17 +1,22 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import joptsimple.internal.Strings;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.gui.widget.ExtendedButton;
 import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.List;
 
 public class DirectionSelector {
 
@@ -33,7 +38,7 @@ public class DirectionSelector {
     @OnlyIn(Dist.CLIENT)
     public AbstractWidget getButton(int x, int y) {
         return new ExtendedButton(x, y, 100, 20, Component.translatable("info." + PrettyPipes.ID + ".populate"), button ->
-                PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.DIRECTION_SELECTOR)) {
+            PacketButton.sendAndExecute(this.pipe.getBlockPos(), PacketButton.ButtonResult.DIRECTION_SELECTOR, List.of())) {
             @Override
             public Component getMessage() {
                 var pipe = DirectionSelector.this.pipe;
@@ -64,18 +69,13 @@ public class DirectionSelector {
         if (!this.modified)
             return;
         this.modified = false;
-
-        var tag = new CompoundTag();
-        if (this.direction != null)
-            tag.putString("direction", this.direction.getName());
-        this.stack.getOrCreateTag().put("direction_selector", tag);
+        this.stack.set(Data.TYPE, new Data(this.direction != null ? this.direction.getName() : ""));
     }
 
     public void load() {
-        if (this.stack.hasTag()) {
-            var tag = this.stack.getTag().getCompound("direction_selector");
-            this.direction = Direction.byName(tag.getString("direction"));
-        }
+        var data = this.stack.get(Data.TYPE);
+        if (data != null)
+            this.direction = !Strings.isNullOrEmpty(data.direction) ? Direction.byName(data.direction) : null;
     }
 
     public Direction[] directions() {
@@ -92,9 +92,9 @@ public class DirectionSelector {
         if (this.pipe.getItemHandler(dir) == null)
             return false;
         return this.pipe.streamModules()
-                .filter(p -> p.getLeft() != this.stack)
-                .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
-                .noneMatch(p -> p != null && p.direction == dir);
+            .filter(p -> p.getLeft() != this.stack)
+            .map(p -> p.getRight().getDirectionSelector(p.getLeft(), this.pipe))
+            .noneMatch(p -> p != null && p.direction == dir);
     }
 
     public interface IDirectionContainer {
@@ -102,4 +102,14 @@ public class DirectionSelector {
         DirectionSelector getSelector();
 
     }
+
+    public record Data(String direction) {
+
+        public static final Codec<DirectionSelector.Data> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Codec.STRING.fieldOf("direction").forGetter(f -> f.direction)
+        ).apply(i, DirectionSelector.Data::new));
+        public static final DataComponentType<DirectionSelector.Data> TYPE = DataComponentType.<DirectionSelector.Data>builder().persistent(DirectionSelector.Data.CODEC).cacheEncoding().build();
+
+    }
+
 }

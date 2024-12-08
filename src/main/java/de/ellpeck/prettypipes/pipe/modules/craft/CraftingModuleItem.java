@@ -1,42 +1,43 @@
 package de.ellpeck.prettypipes.pipe.modules.craft;
 
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.items.ModuleTier;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.misc.ItemFilter;
+import de.ellpeck.prettypipes.network.ActiveCraft;
 import de.ellpeck.prettypipes.network.NetworkLock;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
-import de.ellpeck.prettypipes.terminal.ItemTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class CraftingModuleItem extends ModuleItem {
 
-    public final int inputSlots;
-    public final int outputSlots;
     private final int speed;
 
     public CraftingModuleItem(String name, ModuleTier tier) {
-        super(name);
-        this.inputSlots = tier.forTier(1, 4, 9);
-        this.outputSlots = tier.forTier(1, 2, 4);
+        super(name, new Properties().component(Contents.TYPE, new Contents(new ItemStackHandler(tier.forTier(1, 4, 9)), new ItemStackHandler(tier.forTier(1, 2, 4)), false, InsertionType.ALL, false)));
         this.speed = tier.forTier(20, 10, 5);
     }
 
@@ -69,65 +70,97 @@ public class CraftingModuleItem extends ModuleItem {
     public void tick(ItemStack module, PipeBlockEntity tile) {
         if (!tile.shouldWorkNow(this.speed) || !tile.canWork())
             return;
+        var slot = tile.getModuleSlot(module);
         var network = PipeNetwork.get(tile.getLevel());
-        // process crafting ingredient requests
-        if (!tile.craftIngredientRequests.isEmpty()) {
-            network.startProfile("crafting_ingredients");
-            var request = tile.craftIngredientRequests.peek();
-            var equalityTypes = ItemFilter.getEqualityTypes(tile);
-            var dest = tile.getAvailableDestination(Direction.values(), request.stack, true, true);
-            if (dest != null) {
-                var requestRemain = network.requestExistingItem(request.location, tile.getBlockPos(), dest.getLeft(), request, dest.getRight(), equalityTypes);
-                network.resolveNetworkLock(request);
-                tile.craftIngredientRequests.remove();
+        var foundMainCraft = false;
+        var crafts = tile.getActiveCrafts().iterator();
+        while (crafts.hasNext()) {
+            var craft = crafts.next();
 
-                // if we couldn't fit all items into the destination, create another request for the rest
-                var remain = request.stack.copy();
-                remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                if (!remain.isEmpty()) {
-                    var remainRequest = new NetworkLock(request.location, remain);
-                    tile.craftIngredientRequests.add(remainRequest);
-                    network.createNetworkLock(remainRequest);
-                }
-            }
-            network.endProfile();
-        }
-        // pull requested crafting results from the network once they are stored
-        if (!tile.craftResultRequests.isEmpty()) {
-            network.startProfile("crafting_results");
-            var items = network.getOrderedNetworkItems(tile.getBlockPos());
-            var equalityTypes = ItemFilter.getEqualityTypes(tile);
-            for (var request : tile.craftResultRequests) {
-                var remain = request.getRight().copy();
-                var destPipe = network.getPipe(request.getLeft());
-                if (destPipe != null) {
-                    var dest = destPipe.getAvailableDestinationOrConnectable(remain, true, true);
-                    if (dest == null)
-                        continue;
-                    for (var item : items) {
-                        var requestRemain = network.requestExistingItem(item, request.getLeft(), dest.getLeft(), null, dest.getRight(), equalityTypes);
-                        remain.shrink(dest.getRight().getCount() - requestRemain.getCount());
-                        if (remain.isEmpty())
-                            break;
-                    }
-                    if (remain.getCount() != request.getRight().getCount()) {
-                        tile.craftResultRequests.remove(request);
-                        // if we couldn't pull everything, log a new request
-                        if (!remain.isEmpty())
-                            tile.craftResultRequests.add(Pair.of(request.getLeft(), remain));
+            // handle main crafting, which only one recipe (in the whole pipe!) should be able to do at a time so that items between recipes don't mix
+            if (!foundMainCraft) {
+                // process crafting ingredient requests
+                if (!craft.ingredientsToRequest.isEmpty()) {
+                    if (craft.moduleSlot == slot) {
+                        network.startProfile("crafting_ingredients");
+                        var ingredient = craft.ingredientsToRequest.getFirst();
+                        var toRequest = ingredient.map(l -> l.stack, s -> s);
+                        var dest = tile.getAvailableDestination(Direction.values(), toRequest, true, true);
+                        if (dest != null) {
+                            // if we're ensuring the correct item order and the item is already on the way, don't do anything yet
+                            if (module.get(Contents.TYPE).insertionType != InsertionType.PER_ITEM || craft.travelingIngredients.isEmpty()) {
+                                var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                                var remain = ingredient.map(
+                                    l -> network.requestExistingItem(l.location, tile.getBlockPos(), dest.getLeft(), l, dest.getRight(), equalityTypes),
+                                    s -> network.requestExistingItem(tile.getBlockPos(), dest.getLeft(), null, dest.getRight(), equalityTypes)).copy();
+                                // dest may be able to accept less than toRequest, so the amount that remains there also needs to be taken into account
+                                remain.grow(toRequest.getCount() - dest.getRight().getCount());
+                                if (remain.getCount() != toRequest.getCount()) {
+                                    ingredient.ifLeft(network::resolveNetworkLock);
+                                    craft.ingredientsToRequest.removeFirst();
+                                    if (!remain.isEmpty())
+                                        craft.ingredientsToRequest.addFirst(Either.right(remain));
+                                    craft.travelingIngredients.add(toRequest.copyWithCount(toRequest.getCount() - remain.getCount()));
+                                    craft.inProgress = true;
+                                }
+                            }
+                        }
                         network.endProfile();
-                        return;
                     }
+                    foundMainCraft = true;
+                } else if (!craft.travelingIngredients.isEmpty()) {
+                    foundMainCraft = true;
+                } else if (!craft.resultFound) {
+                    if (craft.moduleSlot == slot) {
+                        // check whether the crafting results have arrived in storage
+                        if (craft.resultStackRemain.isEmpty()) {
+                            // the result stack is empty from the start if this was a partial craft whose results shouldn't be delivered anywhere
+                            // (ie someone requested 3 sticks with ensureItemOrder, but the recipe always makes 4, so the 4th recipe has no destination)
+                            crafts.remove();
+                        } else {
+                            // check if the result is in storage
+                            var items = network.getOrderedNetworkItems(tile.getBlockPos());
+                            var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                            network.startProfile("check_crafting_results");
+                            var remain = craft.resultStackRemain.copy();
+                            for (var item : items) {
+                                remain.shrink(item.getItemAmount(tile.getLevel(), remain, equalityTypes) - network.getLockedAmount(item.getPos(), remain, null, equalityTypes));
+                                if (remain.isEmpty())
+                                    break;
+                            }
+                            craft.resultFound = remain.isEmpty();
+                            network.endProfile();
+                        }
+                    }
+                    foundMainCraft = true;
                 }
             }
-            network.endProfile();
+
+            // pull requested crafting results from the network once they are stored
+            if (craft.resultFound && craft.moduleSlot == slot) {
+                network.startProfile("pull_crafting_results");
+                var destPipe = network.getPipe(craft.resultDestPipe);
+                if (destPipe != null) {
+                    var dest = destPipe.getAvailableDestinationOrConnectable(craft.resultStackRemain, true, true);
+                    if (dest != null) {
+                        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+                        var requestRemain = network.requestExistingItem(craft.resultDestPipe, dest.getLeft(), null, dest.getRight(), equalityTypes);
+                        craft.resultStackRemain.shrink(dest.getRight().getCount() - requestRemain.getCount());
+                        if (craft.resultStackRemain.isEmpty()) {
+                            crafts.remove();
+                            break;
+                        }
+                    }
+                }
+                network.endProfile();
+            }
         }
     }
 
     @Override
     public List<ItemStack> getAllCraftables(ItemStack module, PipeBlockEntity tile) {
         List<ItemStack> ret = new ArrayList<>();
-        var output = this.getOutput(module);
+        var output = module.get(Contents.TYPE).output;
         for (var i = 0; i < output.getSlots(); i++) {
             var stack = output.getStackInSlot(i);
             if (!stack.isEmpty())
@@ -139,33 +172,38 @@ public class CraftingModuleItem extends ModuleItem {
     @Override
     public int getCraftableAmount(ItemStack module, PipeBlockEntity tile, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         var network = PipeNetwork.get(tile.getLevel());
+        network.startProfile("get_craftable_amount");
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
-        var input = this.getInput(module);
+        var content = module.get(Contents.TYPE);
 
         var craftable = 0;
-        var output = this.getOutput(module);
-        for (var i = 0; i < output.getSlots(); i++) {
-            var out = output.getStackInSlot(i);
+        for (var i = 0; i < content.output.getSlots(); i++) {
+            var out = content.output.getStackInSlot(i);
             if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
-                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, input.getSlots(), input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, content.input.getSlots(), content.input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)
                     craftable += out.getCount() * availableCrafts;
             }
         }
+        network.endProfile();
         return craftable;
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+    public Pair<ItemStack, Collection<ActiveCraft>> craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
         // check if we can craft the required amount of items
         var craftableAmount = this.getCraftableAmount(module, tile, unavailableConsumer, stack, dependencyChain);
         if (craftableAmount <= 0)
-            return stack;
+            return Pair.of(stack, List.of());
 
         var network = PipeNetwork.get(tile.getLevel());
+        network.startProfile("craft");
+
         var items = network.getOrderedNetworkItems(tile.getBlockPos());
+        var slot = tile.getModuleSlot(module);
+        var contents = module.get(Contents.TYPE);
 
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
@@ -174,51 +212,91 @@ public class CraftingModuleItem extends ModuleItem {
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
         var toCraft = Math.min(craftableCrafts, requiredCrafts);
 
-        var input = this.getInput(module);
-        for (var i = 0; i < input.getSlots(); i++) {
-            var in = input.getStackInSlot(i);
-            if (in.isEmpty())
-                continue;
-            var copy = in.copy();
-            copy.setCount(in.getCount() * toCraft);
-            var ret = ItemTerminalBlockEntity.requestItemLater(tile.getLevel(), tile.getBlockPos(), items, unavailableConsumer, copy, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
-            tile.craftIngredientRequests.addAll(ret.getLeft());
+        var leftOfRequest = stack.getCount();
+        var allCrafts = new ArrayList<ActiveCraft>();
+        // if we're inserting individual items or per craft, we need to split up the request into multiple crafts
+        for (var c = contents.insertionType != InsertionType.ALL ? toCraft : 1; c > 0; c--) {
+            var toRequest = new ArrayList<Either<NetworkLock, ItemStack>>();
+            for (var i = 0; i < contents.input.getSlots(); i++) {
+                var in = contents.input.getStackInSlot(i);
+                if (in.isEmpty())
+                    continue;
+                var request = in.copy();
+                if (contents.insertionType == InsertionType.ALL)
+                    request.setCount(in.getCount() * toCraft);
+                var ret = network.requestLocksAndStartCrafting(tile.getBlockPos(), items, unavailableConsumer, request, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
+                for (var lock : ret.getLeft())
+                    toRequest.add(Either.left(lock));
+                for (var dep : ret.getRight()) {
+                    // if the dependency doesn't have a result stack, it means it's an extraneous craft and we don't need to mark it as a dependency!
+                    if (dep.resultStackRemain.isEmpty())
+                        continue;
+                    // set crafting dependencies as in progress immediately so that, when canceling, they don't leave behind half-crafted intermediate dependencies
+                    // TODO to be more optimal, we should really do this when setting the main craft as in progress, but that would require storing references to all of the dependencies
+                    dep.inProgress = true;
+                    // we don't want dependencies to send their crafted items to us automatically (instead, we request them ourselves to maintain ordering)
+                    toRequest.add(Either.right(dep.resultStackRemain));
+                    dep.resultStackRemain = ItemStack.EMPTY;
+                    allCrafts.add(dep);
+                }
+            }
+            var crafted = contents.insertionType != InsertionType.ALL ? resultAmount : resultAmount * toCraft;
+            // items we started craft dependencies for are ones that will be sent to us (so we're waiting for them immediately!)
+            var activeCraft = new ActiveCraft(tile.getBlockPos(), slot, toRequest, new ArrayList<>(), destPipe, stack.copyWithCount(Math.min(crafted, leftOfRequest)));
+            tile.getActiveCrafts().add(activeCraft);
+            allCrafts.add(activeCraft);
+            leftOfRequest -= crafted;
         }
+        network.endProfile();
 
         var remain = stack.copy();
         remain.shrink(resultAmount * toCraft);
-
-        var result = stack.copy();
-        result.shrink(remain.getCount());
-        tile.craftResultRequests.add(Pair.of(destPipe, result));
-
-        return remain;
+        return Pair.of(remain, allCrafts);
     }
 
-    public ItemStackHandler getInput(ItemStack module) {
-        var handler = new ItemStackHandler(this.inputSlots);
-        if (module.hasTag())
-            handler.deserializeNBT(module.getTag().getCompound("input"));
-        return handler;
-    }
+    @Override
+    public ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction) {
+        var slot = tile.getModuleSlot(module);
+        var contents = module.get(Contents.TYPE);
+        var equalityTypes = ItemFilter.getEqualityTypes(tile);
+        var allCrafts = tile.getActiveCrafts();
+        for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).toList()) {
+            // TODO currently, we always shrink by the size of stack, even if the container can't actually accept the entire stack
+            //  some containers' getAvailableDestination method returns an incorrect value (because it's a heuristic), so parts of this stack might be sent back,
+            //  in which case we have to add it back to the collection of items we need to request (as an item stack since we won't have the lock anymore)
+            var traveling = craft.getTravelingIngredient(stack, equalityTypes);
+            traveling.shrink(stack.getCount());
+            if (traveling.isEmpty())
+                craft.travelingIngredients.remove(traveling);
 
-    public ItemStackHandler getOutput(ItemStack module) {
-        var handler = new ItemStackHandler(this.outputSlots);
-        if (module.hasTag())
-            handler.deserializeNBT(module.getTag().getCompound("output"));
-        return handler;
-    }
+            if (contents.insertUnstacked) {
+                var handler = tile.getItemHandler(direction);
+                if (handler != null) {
+                    while (!stack.isEmpty()) {
+                        var remain = ItemHandlerHelper.insertItem(handler, stack.copyWithCount(1), false);
+                        if (!remain.isEmpty())
+                            break;
+                        stack.shrink(1);
+                    }
+                }
+            }
 
-    public void save(ItemStackHandler input, ItemStackHandler output, ItemStack module) {
-        var tag = module.getOrCreateTag();
-        if (input != null)
-            tag.put("input", input.serializeNBT());
-        if (output != null)
-            tag.put("output", output.serializeNBT());
+            if (craft.ingredientsToRequest.isEmpty() && craft.travelingIngredients.isEmpty()) {
+                if (contents.emitRedstone) {
+                    tile.redstoneTicks = 5;
+                    tile.getLevel().updateNeighborsAt(tile.getBlockPos(), tile.getBlockState().getBlock());
+                }
+
+                // if we canceled the request and all input items are delivered (ie the machine actually got what it expected), remove it from the queue
+                if (craft.canceled)
+                    allCrafts.remove(craft);
+            }
+        }
+        return stack;
     }
 
     private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
-        var output = this.getOutput(module);
+        var output = module.get(Contents.TYPE).output;
         var resultAmount = 0;
         for (var i = 0; i < output.getSlots(); i++) {
             var out = output.getStackInSlot(i);
@@ -229,8 +307,34 @@ public class CraftingModuleItem extends ModuleItem {
     }
 
     private static Stack<ItemStack> addDependency(Stack<ItemStack> deps, ItemStack module) {
+        // noinspection unchecked
         deps = (Stack<ItemStack>) deps.clone();
         deps.push(module);
         return deps;
     }
+
+    public record Contents(ItemStackHandler input, ItemStackHandler output, boolean emitRedstone, InsertionType insertionType, boolean insertUnstacked) {
+
+        public static final Codec<Contents> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("input").forGetter(d -> d.input),
+            Utility.ITEM_STACK_HANDLER_CODEC.fieldOf("output").forGetter(d -> d.output),
+            Codec.BOOL.optionalFieldOf("emit_redstone", false).forGetter(d -> d.emitRedstone),
+            Codec.STRING.xmap(InsertionType::valueOf, InsertionType::name).optionalFieldOf("insertion_type", InsertionType.ALL).forGetter(d -> d.insertionType),
+            Codec.BOOL.optionalFieldOf("insert_unstacked", false).forGetter(d -> d.insertUnstacked)
+        ).apply(i, Contents::new));
+        public static final DataComponentType<Contents> TYPE = DataComponentType.<Contents>builder().persistent(Contents.CODEC).cacheEncoding().build();
+
+    }
+
+    public enum InsertionType {
+
+        ALL,
+        PER_ITEM,
+        PER_CRAFT;
+
+        public String translationKey() {
+            return "info." + PrettyPipes.ID + ".insertion_type." + this.name().toLowerCase(Locale.ROOT);
+        }
+    }
+
 }

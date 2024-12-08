@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 public class FilterIncreaseModuleItem extends ModuleItem {
 
     public FilterIncreaseModuleItem() {
-        super("filter_increase_modifier");
+        super("filter_increase_modifier", new Properties());
     }
 
     @Override
@@ -33,7 +33,7 @@ public class FilterIncreaseModuleItem extends ModuleItem {
 
     @Override
     public ItemFilter getItemFilter(ItemStack module, PipeBlockEntity tile) {
-        var filter = new ItemFilter(18, module, tile);
+        var filter = new ItemFilter(27, module, tile);
         filter.canModifyWhitelist = false;
         return filter;
     }

@@ -5,12 +5,13 @@ import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.misc.ItemFilter;
-import de.ellpeck.prettypipes.network.NetworkLock;
+import de.ellpeck.prettypipes.network.ActiveCraft;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import de.ellpeck.prettypipes.pipe.containers.MainPipeContainer;
 import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -37,6 +38,7 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.util.Lazy;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -68,15 +70,18 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             PipeBlockEntity.this.setChanged();
         }
     };
-    public final Queue<NetworkLock> craftIngredientRequests = new LinkedList<>();
-    public final List<Pair<BlockPos, ItemStack>> craftResultRequests = new ArrayList<>();
+
     public PressurizerBlockEntity pressurizer;
     public BlockState cover;
     public int moduleDropCheck;
-    protected List<IPipeItem> items;
+    public int redstoneTicks;
+
+    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
+
+    private List<IPipeItem> itemCache;
+    private List<ActiveCraft> activeCraftCache;
     private int lastItemAmount;
     private int priority;
-    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
 
     public PipeBlockEntity(BlockPos pos, BlockState state) {
         super(Registry.pipeBlockEntity, pos, state);
@@ -92,66 +97,55 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("modules", this.modules.serializeNBT());
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
+        compound.put("modules", this.modules.serializeNBT(provider));
         compound.putInt("module_drop_check", this.moduleDropCheck);
-        compound.put("requests", Utility.serializeAll(this.craftIngredientRequests));
         if (this.cover != null)
             compound.put("cover", NbtUtils.writeBlockState(this.cover));
-        var results = new ListTag();
-        for (var triple : this.craftResultRequests) {
-            var nbt = new CompoundTag();
-            nbt.putLong("dest_pipe", triple.getLeft().asLong());
-            nbt.put("item", triple.getRight().save(new CompoundTag()));
-            results.add(nbt);
-        }
-        compound.put("craft_results", results);
+        compound.putInt("priority", this.priority);
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.modules.deserializeNBT(compound.getCompound("modules"));
+    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        this.modules.deserializeNBT(provider, compound.getCompound("modules"));
         this.moduleDropCheck = compound.getInt("module_drop_check");
         this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
-        this.craftIngredientRequests.clear();
-        this.craftIngredientRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), NetworkLock::new));
-        this.craftResultRequests.clear();
-        var results = compound.getList("craft_results", Tag.TAG_COMPOUND);
-        for (var i = 0; i < results.size(); i++) {
-            var nbt = results.getCompound(i);
-            this.craftResultRequests.add(Pair.of(
-                    BlockPos.of(nbt.getLong("dest_pipe")),
-                    ItemStack.of(nbt.getCompound("item"))));
-        }
-        super.load(compound);
+        this.priority = compound.getInt("priority");
+        super.loadAdditional(compound, provider);
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
+    public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
-        var nbt = this.saveWithoutMetadata();
-        nbt.put("items", Utility.serializeAll(this.getItems()));
+        var nbt = this.saveWithoutMetadata(provider);
+        nbt.put("items", Utility.serializeAll(this.getItems(), i -> i.serializeNBT(provider)));
         return nbt;
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag nbt) {
-        this.load(nbt);
+    public void handleUpdateTag(CompoundTag nbt, HolderLookup.Provider provider) {
+        this.loadWithComponents(nbt, provider);
         var items = this.getItems();
         items.clear();
-        items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load));
+        items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), d -> IPipeItem.load(provider, d)));
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        this.load(pkt.getTag());
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider provider) {
+        this.loadWithComponents(pkt.getTag(), provider);
     }
 
     public List<IPipeItem> getItems() {
-        if (this.items == null)
-            this.items = PipeNetwork.get(this.level).getItemsInPipe(this.worldPosition);
-        return this.items;
+        if (this.itemCache == null)
+            this.itemCache = PipeNetwork.get(this.level).getItemsInPipe(this.worldPosition);
+        return this.itemCache;
+    }
+
+    public List<ActiveCraft> getActiveCrafts() {
+        if (this.activeCraftCache == null)
+            this.activeCraftCache = PipeNetwork.get(this.level).getActiveCrafts(this.worldPosition);
+        return this.activeCraftCache;
     }
 
     public void addNewItem(IPipeItem item) {
@@ -279,8 +273,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     public List<ItemStack> getAllCraftables() {
         return this.streamModules()
-                .flatMap(m -> m.getRight().getAllCraftables(m.getLeft(), this).stream())
-                .collect(Collectors.toList());
+            .flatMap(m -> m.getRight().getAllCraftables(m.getLeft(), this).stream())
+            .collect(Collectors.toList());
     }
 
     public int getCraftableAmount(Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
@@ -298,39 +292,32 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return total;
     }
 
-    public ItemStack craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+    public Pair<ItemStack, Collection<ActiveCraft>> craft(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+        var crafts = new ArrayList<ActiveCraft>();
         var modules = this.streamModules().iterator();
         while (modules.hasNext()) {
             var module = modules.next();
-            stack = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, dependencyChain);
+            var started = module.getRight().craft(module.getLeft(), this, destPipe, unavailableConsumer, stack, dependencyChain);
+            stack = started.getLeft();
+            crafts.addAll(started.getRight());
             if (stack.isEmpty())
                 break;
         }
-        return stack;
+        return Pair.of(stack, crafts);
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        var handler = this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
-        if (handler != null)
-            return handler;
-        return Utility.getBlockItemHandler(this.level, this.worldPosition.relative(dir), dir.getOpposite());
+        return this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
     }
 
-    public <T, C> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
+    public <T> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
         if (!this.isConnected(dir))
             return null;
-        var pos = this.worldPosition.relative(dir);
-        var tile = this.level.getBlockEntity(pos);
-        if (tile != null)
-            return this.level.getCapability(cap, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
-        return null;
+        return this.level.getCapability(cap, this.worldPosition.relative(dir), null, null, dir.getOpposite());
     }
 
     public IPipeConnectable getPipeConnectable(Direction dir) {
-        var tile = this.level.getBlockEntity(this.worldPosition.relative(dir));
-        if (tile != null)
-            return this.level.getCapability(Registry.pipeConnectableCapability, tile.getBlockPos(), tile.getBlockState(), tile, dir.getOpposite());
-        return null;
+        return this.level.getCapability(Registry.pipeConnectableCapability, this.worldPosition.relative(dir), null, null, dir.getOpposite());
     }
 
     public boolean canHaveModules() {
@@ -358,10 +345,18 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         return builder.build();
     }
 
-    public void removeCover(Player player, InteractionHand hand) {
+    public int getModuleSlot(ItemStack module) {
+        for (var i = 0; i < this.modules.getSlots(); i++) {
+            if (this.modules.getStackInSlot(i) == module)
+                return i;
+        }
+        return -1;
+    }
+
+    public void removeCover() {
         if (this.level.isClientSide)
             return;
-        var drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null, player, player.getItemInHand(hand));
+        var drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null);
         for (var drop : drops)
             Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ(), drop);
         this.cover = null;
@@ -373,8 +368,8 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
     public int getNextNode(List<BlockPos> nodes, int index) {
         return this.streamModules()
-                .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
-                .filter(m -> m != null && m >= 0).findFirst().orElse(index);
+            .map(m -> m.getRight().getCustomNextNode(m.getLeft(), this, nodes, index))
+            .filter(m -> m != null && m >= 0).findFirst().orElse(index);
     }
 
     public List<ItemFilter> getFilters(Direction direction) {
@@ -386,6 +381,27 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
             }
             return p.getRight().getItemFilter(p.getLeft(), this);
         }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public ItemStack store(ItemStack stack, Direction direction) {
+        var modules = this.streamModules().iterator();
+        while (modules.hasNext()) {
+            var module = modules.next();
+            stack = module.getRight().store(module.getLeft(), this, stack, direction);
+            if (stack.isEmpty())
+                return stack;
+        }
+        var connectable = this.getPipeConnectable(direction);
+        if (connectable != null)
+            return connectable.insertItem(this.getBlockPos(), direction, stack, false);
+        var handler = this.getItemHandler(direction);
+        if (handler != null)
+            return ItemHandlerHelper.insertItemStacked(handler, stack, false);
+        return stack;
+    }
+
+    public void setRedstoneTicks(int ticks) {
+        this.redstoneTicks = ticks;
     }
 
     @Override
@@ -400,6 +416,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
+    public boolean shouldTriggerClientSideContainerClosingOnOpen() {
+        return false;
+    }
+
+    @Override
     public ConnectionType getConnectionType(BlockPos pipePos, Direction direction) {
         var state = this.level.getBlockState(pipePos.relative(direction));
         if (state.getValue(PipeBlock.DIRECTIONS.get(direction.getOpposite())) == ConnectionType.BLOCKED)
@@ -411,6 +432,12 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         // invalidate our pressurizer reference if it was removed
         if (pipe.pressurizer != null && pipe.pressurizer.isRemoved())
             pipe.pressurizer = null;
+
+        if (pipe.redstoneTicks > 0) {
+            pipe.redstoneTicks--;
+            if (pipe.redstoneTicks <= 0)
+                level.updateNeighborsAt(pos, state.getBlock());
+        }
 
         if (!pipe.level.isAreaLoaded(pipe.worldPosition, 1))
             return;

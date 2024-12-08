@@ -1,12 +1,14 @@
 package de.ellpeck.prettypipes.pipe.modules.modifier;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.items.ModuleItem;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
-import joptsimple.internal.Strings;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -17,7 +19,7 @@ public class FilterModifierModuleItem extends ModuleItem {
     public final ItemEquality.Type type;
 
     public FilterModifierModuleItem(String name, ItemEquality.Type type) {
-        super(name);
+        super(name, new Properties());
         this.type = type;
     }
 
@@ -45,15 +47,21 @@ public class FilterModifierModuleItem extends ModuleItem {
     }
 
     public static ResourceLocation getFilterTag(ItemStack stack) {
-        if (!stack.hasTag())
-            return null;
-        var tag = stack.getTag().getString("filter_tag");
-        if (Strings.isNullOrEmpty(tag))
-            return null;
-        return new ResourceLocation(tag);
+        var data = stack.get(Data.TYPE);
+        return data != null && data.filterTag != null ? ResourceLocation.parse(data.filterTag) : null;
     }
 
     public static void setFilterTag(ItemStack stack, ResourceLocation tag) {
-        stack.getOrCreateTag().putString("filter_tag", tag.toString());
+        stack.set(Data.TYPE, new Data(tag.toString()));
     }
+
+    public record Data(String filterTag) {
+
+        public static final Codec<Data> CODEC = RecordCodecBuilder.create(i -> i.group(
+            Codec.STRING.fieldOf("filter_tag").forGetter(f -> f.filterTag)
+        ).apply(i, Data::new));
+        public static final DataComponentType<Data> TYPE = DataComponentType.<Data>builder().persistent(Data.CODEC).cacheEncoding().build();
+
+    }
+
 }

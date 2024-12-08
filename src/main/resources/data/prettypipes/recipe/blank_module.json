@@ -1,0 +1,25 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "QRQ",
+        "SPS",
+        "QRQ"
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "P": {
+            "item": "prettypipes:pipe"
+        },
+        "S": {
+            "item": "minecraft:stone_slab"
+        },
+        "Q": {
+            "item": "minecraft:quartz"
+        }
+    },
+    "result": {
+        "id": "prettypipes:blank_module"
+    }
+}

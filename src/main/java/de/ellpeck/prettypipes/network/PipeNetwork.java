@@ -12,18 +12,21 @@ import de.ellpeck.prettypipes.pipe.PipeBlock;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.ListenableGraph;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.event.GraphEdgeChangeEvent;
@@ -52,6 +55,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     private final Map<BlockPos, PipeBlockEntity> tileCache = new HashMap<>();
     private final ListMultimap<BlockPos, IPipeItem> pipeItems = ArrayListMultimap.create();
     private final ListMultimap<BlockPos, NetworkLock> networkLocks = ArrayListMultimap.create();
+    private final ListMultimap<BlockPos, ActiveCraft> activeCrafts = ArrayListMultimap.create();
     private Level level;
 
     public PipeNetwork() {
@@ -60,18 +64,19 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         this.dijkstra = new DijkstraShortestPath<>(this.graph);
     }
 
-    public PipeNetwork(CompoundTag nbt) {
+    public PipeNetwork(CompoundTag nbt, HolderLookup.Provider provider) {
         this();
-        var nodes = nbt.getList("nodes", Tag.TAG_COMPOUND);
-        for (var i = 0; i < nodes.size(); i++)
-            this.graph.addVertex(NbtUtils.readBlockPos(nodes.getCompound(i)));
+        for (var node : nbt.getList("nodes", Tag.TAG_INT_ARRAY))
+            this.graph.addVertex(Utility.readBlockPos(node));
         var edges = nbt.getList("edges", Tag.TAG_COMPOUND);
         for (var i = 0; i < edges.size(); i++)
-            this.addEdge(new NetworkEdge(edges.getCompound(i)));
-        for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), IPipeItem::load))
+            this.addEdge(new NetworkEdge(provider, edges.getCompound(i)));
+        for (var item : Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), i -> IPipeItem.load(provider, i)))
             this.pipeItems.put(item.getCurrentPipe(), item);
-        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), NetworkLock::new))
+        for (var lock : Utility.deserializeAll(nbt.getList("locks", Tag.TAG_COMPOUND), t -> new NetworkLock(provider, t)))
             this.createNetworkLock(lock);
+        for (var craft : Utility.deserializeAll(nbt.getList("crafts", Tag.TAG_COMPOUND), t -> new ActiveCraft(provider, t)))
+            this.activeCrafts.put(craft.pipe, craft);
     }
 
     @Override
@@ -99,26 +104,27 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     @Override
     public String toString() {
-        return "PipeNetwork{" +
-                "\ngraph=" + this.graph +
-                ",\nnodeToConnectedNodes=" + this.nodeToConnectedNodes +
-                ",\ntileCache=" + this.tileCache.keySet() +
-                ",\npipeItems=" + this.pipeItems +
-                ",\nnetworkLocks=" + this.networkLocks + '}';
+        return "graph:\n\tnodes: " + this.graph.edgeSet() + "\n\tedges: " + this.graph.edgeSet() +
+            "\nnodeToConnectedNodes:\n" + PipeNetwork.toNewlineDelimitedString(this.nodeToConnectedNodes.entrySet()) +
+            "\ntileCache:\n" + PipeNetwork.toNewlineDelimitedString(this.tileCache.keySet()) +
+            "\npipeItems:\n" + PipeNetwork.toNewlineDelimitedString(this.pipeItems.entries()) +
+            "\nnetworkLocks:\n" + PipeNetwork.toNewlineDelimitedString(this.networkLocks.entries()) +
+            "\nactiveCrafts:\n" + PipeNetwork.toNewlineDelimitedString(this.activeCrafts.entries());
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider provider) {
         var nodes = new ListTag();
         for (var node : this.graph.vertexSet())
             nodes.add(NbtUtils.writeBlockPos(node));
         nbt.put("nodes", nodes);
         var edges = new ListTag();
         for (var edge : this.graph.edgeSet())
-            edges.add(edge.serializeNBT());
+            edges.add(edge.serializeNBT(provider));
         nbt.put("edges", edges);
-        nbt.put("items", Utility.serializeAll(this.pipeItems.values()));
-        nbt.put("locks", Utility.serializeAll(this.networkLocks.values()));
+        nbt.put("items", Utility.serializeAll(this.pipeItems.values(), i -> i.serializeNBT(provider)));
+        nbt.put("locks", Utility.serializeAll(this.networkLocks.values(), l -> l.serializeNBT(provider)));
+        nbt.put("crafts", Utility.serializeAll(this.activeCrafts.values(), c -> c.serializeNBT(provider)));
         return nbt;
     }
 
@@ -199,34 +205,78 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         var item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
         startPipe.addNewItem(item);
-        PacketDistributor.TRACKING_CHUNK.with(this.level.getChunkAt(startPipePos)).send(new PacketItemEnterPipe(startPipePos, item));
+        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(startPipePos), new PacketItemEnterPipe(startPipePos, item.serializeNBT(this.level.registryAccess())));
         return true;
     }
 
     public ItemStack requestItem(BlockPos destPipe, BlockPos destInventory, ItemStack stack, ItemEquality... equalityTypes) {
-        var remain = stack.copy();
         // check existing items
-        for (var location : this.getOrderedNetworkItems(destPipe)) {
-            remain = this.requestExistingItem(location, destPipe, destInventory, null, remain, equalityTypes);
-            if (remain.isEmpty())
-                return remain;
-        }
+        var remain = this.requestExistingItem(destPipe, destInventory, null, stack, equalityTypes);
+        if (remain.isEmpty())
+            return remain;
         // check craftable items
-        return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes);
+        return this.requestCraftedItem(destPipe, null, remain, new Stack<>(), equalityTypes).getLeft();
     }
 
-    public ItemStack requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+    public Triple<List<NetworkLock>, ItemStack, Collection<ActiveCraft>> requestLocksAndStartCrafting(BlockPos destPipe, Collection<NetworkLocation> locations, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+        List<NetworkLock> requests = new ArrayList<>();
+        var remain = stack.copy();
+        // check for existing items
+        for (var location : locations) {
+            var amount = location.getItemAmount(this.level, stack, equalityTypes);
+            if (amount <= 0)
+                continue;
+            amount -= this.getLockedAmount(location.getPos(), stack, null, equalityTypes);
+            if (amount > 0) {
+                if (remain.getCount() < amount)
+                    amount = remain.getCount();
+                remain.shrink(amount);
+                while (amount > 0) {
+                    var copy = stack.copy();
+                    copy.setCount(Math.min(stack.getMaxStackSize(), amount));
+                    var lock = new NetworkLock(location, copy);
+                    this.createNetworkLock(lock);
+                    requests.add(lock);
+                    amount -= copy.getCount();
+                }
+                if (remain.isEmpty())
+                    break;
+            }
+        }
+        if (!remain.isEmpty()) {
+            // check for craftable items
+            var started = this.requestCraftedItem(destPipe, unavailableConsumer, remain, dependencyChain, equalityTypes);
+            return Triple.of(requests, started.getLeft(), started.getRight());
+        } else {
+            return Triple.of(requests, remain, List.of());
+        }
+    }
+
+    public Pair<ItemStack, Collection<ActiveCraft>> requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
+        var crafts = new ArrayList<ActiveCraft>();
         for (var craftable : this.getAllCraftables(destPipe)) {
             if (!ItemEquality.compareItems(stack, craftable.getRight(), equalityTypes))
                 continue;
             var pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
                 continue;
-            stack = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
+            var started = pipe.craft(destPipe, unavailableConsumer, stack, dependencyChain);
+            stack = started.getLeft();
+            crafts.addAll(started.getRight());
             if (stack.isEmpty())
                 break;
         }
-        return stack;
+        return Pair.of(stack, crafts);
+    }
+
+    public ItemStack requestExistingItem(BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, ItemStack stack, ItemEquality... equalityTypes) {
+        var remain = stack.copy();
+        for (var location : this.getOrderedNetworkItems(destPipe)) {
+            remain = this.requestExistingItem(location, destPipe, destInventory, ignoredLock, remain, equalityTypes);
+            if (remain.isEmpty())
+                return remain;
+        }
+        return remain;
     }
 
     public ItemStack requestExistingItem(NetworkLocation location, BlockPos destPipe, BlockPos destInventory, NetworkLock ignoredLock, ItemStack stack, ItemEquality... equalityTypes) {
@@ -237,29 +287,27 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         if (location.getPos().equals(destInventory))
             return stack;
         // make sure we don't pull any locked items
-        var amount = location.getItemAmount(this.level, stack, equalityTypes);
-        if (amount <= 0)
+        var available = location.getItemAmount(this.level, stack, equalityTypes);
+        if (available <= 0)
             return stack;
-        amount -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
-        if (amount <= 0)
+        available -= this.getLockedAmount(location.getPos(), stack, ignoredLock, equalityTypes);
+        if (available <= 0)
             return stack;
-        var remain = stack.copy();
-        // make sure we only extract less than or equal to the requested amount
-        if (remain.getCount() < amount)
-            amount = remain.getCount();
-        remain.shrink(amount);
+        var toExtract = Math.min(stack.getCount(), available);
+        var extractedSoFar = 0;
         for (int slot : location.getStackSlots(this.level, stack, equalityTypes)) {
             // try to extract from that location's inventory and send the item
             var handler = location.getItemHandler(this.level);
-            var extracted = handler.extractItem(slot, amount, true);
+            var extracted = handler.extractItem(slot, toExtract - extractedSoFar, true);
             if (this.routeItemToLocation(location.pipePos, location.getPos(), destPipe, destInventory, extracted, speed -> itemSupplier.apply(extracted, speed))) {
                 handler.extractItem(slot, extracted.getCount(), false);
-                amount -= extracted.getCount();
-                if (amount <= 0)
+                extractedSoFar += extracted.getCount();
+                if (extractedSoFar >= toExtract)
                     break;
             }
         }
-        return remain;
+        // we reduce the amount by what we managed to extract & insert in the for loop, so the amount down here will be what we couldn't
+        return stack.copyWithCount(stack.getCount() - extractedSoFar);
     }
 
     public PipeBlockEntity getPipe(BlockPos pos) {
@@ -276,23 +324,25 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         this.tileCache.remove(pos);
     }
 
-    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, ItemEquality... equalityTypes) {
+    public List<Pair<BlockPos, ItemStack>> getCurrentlyCrafting(BlockPos node, boolean includeCanceled, ItemEquality... equalityTypes) {
         this.startProfile("get_currently_crafting");
         List<Pair<BlockPos, ItemStack>> items = new ArrayList<>();
         var craftingPipes = this.getAllCraftables(node).stream().map(c -> this.getPipe(c.getLeft())).distinct().iterator();
         while (craftingPipes.hasNext()) {
             var pipe = craftingPipes.next();
-            for (var request : pipe.craftResultRequests) {
-                var dest = request.getLeft();
-                var stack = request.getRight();
+            for (var craft : pipe.getActiveCrafts()) {
+                if (!includeCanceled && craft.canceled)
+                    continue;
+                if (craft.resultStackRemain.isEmpty())
+                    continue;
                 // add up all the items that should go to the same location
                 var existing = items.stream()
-                        .filter(s -> s.getLeft().equals(dest) && ItemEquality.compareItems(s.getRight(), stack, equalityTypes))
-                        .findFirst();
+                    .filter(s -> s.getLeft().equals(craft.resultDestPipe) && ItemEquality.compareItems(s.getRight(), craft.resultStackRemain, equalityTypes))
+                    .findFirst();
                 if (existing.isPresent()) {
-                    existing.get().getRight().grow(stack.getCount());
+                    existing.get().getRight().grow(craft.resultStackRemain.getCount());
                 } else {
-                    items.add(Pair.of(dest, stack.copy()));
+                    items.add(Pair.of(craft.resultDestPipe, craft.resultStackRemain.copy()));
                 }
             }
         }
@@ -300,10 +350,10 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         return items;
     }
 
-    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, ItemEquality... equalityTypes) {
-        return this.getCurrentlyCrafting(destNode).stream()
-                .filter(p -> p.getLeft().equals(destNode) && ItemEquality.compareItems(p.getRight(), stack, equalityTypes))
-                .mapToInt(p -> p.getRight().getCount()).sum();
+    public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, boolean includeCanceled, ItemEquality... equalityTypes) {
+        return this.getCurrentlyCrafting(destNode, includeCanceled).stream()
+            .filter(p -> p.getLeft().equals(destNode) && ItemEquality.compareItems(p.getRight(), stack, equalityTypes))
+            .mapToInt(p -> p.getRight().getCount()).sum();
     }
 
     public List<Pair<BlockPos, ItemStack>> getAllCraftables(BlockPos node) {
@@ -375,8 +425,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public int getLockedAmount(BlockPos pos, ItemStack stack, NetworkLock ignoredLock, ItemEquality... equalityTypes) {
         return this.getNetworkLocks(pos).stream()
-                .filter(l -> !l.equals(ignoredLock) && ItemEquality.compareItems(l.stack, stack, equalityTypes))
-                .mapToInt(l -> l.stack.getCount()).sum();
+            .filter(l -> !l.equals(ignoredLock) && ItemEquality.compareItems(l.stack, stack, equalityTypes))
+            .mapToInt(l -> l.stack.getCount()).sum();
     }
 
     private void refreshNode(BlockPos pos, BlockState state) {
@@ -414,6 +464,10 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public void unlock() {
         this.networkLocks.clear();
+    }
+
+    public void cancelCrafts() {
+        this.activeCrafts.entries().removeIf(c -> c.getValue().markCanceledOrResolve(this, true));
     }
 
     private List<NetworkEdge> createAllEdges(BlockPos pos, BlockState state, boolean ignoreCurrBlocked) {
@@ -481,9 +535,9 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             // sort destinations first by their priority (eg trash pipes should be last)
             // and then by their distance from the specified node
             ret = Streams.stream(new BreadthFirstIterator<>(this.graph, node))
-                    .filter(p -> this.getPipe(p) != null)
-                    .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
-                    .collect(Collectors.toList());
+                .filter(p -> this.getPipe(p) != null)
+                .sorted(Comparator.<BlockPos>comparingInt(p -> this.getPipe(p).getPriority()).reversed().thenComparing(paths::getWeight))
+                .collect(Collectors.toList());
             this.nodeToConnectedNodes.put(node, ret);
             this.endProfile();
         }
@@ -494,7 +548,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         this.startProfile("clear_node_cache");
         // remove caches for the nodes
         for (var node : nodes)
-            this.nodeToConnectedNodes.keySet().remove(node);
+            this.nodeToConnectedNodes.remove(node);
         // remove caches that contain the nodes as a destination
         this.nodeToConnectedNodes.values().removeIf(cached -> nodes.stream().anyMatch(cached::contains));
         this.endProfile();
@@ -502,6 +556,10 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public List<IPipeItem> getItemsInPipe(BlockPos pos) {
         return this.pipeItems.get(pos);
+    }
+
+    public List<ActiveCraft> getActiveCrafts(BlockPos pos) {
+        return this.activeCrafts.get(pos);
     }
 
     public Stream<IPipeItem> getPipeItemsOnTheWay(BlockPos goalInv) {
@@ -513,8 +571,8 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public int getItemsOnTheWay(BlockPos goalInv, ItemStack type, ItemEquality... equalityTypes) {
         return this.getPipeItemsOnTheWay(goalInv)
-                .filter(i -> type == null || ItemEquality.compareItems(i.getContent(), type, equalityTypes))
-                .mapToInt(i -> i.getItemsOnTheWay(goalInv)).sum();
+            .filter(i -> type == null || ItemEquality.compareItems(i.getContent(), type, equalityTypes))
+            .mapToInt(i -> i.getItemsOnTheWay(goalInv)).sum();
     }
 
     public void startProfile(String name) {
@@ -540,6 +598,10 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
             }
             return PipeNetwork.clientNetwork;
         }
+    }
+
+    private static String toNewlineDelimitedString(Collection<?> collection) {
+        return collection.stream().map(c -> "\t" + c.toString()).collect(Collectors.joining("\n"));
     }
 
 }

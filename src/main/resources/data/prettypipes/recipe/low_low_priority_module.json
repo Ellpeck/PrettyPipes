@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " C ",
+        "RMR",
+        " R "
+    ],
+    "key": {
+        "R": {
+            "item": "minecraft:redstone"
+        },
+        "C": {
+            "tag": "c:cobblestones"
+        },
+        "M": {
+            "item": "prettypipes:blank_module"
+        }
+    },
+    "result": {
+        "id": "prettypipes:low_low_priority_module"
+    }
+}

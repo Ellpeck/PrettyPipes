@@ -1,12 +1,17 @@
 package de.ellpeck.prettypipes;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -22,6 +27,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -29,8 +35,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
+@SuppressWarnings("ALL")
 public final class Utility {
+
+    public static final Codec<ItemStackHandler> ITEM_STACK_HANDLER_CODEC = RecordCodecBuilder.create(builder -> builder.group(
+        Codec.INT.fieldOf("size").forGetter(h -> h.getSlots()),
+        Codec.list(ItemStack.OPTIONAL_CODEC).fieldOf("items").forGetter(h -> IntStream.range(0, h.getSlots()).mapToObj(h::getStackInSlot).toList())
+    ).apply(builder, (size, items) -> {
+        var ret = new ItemStackHandler(size);
+        for (var i = 0; i < items.size(); i++)
+            ret.setStackInSlot(i, items.get(i));
+        return ret;
+    }));
 
     public static <T extends BlockEntity> T getBlockEntity(Class<T> type, BlockGetter world, BlockPos pos) {
         var tile = world.getBlockEntity(pos);
@@ -104,11 +122,21 @@ public final class Utility {
         return ItemStack.EMPTY;
     }
 
-    public static ListTag serializeAll(Collection<? extends INBTSerializable<CompoundTag>> items) {
+    public static <T> ListTag serializeAll(Collection<T> items, Function<T, CompoundTag> serializer) {
         var list = new ListTag();
-        for (INBTSerializable<CompoundTag> item : items)
-            list.add(item.serializeNBT());
+        for (var item : items)
+            list.add(serializer.apply(item));
         return list;
+    }
+
+    public static <T> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> deserializer) {
+        List<T> items = new ArrayList<>();
+        for (var i = 0; i < list.size(); i++) {
+            var item = deserializer.apply(list.getCompound(i));
+            if (item != null)
+                items.add(item);
+        }
+        return items;
     }
 
     public static void sendBlockEntityToClients(BlockEntity tile) {
@@ -119,29 +147,31 @@ public final class Utility {
             e.connection.send(packet);
     }
 
-    public static <T extends INBTSerializable<CompoundTag>> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> supplier) {
-        List<T> items = new ArrayList<>();
-        for (var i = 0; i < list.size(); i++) {
-            var item = supplier.apply(list.getCompound(i));
-            if (item != null)
-                items.add(item);
+    public static BlockPos readBlockPos(Tag tag) {
+        if (tag instanceof IntArrayTag i) {
+            int[] arr = i.getAsIntArray();
+            if (arr.length == 3)
+                return new BlockPos(arr[0], arr[1], arr[2]);
         }
-        return items;
+        return null;
     }
 
-    public static IItemHandler getBlockItemHandler(Level world, BlockPos pos, Direction direction) {
-        var state = world.getBlockState(pos);
-        var block = state.getBlock();
-        if (!(block instanceof WorldlyContainerHolder holder))
-            return null;
-        var inventory = holder.getContainer(state, world, pos);
-        if (inventory == null)
-            return null;
-        return new SidedInvWrapper(inventory, direction);
+    public static void copyInto(ItemStackHandler handler, ItemStackHandler dest) {
+        dest.setSize(handler.getSlots());
+        for (var i = 0; i < handler.getSlots(); i++)
+            dest.setStackInSlot(i, handler.getStackInSlot(i).copy());
+    }
+
+    public static ItemStackHandler copy(ItemStackHandler handler) {
+        var ret = new ItemStackHandler();
+        copyInto(handler, ret);
+        return ret;
     }
 
     public interface IMergeItemStack {
 
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);
+
     }
+
 }

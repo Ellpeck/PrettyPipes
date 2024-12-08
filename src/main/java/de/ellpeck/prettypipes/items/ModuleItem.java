@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.items;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
+import de.ellpeck.prettypipes.network.ActiveCraft;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
@@ -13,12 +14,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
@@ -28,16 +29,16 @@ public abstract class ModuleItem extends Item implements IModule {
 
     private final String name;
 
-    public ModuleItem(String name) {
-        super(new Properties().stacksTo(16));
+    public ModuleItem(String name, Item.Properties properties) {
+        super(properties.stacksTo(16));
         this.name = name;
     }
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        super.appendHoverText(stack, worldIn, tooltip, flagIn);
-        Utility.addTooltip(this.name, tooltip);
+    public void appendHoverText(ItemStack pStack, TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
+        super.appendHoverText(pStack, pContext, pTooltipComponents, pTooltipFlag);
+        Utility.addTooltip(this.name, pTooltipComponents);
     }
 
     @Override
@@ -91,8 +92,8 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    public ItemStack craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
-        return stack;
+    public Pair<ItemStack, Collection<ActiveCraft>> craft(ItemStack module, PipeBlockEntity tile, BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain) {
+        return Pair.of(stack, List.of());
     }
 
     @Override
@@ -109,4 +110,10 @@ public abstract class ModuleItem extends Item implements IModule {
     public DirectionSelector getDirectionSelector(ItemStack module, PipeBlockEntity tile) {
         return null;
     }
+
+    @Override
+    public ItemStack store(ItemStack module, PipeBlockEntity tile, ItemStack stack, Direction direction) {
+        return stack;
+    }
+
 }

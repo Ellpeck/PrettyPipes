@@ -13,16 +13,20 @@ import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalContainer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.wrapper.RangedWrapper;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -76,8 +80,8 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                     var network = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
                     if (network != null) {
                         amount = network.getLocations().stream()
-                                .mapToInt(l -> l.getItemAmount(this.level, stack, ItemEquality.NBT))
-                                .sum();
+                            .mapToInt(l -> l.getItemAmount(this.level, stack, ItemEquality.NBT))
+                            .sum();
                     }
                     // check craftables
                     if (amount <= 0 && highestAmount <= 0) {
@@ -97,8 +101,8 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         if (!this.level.isClientSide) {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
-                clients.add(new PacketGhostSlot.Entry(this.level, Collections.singletonList(this.ghostItems.getStackInSlot(i))));
-            PacketDistributor.TRACKING_CHUNK.with(this.level.getChunkAt(this.getBlockPos())).send(new PacketGhostSlot(this.getBlockPos(), clients));
+                clients.add(PacketGhostSlot.Entry.fromStacks(this.level, List.of(this.ghostItems.getStackInSlot(i))));
+            PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(this.getBlockPos()), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
 
@@ -110,7 +114,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         network.startProfile("terminal_request_crafting");
         this.updateItems();
         // get the amount of crafts that we can do
-        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> ItemHandlerHelper.copyStackWithSize(this.getRequestedCraftItem(i), 1), this::isGhostItem, s -> {
+        var lowestAvailable = CraftingTerminalBlockEntity.getAvailableCrafts(pipe, this.craftItems.getSlots(), i -> this.getRequestedCraftItem(i).copyWithCount(1), this::isGhostItem, s -> {
             var item = this.networkItems.get(s);
             return item != null ? item.getLocations() : Collections.emptyList();
         }, ItemTerminalBlockEntity.onItemUnavailable(player, force), new Stack<>(), ItemEquality.NBT);
@@ -136,16 +140,27 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
         network.endProfile();
     }
 
-    @Override
-    public void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("craft_items", this.craftItems.serializeNBT());
+    public void sendItemsBack() {
+        var outputInventory = new RangedWrapper(this.items, 6, 12);
+        for (var i = 0; i < this.craftItems.getSlots(); i++) {
+            var stack = this.craftItems.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                var remain = ItemHandlerHelper.insertItemStacked(outputInventory, stack, false);
+                this.craftItems.setStackInSlot(i, remain);
+            }
+        }
     }
 
     @Override
-    public void load(CompoundTag compound) {
-        this.craftItems.deserializeNBT(compound.getCompound("craft_items"));
-        super.load(compound);
+    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
+        compound.put("craft_items", this.craftItems.serializeNBT(provider));
+    }
+
+    @Override
+    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
+        this.craftItems.deserializeNBT(provider, compound.getCompound("craft_items"));
+        super.loadAdditional(compound, provider);
     }
 
     @Override
@@ -170,7 +185,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 for (var i = 0; i < tile.craftItems.getSlots(); i++) {
                     var stack = tile.getRequestedCraftItem(i);
                     var count = tile.isGhostItem(i) ? 0 : stack.getCount();
-                    if (!ItemHandlerHelper.canItemStacksStack(stack, remain))
+                    if (!ItemStack.isSameItemSameComponents(stack, remain))
                         continue;
                     // ensure that a single non-stackable item can still enter a ghost slot
                     if (!stack.isStackable() && count >= 1)
@@ -190,7 +205,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 }
             }
             while (lowestSlot >= 0);
-            return ItemHandlerHelper.insertItemStacked(tile.items, remain, simulate);
+            return ItemHandlerHelper.insertItemStacked(new RangedWrapper(tile.items, 0, 6), remain, simulate);
         }
         return remain;
     }

@@ -1,9 +1,7 @@
 package de.ellpeck.prettypipes.misc;
 
 import de.ellpeck.prettypipes.items.IModule;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -17,9 +15,10 @@ public class ModuleClearingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean matches(CraftingContainer container, Level level) {
+    public boolean matches(CraftingInput container, Level level) {
         var foundModule = false;
-        for (var stack : container.getItems()) {
+        for (var i = 0; i < container.size(); i++) {
+            var stack = container.getItem(i);
             if (!foundModule && stack.getItem() instanceof IModule) {
                 foundModule = true;
             } else if (!stack.isEmpty()) {
@@ -30,11 +29,13 @@ public class ModuleClearingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer container, RegistryAccess access) {
-        var module = container.getItems().stream().filter(i -> i.getItem() instanceof IModule).findFirst().orElse(ItemStack.EMPTY);
-        if (!module.isEmpty())
-            module = new ItemStack(module.getItem());
-        return module;
+    public ItemStack assemble(CraftingInput container, HolderLookup.Provider pRegistries) {
+        for (var i = 0; i < container.size(); i++) {
+            var stack = container.getItem(i);
+            if (stack.getItem() instanceof IModule)
+                return new ItemStack(stack.getItem());
+        }
+        return ItemStack.EMPTY;
     }
 
     @Override

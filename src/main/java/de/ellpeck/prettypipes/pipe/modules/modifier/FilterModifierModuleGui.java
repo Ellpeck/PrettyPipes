@@ -134,7 +134,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
                 return false;
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 140 || mouseY >= this.y + 12)
                 return false;
-            PacketButton.sendAndExecute(FilterModifierModuleGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.TAG_FILTER, FilterModifierModuleGui.this.tags.indexOf(this.tag));
+            PacketButton.sendAndExecute(FilterModifierModuleGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.TAG_FILTER, List.of(FilterModifierModuleGui.this.tags.indexOf(this.tag)));
             FilterModifierModuleGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }

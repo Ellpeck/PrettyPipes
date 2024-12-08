@@ -3,7 +3,17 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.80'
+    id 'net.neoforged.gradle.userdev' version '7.0.163'
+    id 'me.modmuss50.mod-publish-plugin' version "0.7.4"
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
+    // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
+    // documentation attached on cursor hover of gradle classes and methods. However, this comes with increased
+    // file size for Gradle. If you do switch this to ALL, run the Gradle wrapper task twice afterwards.
+    // (Verify by checking gradle/wrapper/gradle-wrapper.properties to see if distributionUrl now points to `-all`)
+    distributionType = Wrapper.DistributionType.BIN
 }
 
 // Enable the Jar-in-Jar system for your mod
@@ -27,8 +37,8 @@ base {
     archivesName = mod_name
 }
 
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 runs {
@@ -62,7 +72,7 @@ runs {
 
     server {
         systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-        programArgument '--nogui'
+        argument '--nogui'
     }
 
     // This run config launches GameTestServer and runs all registered gametests, then exits.
@@ -77,7 +87,7 @@ runs {
         // workingDirectory project.file('run-data')
 
         // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-        programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
     }
 }
 
@@ -127,8 +137,8 @@ tasks.withType(ProcessResources).configureEach {
     ]
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/mods.toml']) {
-        expand replaceProperties + [project: project]
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
     }
 }
 
@@ -153,4 +163,37 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+publishMods {
+    def cfToken = providers.environmentVariable("CF_TOKEN")
+    def mrToken = providers.environmentVariable("MR_TOKEN")
+    dryRun = !cfToken.isPresent() || !mrToken.isPresent()
+    changelog = providers.environmentVariable("CHANGELOG").orElse("")
+    version = mod_version
+    type = me.modmuss50.mpp.ReleaseType.valueOf(mod_release_state)
+    file = tasks.jarJar.archiveFile
+    modLoaders.add("neoforge")
+
+    modrinth {
+        accessToken = mrToken
+        projectId = "XExdLWCQ"
+        minecraftVersions.add(minecraft_version)
+        optional("jei")
+    }
+
+    curseforge {
+        accessToken = cfToken
+        projectId = "376737"
+        minecraftVersions.add(minecraft_version)
+        optional("jei")
+    }
 }

@@ -15,6 +15,7 @@ public record EquatableItemStack(ItemStack stack, ItemEquality... equalityTypes)
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.stack.getItem(), this.stack.getTag());
+        return Objects.hash(this.stack.getItem(), this.stack.getComponents());
     }
+
 }

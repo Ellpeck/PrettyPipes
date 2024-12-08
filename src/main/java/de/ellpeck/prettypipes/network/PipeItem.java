@@ -8,6 +8,7 @@ import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -33,7 +34,7 @@ import java.util.function.Consumer;
 
 public class PipeItem implements IPipeItem {
 
-    public static final ResourceLocation TYPE = new ResourceLocation(PrettyPipes.ID, "pipe_item");
+    public static final ResourceLocation TYPE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_item");
 
     public ItemStack stack;
     public float speed;
@@ -63,10 +64,10 @@ public class PipeItem implements IPipeItem {
         this(PipeItem.TYPE, stack, speed);
     }
 
-    public PipeItem(ResourceLocation type, CompoundTag nbt) {
+    public PipeItem(HolderLookup.Provider provider, ResourceLocation type, CompoundTag nbt) {
         this.type = type;
         this.path = new ArrayList<>();
-        this.deserializeNBT(nbt);
+        this.deserializeNBT(provider, nbt);
     }
 
     @Override
@@ -201,13 +202,7 @@ public class PipeItem implements IPipeItem {
 
     protected ItemStack store(PipeBlockEntity currPipe) {
         var dir = Utility.getDirectionFromOffset(this.destInventory, this.getDestPipe());
-        var connectable = currPipe.getPipeConnectable(dir);
-        if (connectable != null)
-            return connectable.insertItem(currPipe.getBlockPos(), dir, this.stack, false);
-        var handler = currPipe.getItemHandler(dir);
-        if (handler != null)
-            return ItemHandlerHelper.insertItemStacked(handler, this.stack, false);
-        return this.stack;
+        return currPipe.store(this.stack, dir);
     }
 
     protected PipeBlockEntity getNextTile(PipeBlockEntity currPipe, boolean progress) {
@@ -221,12 +216,12 @@ public class PipeItem implements IPipeItem {
     }
 
     protected BlockPos getStartPipe() {
-        return this.path.get(0);
+        return this.path.getFirst();
     }
 
     @Override
     public BlockPos getDestPipe() {
-        return this.path.get(this.path.size() - 1);
+        return this.path.getLast();
     }
 
     @Override
@@ -240,10 +235,10 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
         var nbt = new CompoundTag();
         nbt.putString("type", this.type.toString());
-        nbt.put("stack", this.stack.save(new CompoundTag()));
+        nbt.put("stack", this.stack.save(provider));
         nbt.putFloat("speed", this.speed);
         nbt.put("start_inv", NbtUtils.writeBlockPos(this.startInventory));
         nbt.put("dest_inv", NbtUtils.writeBlockPos(this.destInventory));
@@ -261,21 +256,20 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        this.stack = ItemStack.of(nbt.getCompound("stack"));
+    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+        this.stack = ItemStack.parseOptional(provider, nbt.getCompound("stack"));
         this.speed = nbt.getFloat("speed");
-        this.startInventory = NbtUtils.readBlockPos(nbt.getCompound("start_inv"));
-        this.destInventory = NbtUtils.readBlockPos(nbt.getCompound("dest_inv"));
-        this.currGoalPos = NbtUtils.readBlockPos(nbt.getCompound("curr_goal"));
+        this.startInventory = NbtUtils.readBlockPos(nbt, "start_inv").orElse(null);
+        this.destInventory = NbtUtils.readBlockPos(nbt, "dest_inv").orElse(null);
+        this.currGoalPos = NbtUtils.readBlockPos(nbt, "curr_goal").orElse(null);
         this.retryOnObstruction = nbt.getBoolean("drop_on_obstruction");
         this.currentTile = nbt.getInt("tile");
         this.x = nbt.getFloat("x");
         this.y = nbt.getFloat("y");
         this.z = nbt.getFloat("z");
         this.path.clear();
-        var list = nbt.getList("path", Tag.TAG_COMPOUND);
-        for (var i = 0; i < list.size(); i++)
-            this.path.add(NbtUtils.readBlockPos(list.getCompound(i)));
+        for (var tag : nbt.getList("path", Tag.TAG_INT_ARRAY))
+            this.path.add(Utility.readBlockPos(tag));
     }
 
     @Override
@@ -287,9 +281,9 @@ public class PipeItem implements IPipeItem {
     @OnlyIn(Dist.CLIENT)
     public void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source) {
         matrixStack.translate(
-                Mth.lerp(partialTicks, this.lastX, this.x),
-                Mth.lerp(partialTicks, this.lastY, this.y),
-                Mth.lerp(partialTicks, this.lastZ, this.z));
+            Mth.lerp(partialTicks, this.lastX, this.x),
+            Mth.lerp(partialTicks, this.lastY, this.y),
+            Mth.lerp(partialTicks, this.lastZ, this.z));
 
         if (this.stack.getItem() instanceof BlockItem) {
             var scale = 0.7F;
@@ -308,9 +302,9 @@ public class PipeItem implements IPipeItem {
             matrixStack.pushPose();
             if (amount > 1) {
                 matrixStack.translate(
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
-                        (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
+                    (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
             }
             Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemDisplayContext.GROUND, light, overlay, matrixStack, source, tile.getLevel(), 0);
             matrixStack.popPose();
@@ -344,7 +338,7 @@ public class PipeItem implements IPipeItem {
             // add the single pipe twice if there's only one
             // this is a dirty hack, but it works fine so eh
             for (var i = 0; i < 2; i++)
-                ret.add(nodes.get(0));
+                ret.add(nodes.getFirst());
             return ret;
         }
         for (var i = 0; i < nodes.size() - 1; i++) {
@@ -368,4 +362,5 @@ public class PipeItem implements IPipeItem {
         }
         return ret;
     }
+
 }

@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe.modules.craft;
 
+import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.FilterSlot;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
@@ -11,6 +12,9 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
 
     public ItemStackHandler input;
     public ItemStackHandler output;
+    public boolean emitRedstone;
+    public CraftingModuleItem.InsertionType insertionType;
+    public boolean insertUnstacked;
     public boolean modified;
 
     public CraftingModuleContainer(MenuType<?> type, int id, Player player, BlockPos pos, int moduleIndex) {
@@ -19,9 +23,14 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
 
     @Override
     protected void addSlots() {
-        this.input = this.module.getInput(this.moduleStack);
+        var contents = this.moduleStack.get(CraftingModuleItem.Contents.TYPE);
+        this.emitRedstone = contents.emitRedstone();
+        this.insertionType = contents.insertionType();
+        this.insertUnstacked = contents.insertUnstacked();
+
+        this.input = Utility.copy(contents.input());
         for (var i = 0; i < this.input.getSlots(); i++) {
-            this.addSlot(new FilterSlot(this.input, i, (176 - this.module.inputSlots * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
+            this.addSlot(new FilterSlot(this.input, i, (176 - this.input.getSlots() * 18) / 2 + 1 + i % 9 * 18, 17 + 32 + i / 9 * 18, false) {
                 @Override
                 public void setChanged() {
                     super.setChanged();
@@ -31,9 +40,9 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
             });
         }
 
-        this.output = this.module.getOutput(this.moduleStack);
+        this.output = Utility.copy(contents.output());
         for (var i = 0; i < this.output.getSlots(); i++) {
-            this.addSlot(new FilterSlot(this.output, i, (176 - this.module.outputSlots * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
+            this.addSlot(new FilterSlot(this.output, i, (176 - this.output.getSlots() * 18) / 2 + 1 + i % 9 * 18, 85 + i / 9 * 18, false) {
                 @Override
                 public void setChanged() {
                     super.setChanged();
@@ -46,7 +55,10 @@ public class CraftingModuleContainer extends AbstractPipeContainer<CraftingModul
     @Override
     public void removed(Player playerIn) {
         super.removed(playerIn);
-        if (this.modified)
-            this.module.save(this.input, this.output, this.moduleStack);
+        if (this.modified) {
+            this.moduleStack.set(CraftingModuleItem.Contents.TYPE, new CraftingModuleItem.Contents(this.input, this.output, this.emitRedstone, this.insertionType, this.insertUnstacked));
+            this.tile.setChanged();
+        }
     }
+
 }

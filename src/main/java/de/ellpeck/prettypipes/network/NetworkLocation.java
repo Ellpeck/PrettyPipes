@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.network;
 import de.ellpeck.prettypipes.misc.ItemEquality;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.item.ItemStack;
@@ -28,8 +29,8 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
         this.direction = direction;
     }
 
-    public NetworkLocation(CompoundTag nbt) {
-        this.deserializeNBT(nbt);
+    public NetworkLocation(HolderLookup.Provider provider, CompoundTag nbt) {
+        this.deserializeNBT(provider, nbt);
     }
 
     public List<Integer> getStackSlots(Level world, ItemStack stack, ItemEquality... equalityTypes) {
@@ -91,7 +92,7 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
         var nbt = new CompoundTag();
         nbt.put("pipe_pos", NbtUtils.writeBlockPos(this.pipePos));
         nbt.putInt("direction", this.direction.ordinal());
@@ -99,8 +100,9 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        this.pipePos = NbtUtils.readBlockPos(nbt.getCompound("pipe_pos"));
+    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+        this.pipePos = NbtUtils.readBlockPos(nbt, "pipe_pos").orElse(null);
         this.direction = Direction.values()[nbt.getInt("direction")];
     }
+
 }

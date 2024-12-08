@@ -20,6 +20,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -29,9 +30,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings("ALL")
 public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContainer> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/item_terminal.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "textures/gui/item_terminal.png");
 
     public List<ItemStack> currentlyCrafting;
     public EditBox search;
@@ -90,8 +92,10 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             if (!widget.isPresent())
                 return;
             var stack = widget.get().stack.copy();
+            if (stack.isEmpty())
+                return;
             stack.setCount(1);
-            PacketDistributor.SERVER.noArg().send(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
+            PacketDistributor.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
         }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20).build());
         this.requestButton.active = false;
@@ -159,7 +163,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
         if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-                PacketDistributor.SERVER.noArg().send(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING));
+                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of(hasShiftDown() ? 1 : 0)));
                 return true;
             }
         }
@@ -232,8 +236,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                     search = search.substring(1);
                 } else if (search.startsWith("#")) {
                     // search item description
-                    var hoverText = s.getLeft().getTooltipLines(this.minecraft.player,
-                            this.minecraft.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+                    var hoverText = s.getLeft().getTooltipLines(Item.TooltipContext.of(this.minecraft.level), this.minecraft.player,
+                        this.minecraft.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
                     toCompare = hoverText.stream().map(Component::getString).collect(Collectors.joining("\n"));
                     search = search.substring(1);
                 } else {
@@ -362,8 +366,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
 
     public Stream<ItemTerminalWidget> streamWidgets() {
         return this.renderables.stream()
-                .filter(w -> w instanceof ItemTerminalWidget)
-                .map(w -> (ItemTerminalWidget) w);
+            .filter(w -> w instanceof ItemTerminalWidget)
+            .map(w -> (ItemTerminalWidget) w);
     }
 
     public static int requestModifier() {

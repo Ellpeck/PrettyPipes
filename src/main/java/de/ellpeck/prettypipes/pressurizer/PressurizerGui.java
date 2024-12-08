@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Inventory;
 
 public class PressurizerGui extends AbstractContainerScreen<PressurizerContainer> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrettyPipes.ID, "textures/gui/pressurizer.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "textures/gui/pressurizer.png");
 
     public PressurizerGui(PressurizerContainer screenContainer, Inventory inv, Component titleIn) {
         super(screenContainer, inv, titleIn);

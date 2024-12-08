@@ -20,7 +20,7 @@ public class FilterModuleItem extends ModuleItem {
     private final boolean canPopulateFromInventories;
 
     public FilterModuleItem(String name, ModuleTier tier) {
-        super(name);
+        super(name, new Properties());
         this.filterSlots = tier.forTier(5, 9, 18);
         this.canPopulateFromInventories = tier.forTier(false, false, true);
     }

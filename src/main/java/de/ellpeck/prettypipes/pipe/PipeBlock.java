@@ -10,7 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -54,13 +54,13 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     private static final Map<Pair<BlockState, BlockState>, VoxelShape> COLL_SHAPE_CACHE = new HashMap<>();
     private static final VoxelShape CENTER_SHAPE = Block.box(5, 5, 5, 11, 11, 11);
     public static final Map<Direction, VoxelShape> DIR_SHAPES = ImmutableMap.<Direction, VoxelShape>builder()
-            .put(Direction.UP, Block.box(5, 10, 5, 11, 16, 11))
-            .put(Direction.DOWN, Block.box(5, 0, 5, 11, 6, 11))
-            .put(Direction.NORTH, Block.box(5, 5, 0, 11, 11, 6))
-            .put(Direction.SOUTH, Block.box(5, 5, 10, 11, 11, 16))
-            .put(Direction.EAST, Block.box(10, 5, 5, 16, 11, 11))
-            .put(Direction.WEST, Block.box(0, 5, 5, 6, 11, 11))
-            .build();
+        .put(Direction.UP, Block.box(5, 10, 5, 11, 16, 11))
+        .put(Direction.DOWN, Block.box(5, 0, 5, 11, 6, 11))
+        .put(Direction.NORTH, Block.box(5, 5, 0, 11, 11, 6))
+        .put(Direction.SOUTH, Block.box(5, 5, 10, 11, 11, 16))
+        .put(Direction.EAST, Block.box(10, 5, 5, 16, 11, 11))
+        .put(Direction.WEST, Block.box(0, 5, 5, 6, 11, 11))
+        .build();
 
     static {
         for (var dir : Direction.values())
@@ -77,12 +77,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
+    public ItemInteractionResult useItemOn(ItemStack pStack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
         var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile == null)
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (!tile.canHaveModules())
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         var stack = player.getItemInHand(handIn);
         if (stack.getItem() instanceof IModule) {
             var copy = stack.copy();
@@ -90,14 +90,14 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             var remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
             if (remain.isEmpty()) {
                 stack.shrink(1);
-                return InteractionResult.SUCCESS;
+                return ItemInteractionResult.SUCCESS;
             }
         } else if (handIn == InteractionHand.MAIN_HAND && stack.isEmpty()) {
             if (!worldIn.isClientSide)
                 player.openMenu(tile, pos);
-            return InteractionResult.SUCCESS;
+            return ItemInteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -199,26 +199,20 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         return state;
     }
 
-    protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState state) {
+    protected ConnectionType getConnectionType(Level world, BlockPos pos, Direction direction, BlockState pipeState) {
         var offset = pos.relative(direction);
         if (!world.isLoaded(offset))
             return ConnectionType.DISCONNECTED;
         var opposite = direction.getOpposite();
-        var tile = world.getBlockEntity(offset);
-        if (tile != null) {
-            var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, tile.getBlockState(), tile, opposite);
-            if (connectable != null)
-                return connectable.getConnectionType(pos, direction);
-            var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, tile.getBlockState(), tile, opposite);
-            if (handler != null)
-                return ConnectionType.CONNECTED;
-        }
-        var blockHandler = Utility.getBlockItemHandler(world, offset, opposite);
-        if (blockHandler != null)
+        var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, null, null, opposite);
+        if (connectable != null)
+            return connectable.getConnectionType(pos, direction);
+        var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, null, null, opposite);
+        if (handler != null)
             return ConnectionType.CONNECTED;
         var offState = world.getBlockState(offset);
         if (PipeBlock.hasLegsTo(world, offState, offset, direction)) {
-            if (PipeBlock.DIRECTIONS.values().stream().noneMatch(d -> state.getValue(d) == ConnectionType.LEGS))
+            if (PipeBlock.DIRECTIONS.values().stream().noneMatch(d -> pipeState.getValue(d) == ConnectionType.LEGS))
                 return ConnectionType.LEGS;
         }
         return ConnectionType.DISCONNECTED;
@@ -269,18 +263,19 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
             if (worldIn.getBlockEntity(pos) instanceof PipeBlockEntity pipe) {
+                Utility.dropInventory(pipe, pipe.modules);
+                for (var item : pipe.getItems())
+                    item.drop(worldIn, item.getContent());
                 pipe.getItems().clear();
-                for (var lock : pipe.craftIngredientRequests)
-                    network.resolveNetworkLock(lock);
+                if (pipe.cover != null)
+                    pipe.removeCover();
+                for (var craft : pipe.getActiveCrafts()) {
+                    for (var lock : craft.ingredientsToRequest)
+                        lock.ifLeft(network::resolveNetworkLock);
+                }
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);
         }
-    }
-
-    @Override
-    public BlockState playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
-        PipeBlock.dropItems(worldIn, pos, player);
-        return super.playerWillDestroy(worldIn, pos, state, player);
     }
 
     @Override
@@ -294,6 +289,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         if (pipe == null)
             return 0;
         return Math.min(15, pipe.getItems().size());
+    }
+
+    @Override
+    protected int getSignal(BlockState blockState, BlockGetter blockAccess, BlockPos pos, Direction side) {
+        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, blockAccess, pos);
+        return pipe.redstoneTicks > 0 ? 15 : 0;
     }
 
     @org.jetbrains.annotations.Nullable
@@ -316,17 +317,6 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return BaseEntityBlock.createTickerHelper(type, Registry.pipeBlockEntity, PipeBlockEntity::tick);
-    }
-
-    public static void dropItems(Level worldIn, BlockPos pos, Player player) {
-        var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
-        if (tile != null) {
-            Utility.dropInventory(tile, tile.modules);
-            for (var item : tile.getItems())
-                item.drop(worldIn, item.getContent());
-            if (tile.cover != null)
-                tile.removeCover(player, InteractionHand.MAIN_HAND);
-        }
     }
 
 }

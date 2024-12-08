@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "PI ",
+        "II ",
+        "  R"
+    ],
+    "key": {
+        "P": {
+            "item": "prettypipes:pipe"
+        },
+        "I": {
+            "item": "minecraft:iron_ingot"
+        },
+        "R": {
+            "tag": "c:dyes/red"
+        }
+    },
+    "result": {
+        "id": "prettypipes:wrench"
+    }
+}
