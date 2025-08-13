@@ -236,6 +236,13 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
                         // if the container can store more than 64 items in this slot, then it's likely
                         // a barrel or similar, meaning that the slot limit matters more than the max stack size
                         var limit = handler.getSlotLimit(i);
+                        // a quick and dirty hack for Functional Storage. given a drawer with a void upgrade,
+                        // it adds a separate slot at the end that returns MAX_VALUE from a call to getSlotLimit().
+                        // this hack avoids a possible integer overflow when modifying totalSpace below.
+                        if (limit == Integer.MAX_VALUE) {
+                            totalSpace = limit;
+                            break;
+                        }
                         if (limit > 64)
                             maxStackSize = limit;
                         copy.setCount(maxStackSize);
