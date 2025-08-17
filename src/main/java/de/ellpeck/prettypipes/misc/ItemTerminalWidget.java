@@ -1,12 +1,14 @@
 package de.ellpeck.prettypipes.misc;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
@@ -44,9 +46,8 @@ public class ItemTerminalWidget extends AbstractWidget {
             graphics.fill(this.getX(), this.getY(), this.getX() + 16, this.getY() + 16, -2130706433);
         RenderSystem.enableDepthTest();
         graphics.renderItem(this.stack, this.getX(), this.getY());
-        var amount = !this.craftable ? this.stack.getCount() : 0;
-        var amountStrg = this.stack.getCount() >= 1000 ? amount / 1000 + "k" : String.valueOf(amount);
-        graphics.renderItemDecorations(mc.font, this.stack, this.getX(), this.getY(), amountStrg);
+        var amount = ItemTerminalWidget.displayAmount(!this.craftable ? this.stack.getCount() : 0);
+        graphics.renderItemDecorations(mc.font, this.stack, this.getX(), this.getY(), amount);
         graphics.pose().translate(0, 0, -100);
 
         if (this.isHoveredOrFocused()) {
@@ -73,6 +74,14 @@ public class ItemTerminalWidget extends AbstractWidget {
     @Override
     public void updateWidgetNarration(NarrationElementOutput output) {
         this.defaultButtonNarrationText(output);
+    }
+
+    private static String displayAmount(int amount) {
+        if (amount >= 1_000_000)
+            return I18n.get("info." + PrettyPipes.ID + ".million", amount / 1_000_000);
+        if (amount >= 1_000)
+            return I18n.get("info." + PrettyPipes.ID + ".thousand", amount / 1_000);
+        return String.valueOf(amount);
     }
 
 }

@@ -103,6 +103,8 @@
     "info.prettypipes.cancel_all.desc": "Stops waiting for current crafting outputs\nOngoing crafting operations are still completed\nHold Shift to include ongoing crafting operations,\nwhich may cause partial recipes to stay behind",
     "info.prettypipes.no_pipe_connected": "The terminal needs to be connected to a pipe network",
     "info.prettypipes.too_many_pipes_connected": "The terminal can only be connected to a single pipe at a time",
+    "info.prettypipes.thousand": "%sk",
+    "info.prettypipes.million": "%sM",
     "dir.prettypipes.up": "Up",
     "dir.prettypipes.down": "Down",
     "dir.prettypipes.north": "North",
