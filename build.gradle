@@ -103,9 +103,9 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
     implementation "org.jgrapht:jgrapht-core:${jgt_version}"
-    jarJar(group: "org.jgrapht", name: "jgrapht-core", version: "[${jgt_version}]")
-    jarJar(group: "org.jheaps", name: "jheaps", version: "[${jheaps_version}]")
-    jarJar(group: "org.apfloat", name: "apfloat", version: "[${apfloat_version}]")
+    jarJar(group: "org.jgrapht", name: "jgrapht-core", version: "[${jgt_version},)")
+    jarJar(group: "org.jheaps", name: "jheaps", version: "[${jheaps_version},)")
+    jarJar(group: "org.apfloat", name: "apfloat", version: "[${apfloat_version},)")
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
