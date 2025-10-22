@@ -68,22 +68,25 @@ public class CraftingTerminalGui extends ItemTerminalGui {
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
 
-        var container = this.getCraftingContainer();
-        var tile = container.getTile();
-        for (var i = 0; i < tile.ghostItems.getSlots(); i++) {
-            if (!tile.craftItems.getStackInSlot(i).isEmpty())
-                continue;
-            var ghost = tile.ghostItems.getStackInSlot(i);
-            if (ghost.isEmpty())
-                continue;
-            var finalI = i;
-            var slot = container.slots.stream().filter(s -> s.container == container.craftInventory && s.getSlotIndex() == finalI).findFirst().orElse(null);
-            if (slot == null)
-                continue;
-            graphics.renderItem(ghost, slot.x, slot.y);
-            graphics.renderItemDecorations(this.font, ghost, slot.x, slot.y, "0");
+
+        if(!dragging) {
+            super.renderLabels(graphics, mouseX, mouseY);
+            var container = this.getCraftingContainer();
+            var tile = container.getTile();
+            for (var i = 0; i < tile.ghostItems.getSlots(); i++) {
+                if (!tile.craftItems.getStackInSlot(i).isEmpty())
+                    continue;
+                var ghost = tile.ghostItems.getStackInSlot(i);
+                if (ghost.isEmpty())
+                    continue;
+                var finalI = i;
+                var slot = container.slots.stream().filter(s -> s.container == container.craftInventory && s.getSlotIndex() == finalI).findFirst().orElse(null);
+                if (slot == null)
+                    continue;
+                graphics.renderItem(ghost, slot.x, slot.y);
+                graphics.renderItemDecorations(this.font, ghost, slot.x, slot.y, "0");
+            }
         }
     }
 
@@ -147,7 +150,11 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         super.render(graphics, mouseX, mouseY, partialTicks);
         if(draggedItem!=null && dragging) {
+            graphics.pose().pushPose();
+            graphics.pose().translate(0, 0, 200);
             graphics.renderItem(draggedItem.stack, mouseX-9, mouseY - 9);
+            graphics.pose().popPose();
         }
     }
+
 }
