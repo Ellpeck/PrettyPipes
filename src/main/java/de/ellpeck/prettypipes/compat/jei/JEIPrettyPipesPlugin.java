@@ -6,23 +6,18 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @JeiPlugin
 public class JEIPrettyPipesPlugin implements IModPlugin {
@@ -31,6 +26,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     private String lastTerminalText;
     private String lastJeiText;
     private Button jeiSyncButton;
+
 
     public JEIPrettyPipesPlugin() {
         NeoForge.EVENT_BUS.register(this);
@@ -54,18 +50,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<>() {
-            @Override
-            public List<Rect2i> getGuiExtraAreas(ItemTerminalGui containerScreen) {
-                List<Rect2i> ret = new ArrayList<>();
-                // sorting buttons
-                ret.add(new Rect2i(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
-                // crafting hud
-                if (containerScreen.currentlyCrafting != null && !containerScreen.currentlyCrafting.isEmpty())
-                    ret.add(new Rect2i(containerScreen.getGuiLeft() + containerScreen.getXSize(), containerScreen.getGuiTop() + 4, 65, 89));
-                return ret;
-            }
-        });
+        registration.addGuiContainerHandler(ItemTerminalGui.class,new JEICraftingTerminalGuiElementHandler());
     }
 
     @SubscribeEvent
