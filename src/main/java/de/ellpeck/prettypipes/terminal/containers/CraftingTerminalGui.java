@@ -68,9 +68,6 @@ public class CraftingTerminalGui extends ItemTerminalGui {
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-
-
-        if(!dragging) {
             super.renderLabels(graphics, mouseX, mouseY);
             var container = this.getCraftingContainer();
             var tile = container.getTile();
@@ -88,7 +85,6 @@ public class CraftingTerminalGui extends ItemTerminalGui {
                 graphics.renderItemDecorations(this.font, ghost, slot.x, slot.y, "0");
             }
         }
-    }
 
     @Override
     protected ResourceLocation getTexture() {
