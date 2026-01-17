@@ -27,8 +27,7 @@ public class FilterSlot extends SlotItemHandler {
         return false;
     }
 
-    private void slotClick(AbstractContainerMenu menu) {
-        var heldStack = menu.getCarried();
+    public void slotClick(AbstractContainerMenu menu, ItemStack heldStack) {
         var stackInSlot = this.getItem();
 
         if (!stackInSlot.isEmpty() && heldStack.isEmpty()) {
@@ -39,6 +38,10 @@ public class FilterSlot extends SlotItemHandler {
                 s.setCount(1);
             this.set(s);
         }
+    }
+    private void slotClick(AbstractContainerMenu menu) {
+        var heldStack = menu.getCarried();
+        slotClick(menu, heldStack);
     }
 
     @Override

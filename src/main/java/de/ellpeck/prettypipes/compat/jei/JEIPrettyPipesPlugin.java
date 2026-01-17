@@ -2,6 +2,9 @@ package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
+import de.ellpeck.prettypipes.pipe.modules.filter.FilterIncreaseModuleGui;
+import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -66,6 +69,8 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
                 return ret;
             }
         });
+        registration.addGhostIngredientHandler(CraftingTerminalGui.class,new JEICraftingTerminalGhostIngredients());
+        registration.addGhostIngredientHandler(AbstractPipeGui.class,new JEIFilterGhostIngredients());
     }
 
     @SubscribeEvent
