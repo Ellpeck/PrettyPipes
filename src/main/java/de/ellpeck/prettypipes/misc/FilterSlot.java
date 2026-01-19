@@ -27,14 +27,21 @@ public class FilterSlot extends SlotItemHandler {
         return false;
     }
 
+    public void slotClick(AbstractContainerMenu menu, ItemStack itemStack) {
+        this.slotClickMethod(this.getItem(), itemStack);
+    }
     private void slotClick(AbstractContainerMenu menu) {
         var heldStack = menu.getCarried();
         var stackInSlot = this.getItem();
 
-        if (!stackInSlot.isEmpty() && heldStack.isEmpty()) {
+        slotClickMethod(stackInSlot, heldStack);
+    }
+
+    private void slotClickMethod(ItemStack stackInSlot, ItemStack itemStack) {
+        if (!stackInSlot.isEmpty() && itemStack.isEmpty()) {
             this.set(ItemStack.EMPTY);
-        } else if (!heldStack.isEmpty()) {
-            var s = heldStack.copy();
+        } else if (!itemStack.isEmpty()) {
+            var s = itemStack.copy();
             if (this.onlyOneItem)
                 s.setCount(1);
             this.set(s);
