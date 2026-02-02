@@ -9,6 +9,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
@@ -74,6 +75,11 @@ public class ItemTerminalWidget extends AbstractWidget {
     @Override
     public void updateWidgetNarration(NarrationElementOutput output) {
         this.defaultButtonNarrationText(output);
+    }
+
+    @Override
+    public void playDownSound(SoundManager handler) {
+        // we don't want a sound :)
     }
 
     private static String displayAmount(int amount) {
