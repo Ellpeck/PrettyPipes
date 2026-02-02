@@ -225,6 +225,7 @@ public final class Registry {
         registrar.playBidirectional(PacketButton.TYPE, PacketButton.CODEC, PacketButton::onMessage);
         registrar.playBidirectional(PacketCraftingModuleTransfer.TYPE, PacketCraftingModuleTransfer.CODEC, PacketCraftingModuleTransfer::onMessage);
         registrar.playBidirectional(PacketGhostSlot.TYPE, PacketGhostSlot.CODEC, PacketGhostSlot::onMessage);
+        registrar.playToServer(PacketFilterSlot.TYPE, PacketFilterSlot.CODEC, PacketFilterSlot::onMessage);
         registrar.playBidirectional(PacketNetworkItems.TYPE, PacketNetworkItems.CODEC, PacketNetworkItems::onMessage);
         registrar.playBidirectional(PacketRequest.TYPE, PacketRequest.CODEC, PacketRequest::onMessage);
     }

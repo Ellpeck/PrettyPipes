@@ -2,6 +2,8 @@ package de.ellpeck.prettypipes.compat.jei;
 
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.misc.PlayerPrefs;
+import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
+import de.ellpeck.prettypipes.terminal.containers.CraftingTerminalGui;
 import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -54,19 +56,11 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiContainerHandler(ItemTerminalGui.class, new IGuiContainerHandler<>() {
-            @Override
-            public List<Rect2i> getGuiExtraAreas(ItemTerminalGui containerScreen) {
-                List<Rect2i> ret = new ArrayList<>();
-                // sorting buttons
-                ret.add(new Rect2i(containerScreen.getGuiLeft() - 22, containerScreen.getGuiTop(), 22, 64));
-                // crafting hud
-                if (containerScreen.currentlyCrafting != null && !containerScreen.currentlyCrafting.isEmpty())
-                    ret.add(new Rect2i(containerScreen.getGuiLeft() + containerScreen.getXSize(), containerScreen.getGuiTop() + 4, 65, 89));
-                return ret;
-            }
-        });
+        registration.addGuiContainerHandler(ItemTerminalGui.class, new JEICraftingTerminalGuiElementHandler());
+        registration.addGhostIngredientHandler(CraftingTerminalGui.class, new JEICraftingTerminalGhostIngredients());
+        registration.addGhostIngredientHandler(AbstractPipeGui.class, new JEIFilterGhostIngredients());
     }
+
 
     @SubscribeEvent
     public void onInitGui(ScreenEvent.Init.Post event) {
