@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +29,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     private Button requestButton;
     private Button sendBackButton;
     private ItemTerminalWidget draggedItem;
+    private double initialDragX;
+    private double initialDragY;
     private boolean dragging;
 
     public CraftingTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
@@ -93,6 +96,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
         if (button == 0 && this.draggedItem == null) {
             this.getChildAt(mouseX, mouseY).ifPresent(child -> {
                 this.draggedItem = child instanceof ItemTerminalWidget widget && !widget.stack.isEmpty() ? widget : null;
+                this.initialDragX = mouseX;
+                this.initialDragY = mouseY;
             });
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -101,7 +106,7 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
         // Makes sure clicks aren't counted as drags
-        if (this.draggedItem != null && (j != 0 || k != 0))
+        if (!this.dragging && this.draggedItem != null && Mth.lengthSquared(mouseX - this.initialDragX, mouseY - this.initialDragY) >= 2 * 2)
             this.dragging = true;
         return super.mouseDragged(mouseX, mouseY, i, j, k);
     }
