@@ -90,9 +90,9 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Starts drag if clicked widget has item
-        if(button == 0 && this.draggedItem == null) {
-            this.getChildAt(mouseX,mouseY).ifPresent(child -> {
-                this.draggedItem = child instanceof ItemTerminalWidget widget && !widget.stack.isEmpty()? widget : null;
+        if (button == 0 && this.draggedItem == null) {
+            this.getChildAt(mouseX, mouseY).ifPresent(child -> {
+                this.draggedItem = child instanceof ItemTerminalWidget widget && !widget.stack.isEmpty() ? widget : null;
             });
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -101,29 +101,27 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
         // Makes sure clicks aren't counted as drags
-        if(this.draggedItem != null) {
-            double distance = j*j + k*k;
-            if(distance>2) {
-                dragging=true;
-            }
+        if (this.draggedItem != null) {
+            var distance = j * j + k * k;
+            if (distance > 2)
+                this.dragging = true;
         }
         return super.mouseDragged(mouseX, mouseY, i, j, k);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        Slot curSlot = this.getSlotUnderMouse();
-        if( draggedItem != null &&
-        !draggedItem.stack.isEmpty() &&
-        curSlot != null &&
-        curSlot.index >= 0 &&
-        curSlot.index <= 9) {
-            ItemStack ghostStack = draggedItem.stack.copyWithCount(1);
+        var curSlot = this.getSlotUnderMouse();
+        if (this.draggedItem != null &&
+                !this.draggedItem.stack.isEmpty() &&
+                curSlot != null &&
+                curSlot.index >= 0 &&
+                curSlot.index <= 9) {
+            var ghostStack = this.draggedItem.stack.copyWithCount(1);
             List<PacketGhostSlot.Entry> stacks = new ArrayList<>();
-            if(menu.tile instanceof CraftingTerminalBlockEntity craftingTerminalBlockEntity) {
-                for(int i=0; i< craftingTerminalBlockEntity.ghostItems.getSlots(); i++) {
-                    if(i!= curSlot.index-1)
-                    {
+            if (this.menu.tile instanceof CraftingTerminalBlockEntity craftingTerminalBlockEntity) {
+                for (var i = 0; i < craftingTerminalBlockEntity.ghostItems.getSlots(); i++) {
+                    if (i != curSlot.index - 1) {
                         stacks.add(i, new PacketGhostSlot.Entry(Optional.of(List.of(craftingTerminalBlockEntity.ghostItems.getStackInSlot(i))), Optional.empty()));
                     } else {
                         stacks.add(i, new PacketGhostSlot.Entry(Optional.of(List.of(ghostStack)), Optional.empty()));
@@ -132,8 +130,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
                 PacketDistributor.sendToServer(new PacketGhostSlot(craftingTerminalBlockEntity.getBlockPos(), stacks));
             }
         }
-        draggedItem = null;
-        dragging = false;
+        this.draggedItem = null;
+        this.dragging = false;
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -141,10 +139,10 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         super.render(graphics, mouseX, mouseY, partialTicks);
         // Renders dragged item at cursor with z offset
-        if(dragging && draggedItem != null) {
+        if (this.dragging && this.draggedItem != null) {
             graphics.pose().pushPose();
             graphics.pose().translate(0, 0, 200);
-            graphics.renderItem(draggedItem.stack, mouseX-9, mouseY-9);
+            graphics.renderItem(this.draggedItem.stack, mouseX - 9, mouseY - 9);
             graphics.pose().popPose();
         }
     }

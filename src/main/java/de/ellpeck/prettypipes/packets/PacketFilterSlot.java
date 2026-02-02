@@ -21,11 +21,10 @@ public record PacketFilterSlot(int slotIndex, ItemStack stack) implements Custom
     public Type<? extends CustomPacketPayload> type() {
         return PacketFilterSlot.TYPE;
     }
+
     public static void onMessage(PacketFilterSlot message, IPayloadContext ctx) {
         var player = ctx.player();
-        if(player.containerMenu.slots.get(message.slotIndex()) instanceof FilterSlot filterSlot){
+        if (player.containerMenu.slots.get(message.slotIndex()) instanceof FilterSlot filterSlot)
             filterSlot.slotClick(player.containerMenu, message.stack());
-        }
-
     }
 }

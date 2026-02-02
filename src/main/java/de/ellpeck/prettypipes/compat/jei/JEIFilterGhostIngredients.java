@@ -18,9 +18,8 @@ public class JEIFilterGhostIngredients implements IGhostIngredientHandler<Abstra
     @Override
     public <I> List<Target<I>> getTargetsTyped(AbstractPipeGui gui, ITypedIngredient<I> ingredient, boolean doStart) {
         var targetList = new ArrayList<Target<I>>();
-        if(gui.getMenu() instanceof ItemFilter.IFilteredContainer container) {
-
-            for (Slot slot : gui.getMenu().slots) {
+        if (gui.getMenu() instanceof ItemFilter.IFilteredContainer) {
+            for (var slot : gui.getMenu().slots) {
                 if (slot instanceof FilterSlot) {
                     targetList.add((Target<I>) new GhostTarget(gui, slot));
                 }
@@ -38,19 +37,21 @@ public class JEIFilterGhostIngredients implements IGhostIngredientHandler<Abstra
     public static class GhostTarget implements IGhostIngredientHandler.Target<ItemStack> {
         private final Slot slot;
         private final AbstractPipeGui gui;
-        public GhostTarget(AbstractPipeGui gui,Slot slot) {
+
+        public GhostTarget(AbstractPipeGui gui, Slot slot) {
             this.slot = slot;
             this.gui = gui;
         }
+
         @Override
         public Rect2i getArea() {
-            return new Rect2i(gui.getGuiLeft()+slot.x, gui.getGuiTop()+slot.y, 16, 16);
+            return new Rect2i(this.gui.getGuiLeft() + this.slot.x, this.gui.getGuiTop() + this.slot.y, 16, 16);
         }
 
         @Override
         public void accept(ItemStack ingredient) {
-            if (ingredient.isEmpty() || !(slot instanceof FilterSlot)) return;
-            PacketDistributor.sendToServer(new PacketFilterSlot(slot.index, ingredient));
+            if (ingredient.isEmpty() || !(this.slot instanceof FilterSlot)) return;
+            PacketDistributor.sendToServer(new PacketFilterSlot(this.slot.index, ingredient));
         }
     }
 }

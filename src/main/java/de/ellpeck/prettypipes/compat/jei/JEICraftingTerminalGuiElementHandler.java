@@ -29,17 +29,17 @@ public class JEICraftingTerminalGuiElementHandler implements IGuiContainerHandle
         var child = containerScreen.getChildAt(mouseX, mouseY);
         var curSlot = containerScreen.getSlotUnderMouse();
         // Exposes terminal widget or ghost crafting ingredient
-        if(child.isPresent()) {
+        if (child.isPresent()) {
             var childSlot = child.get();
-            if(childSlot instanceof ItemTerminalWidget widget) {
-                return builder.createBuilder(widget.stack).buildWithArea(widget.getX(),widget.getY(),widget.getWidth(),widget.getHeight());
+            if (childSlot instanceof ItemTerminalWidget widget) {
+                return builder.createBuilder(widget.stack).buildWithArea(widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight());
             }
-        } else if(curSlot != null && curSlot.index > 0 && curSlot.index <= 9 ) {
+        } else if (curSlot != null && curSlot.index > 0 && curSlot.index <= 9) {
             // Exposes ghost crafting ingredient when present
-            if(containerScreen.getMenu().tile instanceof CraftingTerminalBlockEntity craftingTerminal) {
-                if(craftingTerminal.isGhostItem(curSlot.index-1)) {
-                    var stack = craftingTerminal.ghostItems.getStackInSlot(curSlot.index-1);
-                    return builder.createBuilder(stack).buildWithArea(curSlot.x,curSlot.y,18,18);
+            if (containerScreen.getMenu().tile instanceof CraftingTerminalBlockEntity craftingTerminal) {
+                if (craftingTerminal.isGhostItem(curSlot.index - 1)) {
+                    var stack = craftingTerminal.ghostItems.getStackInSlot(curSlot.index - 1);
+                    return builder.createBuilder(stack).buildWithArea(curSlot.x, curSlot.y, 18, 18);
                 }
             }
         }
