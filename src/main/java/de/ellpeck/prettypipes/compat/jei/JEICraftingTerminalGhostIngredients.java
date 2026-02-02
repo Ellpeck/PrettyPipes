@@ -20,7 +20,7 @@ public class JEICraftingTerminalGhostIngredients implements IGhostIngredientHand
     @Override
     public <I> List<Target<I>> getTargetsTyped(CraftingTerminalGui gui, ITypedIngredient<I> ingredient, boolean doStart) {
         var targetList = new ArrayList<IGhostIngredientHandler.Target<I>>();
-        for (var i = 0; i <= 9; i++) {
+        for (var i = 0; i < 9; i++) {
             var currentTarget = new GhostSlotTarget(i, gui);
             targetList.add((Target<I>) currentTarget);
         }
