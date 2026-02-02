@@ -101,11 +101,8 @@ public class CraftingTerminalGui extends ItemTerminalGui {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
         // Makes sure clicks aren't counted as drags
-        if (this.draggedItem != null) {
-            var distance = j * j + k * k;
-            if (distance > 2)
-                this.dragging = true;
-        }
+        if (this.draggedItem != null && (j != 0 || k != 0))
+            this.dragging = true;
         return super.mouseDragged(mouseX, mouseY, i, j, k);
     }
 
