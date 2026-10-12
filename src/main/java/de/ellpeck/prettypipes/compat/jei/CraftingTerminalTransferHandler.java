@@ -39,6 +39,7 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         return RecipeTypes.CRAFTING;
     }
 
+    @SuppressWarnings("removal") // since it's an interface, we can't remove the usage of this method anyway, so just wait for it to be fully removed or switched to be the new default
     @Override
     public @Nullable IRecipeTransferError transferRecipe(CraftingTerminalContainer container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView slots, Player player, boolean maxTransfer, boolean doTransfer) {
         if (!doTransfer)

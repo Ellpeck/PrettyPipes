@@ -83,9 +83,7 @@ import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
-import static net.neoforged.fml.common.EventBusSubscriber.Bus;
-
-@EventBusSubscriber(bus = Bus.MOD)
+@EventBusSubscriber
 public final class Registry {
 
     public static BlockCapability<IPipeConnectable, Direction> pipeConnectableCapability = BlockCapability.createSided(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_connectable"), IPipeConnectable.class);
@@ -246,7 +244,7 @@ public final class Registry {
             helper.register(ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, tier.name().toLowerCase(Locale.ROOT) + "_" + name), item.apply(name, tier));
     }
 
-    @EventBusSubscriber(bus = Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(value = Dist.CLIENT)
     public static final class Client {
 
         @SubscribeEvent
