@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 public class PressurizerBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable {
 
-    public final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(64000, 512, 0);
+    public final ModifiableEnergyStorage storage = new ModifiableEnergyStorage(256000, 512, 0);
     private int lastEnergy;
 
     public PressurizerBlockEntity(BlockPos pos, BlockState state) {
