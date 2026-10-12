@@ -191,5 +191,7 @@ publishMods {
         projectId = "376737"
         minecraftVersions.add(minecraft_version)
         optional("jei")
+        clientRequired = true
+        serverRequired = true
     }
 }
