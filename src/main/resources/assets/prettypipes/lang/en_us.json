@@ -48,7 +48,7 @@
     "info.prettypipes.redstone_module": "Allows disabling the pipe with a redstone signal\nWorks for extraction, retrieval and crafting",
     "info.prettypipes.item_terminal": "Allows viewing and requesting all items in a pipe network\nAlso has slots for putting items into the network",
     "info.prettypipes.crafting_terminal": "Allows requesting ingredients for crafting recipes\nSupports auto-filling from JEI if installed",
-    "info.prettypipes.pressurizer": "Drastically increases item speed in the entire pipe network\nRequires FE (or RF) for each item transferred",
+    "info.prettypipes.pressurizer": "Drastically increases item speed in the entire pipe network\nRequires FE (or RF), supplied by another mod, for each item transferred",
     "info.prettypipes.filter_increase_modifier": "Adds additional filter slots to the pipe\nSlots will be used by any module that filters items",
     "info.prettypipes.crafting_module": "Allows automatically crafting items into other items using the connected block\nDoesn't automatically extract from the block\nInput and output slots vary by tier\nSupports auto-filling from JEI if installed",
     "info.prettypipes.random_sorting_modifier": "Causes extracted items to choose destinations randomly\nPriority modules will be ignored",
