@@ -54,11 +54,11 @@ public class DirectionSelector {
         };
     }
 
-    public void onButtonPacket() {
+    public void advanceDirection() {
         var dir = this.direction;
         do {
             dir = DirectionSelector.ALL[(ArrayUtils.indexOf(DirectionSelector.ALL, dir) + 1) % DirectionSelector.ALL.length];
-        } while (!this.isDirectionValid(dir));
+        } while (!this.isDirectionValid(dir)); // this terminates because the null direction always returns true!
         if (this.direction != dir) {
             this.direction = dir;
             this.modified = true;
@@ -84,6 +84,14 @@ public class DirectionSelector {
 
     public boolean has(Direction dir) {
         return this.direction == null || this.direction == dir;
+    }
+
+    public void onPipeModulesChanged() {
+        // ensure our direction is still valid even if additional modules have been inserted or changed
+        if (!this.isDirectionValid(this.direction)) {
+            this.advanceDirection();
+            this.save();
+        }
     }
 
     private boolean isDirectionValid(Direction dir) {

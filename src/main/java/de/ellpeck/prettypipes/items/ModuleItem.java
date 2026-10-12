@@ -42,6 +42,13 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
+    public void onContentsChanged(ItemStack module, PipeBlockEntity tile, int slot) {
+        var selector = this.getDirectionSelector(module, tile);
+        if (selector != null)
+            selector.onPipeModulesChanged();
+    }
+
+    @Override
     public void tick(ItemStack module, PipeBlockEntity tile) {
 
     }

@@ -20,6 +20,8 @@ import java.util.function.Consumer;
 
 public interface IModule {
 
+    void onContentsChanged(ItemStack module, PipeBlockEntity tile, int slot);
+
     void tick(ItemStack module, PipeBlockEntity tile);
 
     boolean canNetworkSee(ItemStack module, PipeBlockEntity tile, Direction direction, IItemHandler handler);

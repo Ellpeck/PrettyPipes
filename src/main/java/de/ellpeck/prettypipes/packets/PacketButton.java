@@ -143,7 +143,7 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
         }),
         DIRECTION_SELECTOR((pos, data, player) -> {
             if (player.containerMenu instanceof IDirectionContainer filtered)
-                filtered.getSelector().onButtonPacket();
+                filtered.getSelector().advanceDirection();
         });
 
         public final TriConsumer<BlockPos, List<Integer>, Player> action;

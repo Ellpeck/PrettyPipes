@@ -67,6 +67,11 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
         @Override
         protected void onContentsChanged(int slot) {
+            var modules = PipeBlockEntity.this.streamModules().iterator();
+            while (modules.hasNext()) {
+                var module = modules.next();
+                module.getRight().onContentsChanged(module.getLeft(), PipeBlockEntity.this, slot);
+            }
             PipeBlockEntity.this.setChanged();
         }
     };
