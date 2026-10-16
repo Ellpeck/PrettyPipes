@@ -2,7 +2,7 @@ package de.ellpeck.prettypipes.pipe.modules.modifier;
 
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 
@@ -18,8 +18,8 @@ public class FilterModifierModuleContainer extends AbstractPipeContainer<FilterM
         super(type, id, player, pos, moduleIndex);
     }
 
-    public List<ResourceLocation> getTags() {
-        Set<ResourceLocation> unsortedTags = new HashSet<>();
+    public List<Identifier> getTags() {
+        Set<Identifier> unsortedTags = new HashSet<>();
         for (var filter : this.tile.getFilters(null)) {
             for (var i = 0; i < filter.content.getSlots(); i++) {
                 var stack = filter.content.getStackInSlot(i);

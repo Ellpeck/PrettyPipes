@@ -9,7 +9,7 @@ import de.ellpeck.prettypipes.misc.ItemEquality;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import net.minecraft.core.component.DataComponentType;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -46,12 +46,12 @@ public class FilterModifierModuleItem extends ModuleItem {
         }
     }
 
-    public static ResourceLocation getFilterTag(ItemStack stack) {
+    public static Identifier getFilterTag(ItemStack stack) {
         var data = stack.get(Data.TYPE);
-        return data != null && data.filterTag != null ? ResourceLocation.parse(data.filterTag) : null;
+        return data != null && data.filterTag != null ? Identifier.parse(data.filterTag) : null;
     }
 
-    public static void setFilterTag(ItemStack stack, ResourceLocation tag) {
+    public static void setFilterTag(ItemStack stack, Identifier tag) {
         stack.set(Data.TYPE, new Data(tag.toString()));
     }
 

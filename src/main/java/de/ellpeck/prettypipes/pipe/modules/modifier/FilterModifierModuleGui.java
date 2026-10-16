@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
@@ -20,7 +20,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
 
     private int scrollOffset;
     private boolean isScrolling;
-    private List<ResourceLocation> tags;
+    private List<Identifier> tags;
     private final List<Tag> tagButtons = new ArrayList<>();
 
     public FilterModifierModuleGui(FilterModifierModuleContainer screenContainer, Inventory inv, Component titleIn) {
@@ -107,11 +107,11 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
 
     private class Tag {
 
-        private final ResourceLocation tag;
+        private final Identifier tag;
         private final int x;
         private final int y;
 
-        public Tag(ResourceLocation tag, int x, int y) {
+        public Tag(Identifier tag, int x, int y) {
             this.tag = tag;
             this.x = x;
             this.y = y;

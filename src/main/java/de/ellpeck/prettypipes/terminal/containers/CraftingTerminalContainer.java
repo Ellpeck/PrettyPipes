@@ -63,21 +63,21 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
     }
 
     @Override
-    public void clicked(int slotId, int dragType, ClickType clickTypeIn, Player player) {
-        if (slotId > 0) {
-            var slot = this.slots.get(slotId);
+    public void clicked(int slotIndex, int buttonNum, ContainerInput containerInput, Player player) {
+        if (slotIndex > 0) {
+            var slot = this.slots.get(slotIndex);
             var ghostItems = this.getTile().ghostItems;
             if (slot.container == this.craftInventory && !slot.hasItem()) {
-                if (clickTypeIn == ClickType.PICKUP) {
+                if (containerInput == ContainerInput.PICKUP) {
                     ghostItems.setStackInSlot(slot.getSlotIndex(), ItemStack.EMPTY);
-                } else if (clickTypeIn == ClickType.QUICK_MOVE) {
+                } else if (containerInput == ContainerInput.QUICK_MOVE) {
                     // clear the entire grid when holding shift
                     for (var i = 0; i < ghostItems.getSlots(); i++)
                         ghostItems.setStackInSlot(i, ItemStack.EMPTY);
                 }
             }
         }
-        super.clicked(slotId, dragType, clickTypeIn, player);
+        super.clicked(slotIndex, buttonNum, containerInput, player);
     }
 
     public CraftingTerminalBlockEntity getTile() {
@@ -86,7 +86,7 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
 
     // copied from CraftingMenu
     protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftSlots, ResultContainer resultSlots, @Nullable RecipeHolder<CraftingRecipe> recipe) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             var craftinginput = craftSlots.asCraftInput();
             var serverplayer = (ServerPlayer) player;
             var itemstack = ItemStack.EMPTY;
@@ -94,8 +94,8 @@ public class CraftingTerminalContainer extends ItemTerminalContainer {
             if (optional.isPresent()) {
                 var recipeholder = optional.get();
                 var craftingrecipe = recipeholder.value();
-                if (resultSlots.setRecipeUsed(level, serverplayer, recipeholder)) {
-                    var itemstack1 = craftingrecipe.assemble(craftinginput, level.registryAccess());
+                if ( resultSlots.setRecipeUsed(serverplayer, recipeholder)){
+                    var itemstack1 = craftingrecipe.assemble(craftinginput);
                     if (itemstack1.isItemEnabled(level.enabledFeatures())) {
                         itemstack = itemstack1;
                     }

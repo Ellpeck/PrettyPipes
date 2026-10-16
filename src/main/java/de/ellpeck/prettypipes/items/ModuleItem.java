@@ -35,10 +35,9 @@ public abstract class ModuleItem extends Item implements IModule {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack pStack, TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
-        super.appendHoverText(pStack, pContext, pTooltipComponents, pTooltipFlag);
-        Utility.addTooltip(this.name, pTooltipComponents);
+    public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(itemStack, context, display, builder, tooltipFlag);
+        Utility.addTooltip(this.name, builder);
     }
 
     @Override

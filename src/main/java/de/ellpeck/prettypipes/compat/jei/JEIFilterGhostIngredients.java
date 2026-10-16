@@ -45,7 +45,7 @@ public class JEIFilterGhostIngredients implements IGhostIngredientHandler<Abstra
 
         @Override
         public Rect2i getArea() {
-            return new Rect2i(this.gui.getGuiLeft() + this.slot.x, this.gui.getGuiTop() + this.slot.y, 16, 16);
+            return new Rect2i(this.gui.getLeftPos() + this.slot.x, this.gui.guiTopPos() + this.slot.y, 16, 16);
         }
 
         @Override

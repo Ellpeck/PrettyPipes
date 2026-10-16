@@ -13,7 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 
 public class PipeItem implements IPipeItem {
 
-    public static final ResourceLocation TYPE = ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "pipe_item");
+    public static final Identifier TYPE = Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe_item");
 
     public ItemStack stack;
     public float speed;
@@ -52,9 +52,9 @@ public class PipeItem implements IPipeItem {
     protected int currentTile;
     protected boolean retryOnObstruction;
     protected long lastWorldTick;
-    protected ResourceLocation type;
+    protected Identifier type;
 
-    public PipeItem(ResourceLocation type, ItemStack stack, float speed) {
+    public PipeItem(Identifier type, ItemStack stack, float speed) {
         this.type = type;
         this.stack = stack;
         this.speed = speed;
@@ -64,7 +64,7 @@ public class PipeItem implements IPipeItem {
         this(PipeItem.TYPE, stack, speed);
     }
 
-    public PipeItem(HolderLookup.Provider provider, ResourceLocation type, CompoundTag nbt) {
+    public PipeItem(HolderLookup.Provider provider, Identifier type, CompoundTag nbt) {
         this.type = type;
         this.path = new ArrayList<>();
         this.deserializeNBT(provider, nbt);

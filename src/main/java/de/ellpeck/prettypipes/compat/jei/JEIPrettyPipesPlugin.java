@@ -17,7 +17,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -39,8 +39,8 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
     }
 
     @Override
-    public ResourceLocation getPluginUid() {
-        return ResourceLocation.fromNamespaceAndPath(PrettyPipes.ID, "jei_plugin");
+    public Identifier getPluginUid() {
+        return Identifier.fromNamespaceAndPath(PrettyPipes.ID, "jei_plugin");
     }
 
     @Override
@@ -72,7 +72,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             preferences.syncJei = !preferences.syncJei;
             preferences.save();
             terminal.updateWidgets();
-        }).bounds(terminal.getGuiLeft() - 22, terminal.getGuiTop() + 44, 20, 20).build());
+        }).bounds(terminal.getLeftPos() - 22, terminal.guiTopPos() + 44, 20, 20).build());
         if (PlayerPrefs.get().syncJei)
             terminal.search.setValue(this.runtime.getIngredientFilter().getFilterText());
     }

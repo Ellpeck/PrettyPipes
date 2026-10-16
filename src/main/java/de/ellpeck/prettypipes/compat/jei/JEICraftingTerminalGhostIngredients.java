@@ -8,7 +8,7 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class JEICraftingTerminalGhostIngredients implements IGhostIngredientHand
 
         @Override
         public Rect2i getArea() {
-            return new Rect2i(this.gui.getGuiLeft() + this.curSlot.x, this.gui.getGuiTop() + this.curSlot.y, 16, 16);
+            return new Rect2i(this.gui.getLeftPos() + this.curSlot.x, this.gui.getTopPos() + this.curSlot.y, 16, 16);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class JEICraftingTerminalGhostIngredients implements IGhostIngredientHand
                         stacks.add(i, new PacketGhostSlot.Entry(Optional.of(List.of(ghostStack)), Optional.empty()));
                     }
                 }
-                PacketDistributor.sendToServer(new PacketGhostSlot(craftingTerminalBlockEntity.getBlockPos(), stacks));
+                ClientPacketDistributor.sendToServer(new PacketGhostSlot(craftingTerminalBlockEntity.getBlockPos(), stacks));
             }
         }
     }

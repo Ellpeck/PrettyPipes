@@ -8,12 +8,14 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.util.INBTSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.List;
 
-public class ActiveCraft implements INBTSerializable<CompoundTag> {
+public class ActiveCraft implements ValueIOSerializable {
 
     public BlockPos pipe;
     public int moduleSlot;
@@ -35,42 +37,41 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
         this.resultStackRemain = resultStackRemain;
     }
 
-    public ActiveCraft(HolderLookup.Provider provider, CompoundTag tag) {
-        this.deserializeNBT(provider, tag);
+    public ActiveCraft(ValueInput input) {
+        this.deserialize(input);
     }
 
     @Override
-    public @UnknownNullability CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var ret = new CompoundTag();
-        ret.putLong("pipe", this.pipe.asLong());
-        ret.putInt("module_slot", this.moduleSlot);
-        ret.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> {
+    public void serialize(ValueOutput output) {
+        output.putLong("pipe", this.pipe.asLong());
+        output.putInt("module_slot", this.moduleSlot);
+        output.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> {
             var tag = new CompoundTag();
             n.ifLeft(l -> tag.put("lock", l.serializeNBT(provider))).ifRight(s -> tag.put("stack", s.save(provider)));
             return tag;
         }));
-        ret.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
-        ret.putLong("result_dest_pipe", this.resultDestPipe.asLong());
-        ret.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
-        ret.putBoolean("in_progress", this.inProgress);
-        ret.putBoolean("result_found", this.resultFound);
-        ret.putBoolean("canceled", this.canceled);
-        return ret;
+        output.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
+        output.putLong("result_dest_pipe", this.resultDestPipe.asLong());
+        output.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
+        output.putBoolean("in_progress", this.inProgress);
+        output.putBoolean("result_found", this.resultFound);
+        output.putBoolean("canceled", this.canceled);
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.pipe = BlockPos.of(nbt.getLong("pipe"));
-        this.moduleSlot = nbt.getInt("module_slot");
-        this.ingredientsToRequest = Utility.deserializeAll(nbt.getList("ingredients_to_request", Tag.TAG_COMPOUND), t ->
+    public void deserialize(ValueInput input) {
+        this.pipe = BlockPos.of(input.getLongOr("pipe",0));
+        this.moduleSlot = input.getIntOr("module_slot",0);
+        this.ingredientsToRequest = Utility.deserializeAll(input.childrenList("ingredients_to_request"), t ->
             t.contains("lock") ? Either.left(new NetworkLock(provider, t.getCompound("lock"))) : Either.right(ItemStack.parseOptional(provider, t.getCompound("stack"))));
-        this.travelingIngredients = Utility.deserializeAll(nbt.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
-        this.resultDestPipe = BlockPos.of(nbt.getLong("result_dest_pipe"));
-        this.resultStackRemain = ItemStack.parseOptional(provider, nbt.getCompound("result_stack_remain"));
-        this.inProgress = nbt.getBoolean("in_progress");
-        this.resultFound = nbt.getBoolean("result_found");
-        this.canceled = nbt.getBoolean("canceled");
+        this.travelingIngredients = Utility.deserializeAll(input.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
+        this.resultDestPipe = BlockPos.of(input.getLongOr("result_dest_pipe", 0));
+        this.resultStackRemain = ItemStack.parseOptional(provider, input.getCompound("result_stack_remain"));
+        this.inProgress = input.getBooleanOr("in_progress", false);
+        this.resultFound = input.getBooleanOr("result_found", false);
+        this.canceled = input.getBooleanOr("canceled", false);
     }
+
 
     @Override
     public String toString() {
@@ -104,5 +105,4 @@ public class ActiveCraft implements INBTSerializable<CompoundTag> {
             return false;
         }
     }
-
 }

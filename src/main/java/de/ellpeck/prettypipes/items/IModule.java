@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.items;
 
+import com.mojang.blaze3d.resource.ResourceHandle;
 import de.ellpeck.prettypipes.misc.DirectionSelector;
 import de.ellpeck.prettypipes.misc.ItemFilter;
 import de.ellpeck.prettypipes.network.ActiveCraft;
@@ -11,6 +12,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collection;

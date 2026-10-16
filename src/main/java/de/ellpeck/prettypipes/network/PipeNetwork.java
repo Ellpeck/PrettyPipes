@@ -17,12 +17,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,7 +48,7 @@ import java.util.stream.Stream;
 
 public class PipeNetwork extends SavedData implements GraphListener<BlockPos, NetworkEdge> {
 
-    private static final Factory<PipeNetwork> FACTORY = new Factory<>(PipeNetwork::new, PipeNetwork::new);
+    private static final SavedDataType<PipeNetwork> TYPE = new SavedDataType<>(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe_network"), () -> PipeNetwork::new);
     private static PipeNetwork clientNetwork;
 
     public final ListenableGraph<BlockPos, NetworkEdge> graph;
@@ -205,7 +208,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         var item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
         startPipe.addNewItem(item);
-        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(startPipePos), new PacketItemEnterPipe(startPipePos, item.serializeNBT(this.level.registryAccess())));
+        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, ChunkPos.containing(startPipePos), new PacketItemEnterPipe(startPipePos, item.serializeNBT(this.level.registryAccess())));
         return true;
     }
 
@@ -577,17 +580,17 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public void startProfile(String name) {
         if (this.level != null)
-            this.level.getProfiler().push(() -> PrettyPipes.ID + ":pipe_network_" + name);
+            Profiler.get().push(() -> PrettyPipes.ID + ":pipe_network_" + name);
     }
 
     public void endProfile() {
         if (this.level != null)
-            this.level.getProfiler().pop();
+            Profiler.get().pop();
     }
 
     public static PipeNetwork get(Level level) {
         if (level instanceof ServerLevel server) {
-            var ret = server.getDataStorage().computeIfAbsent(PipeNetwork.FACTORY, "pipe_network");
+            var ret = server.getDataStorage().computeIfAbsent(PipeNetwork.TYPE);
             if (ret.level == null)
                 ret.level = level;
             return ret;
