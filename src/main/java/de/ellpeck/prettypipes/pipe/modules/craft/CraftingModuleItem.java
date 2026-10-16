@@ -180,7 +180,7 @@ public class CraftingModuleItem extends ModuleItem {
         var craftable = 0;
         for (var i = 0; i < content.output.getSlots(); i++) {
             var out = content.output.getStackInSlot(i);
-            if (!out.isEmpty() && ItemEquality.compareItems(out, stack, equalityTypes)) {
+            if (!out.isEmpty() && ItemEquality.compareItems(tile.getLevel().registryAccess(), out, stack, equalityTypes)) {
                 // figure out how many crafting operations we can actually do with the input items we have in the network
                 var availableCrafts = CraftingTerminalBlockEntity.getAvailableCrafts(tile, content.input.getSlots(), content.input::getStackInSlot, k -> true, s -> items, unavailableConsumer, CraftingModuleItem.addDependency(dependencyChain, module), equalityTypes);
                 if (availableCrafts > 0)

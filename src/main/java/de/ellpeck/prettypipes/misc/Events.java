@@ -4,6 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permissions;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -18,7 +19,7 @@ public final class Events {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
-        event.getServer().getCommands().getDispatcher().register(Commands.literal(PrettyPipes.ID).requires(s -> s.hasPermission(2))
+        event.getServer().getCommands().getDispatcher().register(Commands.literal(PrettyPipes.ID).requires(s -> s.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
             .then(Commands.literal("dump").executes(c -> {
                 var source = c.getSource();
                 var file = Paths.get('_' + PrettyPipes.ID + "dump.txt");

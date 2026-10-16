@@ -22,6 +22,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
@@ -81,7 +82,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     public int moduleDropCheck;
     public int redstoneTicks;
 
-    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.random.nextInt(200));
+    private final Lazy<Integer> workRandomizer = Lazy.of(() -> this.level.getRandom().nextInt(200));
 
     private List<IPipeItem> itemCache;
     private List<ActiveCraft> activeCraftCache;
@@ -319,7 +320,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public IItemHandler getItemHandler(Direction dir) {
-        return this.getNeighborCap(dir, Capabilities.ItemHandler.BLOCK);
+        return IItemHandler.of(this.getNeighborCap(dir, Capabilities.Item.BLOCK));
     }
 
     public <T> T getNeighborCap(Direction dir, BlockCapability<T, Direction> cap) {
@@ -366,7 +367,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     public void removeCover() {
-        if (this.level.isClientSide)
+        if (this.level.isClientSide())
             return;
         var drops = Block.getDrops(this.cover, (ServerLevel) this.level, this.worldPosition, null);
         for (var drop : drops)
@@ -453,9 +454,9 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
 
         if (!pipe.level.isAreaLoaded(pipe.worldPosition, 1))
             return;
-        var profiler = pipe.level.getProfiler();
+        var profiler = Profiler.get();
 
-        if (!pipe.level.isClientSide) {
+        if (!pipe.level.isClientSide()) {
             // drop modules here to give a bit of time for blocks to update (iron -> gold chest etc.)
             if (pipe.moduleDropCheck > 0) {
                 pipe.moduleDropCheck--;

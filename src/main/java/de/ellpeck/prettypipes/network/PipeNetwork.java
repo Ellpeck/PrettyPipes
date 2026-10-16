@@ -258,7 +258,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     public Pair<ItemStack, Collection<ActiveCraft>> requestCraftedItem(BlockPos destPipe, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
         var crafts = new ArrayList<ActiveCraft>();
         for (var craftable : this.getAllCraftables(destPipe)) {
-            if (!ItemEquality.compareItems(stack, craftable.getRight(), equalityTypes))
+            if (!ItemEquality.compareItems(this.level.registryAccess(), stack, craftable.getRight(), equalityTypes))
                 continue;
             var pipe = this.getPipe(craftable.getLeft());
             if (pipe == null)
@@ -340,7 +340,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
                     continue;
                 // add up all the items that should go to the same location
                 var existing = items.stream()
-                    .filter(s -> s.getLeft().equals(craft.resultDestPipe) && ItemEquality.compareItems(s.getRight(), craft.resultStackRemain, equalityTypes))
+                    .filter(s -> s.getLeft().equals(craft.resultDestPipe) && ItemEquality.compareItems(this.level.registryAccess(), s.getRight(), craft.resultStackRemain, equalityTypes))
                     .findFirst();
                 if (existing.isPresent()) {
                     existing.get().getRight().grow(craft.resultStackRemain.getCount());
@@ -355,7 +355,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public int getCurrentlyCraftingAmount(BlockPos destNode, ItemStack stack, boolean includeCanceled, ItemEquality... equalityTypes) {
         return this.getCurrentlyCrafting(destNode, includeCanceled).stream()
-            .filter(p -> p.getLeft().equals(destNode) && ItemEquality.compareItems(p.getRight(), stack, equalityTypes))
+            .filter(p -> p.getLeft().equals(destNode) && ItemEquality.compareItems(this.level.registryAccess(), p.getRight(), stack, equalityTypes))
             .mapToInt(p -> p.getRight().getCount()).sum();
     }
 
@@ -378,7 +378,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     public int getCraftableAmount(BlockPos node, Consumer<ItemStack> unavailableConsumer, ItemStack stack, Stack<ItemStack> dependencyChain, ItemEquality... equalityTypes) {
         var total = 0;
         for (var pair : this.getAllCraftables(node)) {
-            if (!ItemEquality.compareItems(pair.getRight(), stack, equalityTypes))
+            if (!ItemEquality.compareItems(this.level.registryAccess(), pair.getRight(), stack, equalityTypes))
                 continue;
             if (!this.level.isLoaded(pair.getLeft()))
                 continue;

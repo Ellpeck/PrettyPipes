@@ -45,7 +45,7 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
         if (this.isEmpty(world))
             return 0;
         return this.getItems(world).entrySet().stream()
-                .filter(kv -> ItemEquality.compareItems(stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
+                .filter(kv -> ItemEquality.compareItems(world.registryAccess(), stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
                 .mapToInt(kv -> kv.getValue().getCount()).sum();
     }
 

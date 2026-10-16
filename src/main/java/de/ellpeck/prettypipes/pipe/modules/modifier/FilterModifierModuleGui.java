@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -117,16 +117,14 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             this.y = y;
         }
 
-        private void draw(GuiGraphics graphics, double mouseX, double mouseY) {
+        private void draw(GuiGraphicsExtractor graphics, double mouseX, double mouseY) {
             var color = 4210752;
             var text = this.tag.toString();
             if (mouseX >= this.x && mouseY >= this.y && mouseX < this.x + 140 && mouseY < this.y + 12)
                 color = 0xFFFFFF;
             if (this.tag.equals(FilterModifierModuleItem.getFilterTag(FilterModifierModuleGui.this.menu.moduleStack)))
                 text = ChatFormatting.BOLD + text;
-            graphics.drawString(FilterModifierModuleGui.this.font, text, this.x, this.y, color, false);
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, AbstractPipeGui.TEXTURE);
+            graphics.text(FilterModifierModuleGui.this.font, text, this.x, this.y, color, false);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {

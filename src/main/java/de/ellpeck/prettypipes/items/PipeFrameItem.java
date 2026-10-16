@@ -5,20 +5,18 @@ import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.entities.PipeFrameEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.UseOnContext;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 public class PipeFrameItem extends Item {
 
@@ -39,13 +37,8 @@ public class PipeFrameItem extends Item {
         } else {
             var world = context.getLevel();
             HangingEntity hangingentity = new PipeFrameEntity(Registry.pipeFrameEntity, world, blockpos1, direction);
-
-            var customdata = itemstack.getOrDefault(DataComponents.ENTITY_DATA, CustomData.EMPTY);
-            if (!customdata.isEmpty())
-                EntityType.updateCustomEntityTag(world, playerentity, hangingentity, customdata);
-
             if (hangingentity.survives()) {
-                if (!world.isClientSide) {
+                if (!world.isClientSide()) {
                     hangingentity.playPlacementSound();
                     world.addFreshEntity(hangingentity);
                 }
@@ -63,9 +56,9 @@ public class PipeFrameItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack pStack, TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
-        super.appendHoverText(pStack, pContext, pTooltipComponents, pTooltipFlag);
-        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), pTooltipComponents);
+    public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
+        super.appendHoverText(itemStack, context, display, builder, tooltipFlag);
+        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), builder);
     }
 
 }

@@ -9,7 +9,7 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +51,7 @@ public class JEIFilterGhostIngredients implements IGhostIngredientHandler<Abstra
         @Override
         public void accept(ItemStack ingredient) {
             if (ingredient.isEmpty() || !(this.slot instanceof FilterSlot)) return;
-            PacketDistributor.sendToServer(new PacketFilterSlot(this.slot.index, ingredient));
+            ClientPacketDistributor.sendToServer(new PacketFilterSlot(this.slot.index, ingredient));
         }
     }
 }

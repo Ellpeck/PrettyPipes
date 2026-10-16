@@ -3,11 +3,10 @@ package de.ellpeck.prettypipes;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
@@ -17,23 +16,20 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
-import net.minecraft.world.WorldlyContainerHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.common.util.INBTSerializable;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -66,16 +62,16 @@ public final class Utility {
 
     public static Direction getDirectionFromOffset(BlockPos pos, BlockPos other) {
         var diff = pos.subtract(other);
-        return Direction.fromDelta(diff.getX(), diff.getY(), diff.getZ());
+        return Direction.getNearest(diff.getX(), diff.getY(), diff.getZ(), null);
     }
 
-    public static void addTooltip(String name, List<Component> tooltip) {
-        if (Screen.hasShiftDown()) {
+    public static void addTooltip(String name, Consumer<Component> builder) {
+        if (Minecraft.getInstance().hasShiftDown()) {
             var content = I18n.get("info." + PrettyPipes.ID + "." + name).split("\n");
             for (var s : content)
-                tooltip.add(Component.literal(s).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY)));
+                builder.accept(Component.literal(s).setStyle(Style.EMPTY.applyFormat(ChatFormatting.GRAY)));
         } else {
-            tooltip.add(Component.translatable("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.applyFormat(ChatFormatting.DARK_GRAY)));
+            builder.accept(Component.translatable("info." + PrettyPipes.ID + ".shift").setStyle(Style.EMPTY.applyFormat(ChatFormatting.DARK_GRAY)));
         }
     }
 
@@ -132,7 +128,7 @@ public final class Utility {
     public static <T> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> deserializer) {
         List<T> items = new ArrayList<>();
         for (var i = 0; i < list.size(); i++) {
-            var item = deserializer.apply(list.getCompound(i));
+            var item = deserializer.apply(list.getCompoundOrEmpty(i));
             if (item != null)
                 items.add(item);
         }
@@ -141,7 +137,7 @@ public final class Utility {
 
     public static void sendBlockEntityToClients(BlockEntity tile) {
         var world = (ServerLevel) tile.getLevel();
-        var entities = world.getChunkSource().chunkMap.getPlayers(new ChunkPos(tile.getBlockPos()), false);
+        var entities = world.getChunkSource().chunkMap.getPlayers(ChunkPos.containing(tile.getBlockPos()), false);
         var packet = ClientboundBlockEntityDataPacket.create(tile, BlockEntity::saveWithoutMetadata);
         for (var e : entities)
             e.connection.send(packet);

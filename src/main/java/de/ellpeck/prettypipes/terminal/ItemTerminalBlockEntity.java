@@ -60,7 +60,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, ItemTerminalBlockEntity terminal) {
-        if (terminal.level.isClientSide)
+        if (terminal.level.isClientSide())
             return;
         var network = PipeNetwork.get(terminal.level);
         var pipe = terminal.getConnectedPipe();
@@ -154,7 +154,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
             stack = this.networkItems.values().stream()
                 .map(NetworkItem::asStack)
                 // don't compare with nbt equality here or the data hashing thing is pointless
-                .filter(s -> ItemEquality.compareItems(s, filter) && !s.isComponentsPatchEmpty() && s.getComponents().hashCode() == componentsHash)
+                .filter(s -> ItemEquality.compareItems(this.level.registryAccess(), s, filter) && !s.isComponentsPatchEmpty() && s.getComponents().hashCode() == componentsHash)
                 .findFirst().orElse(filter);
             stack.setCount(filter.getCount());
         }

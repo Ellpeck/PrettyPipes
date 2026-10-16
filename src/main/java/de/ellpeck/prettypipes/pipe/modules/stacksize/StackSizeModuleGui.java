@@ -4,7 +4,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketButton.ButtonResult;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.resources.language.I18n;
@@ -52,10 +52,9 @@ public class StackSizeModuleGui extends AbstractPipeGui<StackSizeModuleContainer
     }
 
     @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
-        graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 8, 20 + 32, 4210752, false);
-
+    protected void extractLabels(GuiGraphicsExtractor graphics, int xm, int ym) {
+        super.extractLabels(graphics, xm, ym);
+        graphics.text(this.font, I18n.get("info." + PrettyPipes.ID + ".max_stack_size") + ":", 8, 20 + 32, 4210752, false);
     }
 
 }

@@ -1,18 +1,20 @@
 package de.ellpeck.prettypipes.misc;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Comparator;
+import java.util.function.Function;
 
 public enum ItemOrder {
-    AMOUNT(Comparator.comparingInt(ItemStack::getCount)),
-    NAME(Comparator.comparing(s -> s.getHoverName().getString())),
-    MOD(Comparator.comparing(s -> s.getItem().getCreatorModId(s)));
+    AMOUNT(_ -> Comparator.comparingInt(ItemStack::getCount)),
+    NAME(_ -> Comparator.comparing((ItemStack s) -> s.getHoverName().getString())),
+    MOD(provider -> Comparator.comparing((ItemStack s) -> s.getItem().getCreatorModId(provider, s)));
 
-    public final Comparator<ItemStack> comparator;
+    public final Function<HolderLookup.Provider, Comparator<ItemStack>> makeComparator;
 
-    ItemOrder(Comparator<ItemStack> comparator) {
-        this.comparator = comparator;
+    ItemOrder(Function<HolderLookup.Provider, Comparator<ItemStack>> makeComparator) {
+        this.makeComparator = makeComparator;
     }
 
     public ItemOrder next() {

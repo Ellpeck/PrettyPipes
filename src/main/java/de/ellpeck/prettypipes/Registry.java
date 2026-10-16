@@ -152,15 +152,15 @@ public final class Registry {
             }
 
             BuiltInRegistries.BLOCK.entrySet().stream()
-                .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
-                .forEach(b -> h.register(b.getKey().location(), new BlockItem(b.getValue(), new Item.Properties())));
+                .filter(b -> b.getKey().registry().getNamespace().equals(PrettyPipes.ID))
+                .forEach(b -> h.register(b.getKey().registry(), new BlockItem(b.getValue(), new Item.Properties())));
         });
 
         event.register(Registries.BLOCK_ENTITY_TYPE, h -> {
-            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = BlockEntityType.Builder.of(PipeBlockEntity::new, Registry.pipeBlock).build(null));
-            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = BlockEntityType.Builder.of(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock).build(null));
-            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = BlockEntityType.Builder.of(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock).build(null));
-            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = BlockEntityType.Builder.of(PressurizerBlockEntity::new, Registry.pressurizerBlock).build(null));
+            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeBlockEntity = new BlockEntityType<>(PipeBlockEntity::new, Registry.pipeBlock));
+            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "item_terminal"), Registry.itemTerminalBlockEntity = new BlockEntityType<>(ItemTerminalBlockEntity::new, Registry.itemTerminalBlock));
+            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "crafting_terminal"), Registry.craftingTerminalBlockEntity = new BlockEntityType<>(CraftingTerminalBlockEntity::new, Registry.craftingTerminalBlock));
+            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = new BlockEntityType<>(PressurizerBlockEntity::new, Registry.pressurizerBlock));
         });
 
         event.register(Registries.ENTITY_TYPE, h ->
@@ -186,7 +186,7 @@ public final class Registry {
                 .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
                 .icon(() -> new ItemStack(Registry.wrenchItem))
                 .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
-                    .filter(b -> b.getKey().location().getNamespace().equals(PrettyPipes.ID))
+                    .filter(b -> b.getKey().registry().getNamespace().equals(PrettyPipes.ID))
                     .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
                     .forEach(b -> output.accept(b.getValue()))).build()
             );
@@ -213,7 +213,7 @@ public final class Registry {
         event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.itemTerminalBlockEntity, (e, d) -> e);
         event.registerBlockEntity(Registry.pipeConnectableCapability, Registry.craftingTerminalBlockEntity, (e, d) -> e);
 
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, Registry.pressurizerBlockEntity, (e, d) -> e.storage);
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, Registry.pressurizerBlockEntity, (e, d) -> e.storage);
     }
 
     @SubscribeEvent

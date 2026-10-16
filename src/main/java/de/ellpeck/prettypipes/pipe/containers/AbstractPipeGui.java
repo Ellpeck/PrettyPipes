@@ -25,9 +25,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     private final ItemStack[] lastItems = new ItemStack[this.menu.tile.modules.getSlots()];
 
     public AbstractPipeGui(T screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
-        this.imageWidth = 176;
-        this.imageHeight = 171 + 32;
+        super(screenContainer, inv, titleIn, 176, 171 + 32);
     }
 
     @Override

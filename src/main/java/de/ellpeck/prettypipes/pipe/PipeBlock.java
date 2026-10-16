@@ -8,16 +8,16 @@ import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.network.PipeNetwork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -30,6 +30,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -77,12 +78,12 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public ItemInteractionResult useItemOn(ItemStack pStack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
+    public InteractionResult useItemOn(ItemStack pStack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult result) {
         var tile = Utility.getBlockEntity(PipeBlockEntity.class, worldIn, pos);
         if (tile == null)
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.PASS;
         if (!tile.canHaveModules())
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.PASS;
         var stack = player.getItemInHand(handIn);
         if (stack.getItem() instanceof IModule) {
             var copy = stack.copy();
@@ -90,14 +91,14 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
             var remain = ItemHandlerHelper.insertItem(tile.modules, copy, false);
             if (remain.isEmpty()) {
                 stack.shrink(1);
-                return ItemInteractionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
         } else if (handIn == InteractionHand.MAIN_HAND && stack.isEmpty()) {
-            if (!worldIn.isClientSide)
+            if (!worldIn.isClientSide())
                 player.openMenu(tile, pos);
-            return ItemInteractionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         }
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return InteractionResult.PASS;
     }
 
     @Override
@@ -112,13 +113,14 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-        var newState = this.createState(worldIn, pos, state);
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, @org.jspecify.annotations.Nullable Orientation orientation, boolean movedByPiston) {
+        var newState = this.createState(level, pos, state);
         if (newState != state) {
-            worldIn.setBlockAndUpdate(pos, newState);
-            PipeBlock.onStateChanged(worldIn, pos, newState);
+            level.setBlockAndUpdate(pos, newState);
+            PipeBlock.onStateChanged(level, pos, newState);
         }
     }
+
 
     @Nullable
     @Override
@@ -127,10 +129,10 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
-        if (stateIn.getValue(BlockStateProperties.WATERLOGGED))
-            worldIn.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
-        return super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction directionToNeighbour, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
+        if (state.getValue(BlockStateProperties.WATERLOGGED))
+            ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+        return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
     }
 
     @Override
@@ -147,9 +149,9 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     public VoxelShape getCollisionShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return this.cacheAndGetShape(state, worldIn, pos, s -> s.getCollisionShape(worldIn, pos, context), PipeBlock.COLL_SHAPE_CACHE, s -> {
             // make the shape a bit higher so we can jump up onto a higher block
-            var newShape = new MutableObject<VoxelShape>(Shapes.empty());
-            s.forAllBoxes((x1, y1, z1, x2, y2, z2) -> newShape.setValue(Shapes.join(Shapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.getValue(), BooleanOp.OR)));
-            return newShape.getValue().optimize();
+            var newShape = new MutableObject<>(Shapes.empty());
+            s.forAllBoxes((x1, y1, z1, x2, y2, z2) -> newShape.setValue(Shapes.join(Shapes.create(x1, y1, z1, x2, y2 + 3 / 16F, z2), newShape.get(), BooleanOp.OR)));
+            return newShape.get().optimize();
         });
     }
 
@@ -207,7 +209,7 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
         var connectable = world.getCapability(Registry.pipeConnectableCapability, offset, null, null, opposite);
         if (connectable != null)
             return connectable.getConnectionType(pos, direction);
-        var handler = world.getCapability(Capabilities.ItemHandler.BLOCK, offset, null, null, opposite);
+        var handler = world.getCapability(Capabilities.Item.BLOCK, offset, null, null, opposite);
         if (handler != null)
             return ConnectionType.CONNECTED;
         var offState = world.getBlockState(offset);
@@ -257,8 +259,8 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (state.getBlock() != newState.getBlock()) {
+    public void affectNeighborsAfterRemoval(BlockState state, ServerLevel worldIn, BlockPos pos, boolean isMoving) {
+        if (state.getBlock() != worldIn.getBlockState(pos).getBlock()) {
             var network = PipeNetwork.get(worldIn);
             network.removeNode(pos);
             network.onPipeChanged(pos, state);
@@ -274,7 +276,7 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
                         lock.ifLeft(network::resolveNetworkLock);
                 }
             }
-            super.onRemove(state, worldIn, pos, newState, isMoving);
+            super.affectNeighborsAfterRemoval(state, worldIn, pos, isMoving);
         }
     }
 
@@ -284,8 +286,8 @@ public class PipeBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos) {
-        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, world, pos);
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+        var pipe = Utility.getBlockEntity(PipeBlockEntity.class, level, pos);
         if (pipe == null)
             return 0;
         return Math.min(15, pipe.getItems().size());

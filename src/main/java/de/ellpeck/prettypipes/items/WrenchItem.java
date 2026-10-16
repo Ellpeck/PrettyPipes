@@ -14,6 +14,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -21,7 +22,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 public class WrenchItem extends Item {
 
@@ -42,7 +43,7 @@ public class WrenchItem extends Item {
             return InteractionResult.FAIL;
 
         if (player.isCrouching()) {
-            if (!world.isClientSide) {
+            if (!world.isClientSide()) {
                 if (tile.cover != null) {
                     // remove the cover
                     tile.removeCover();
@@ -54,14 +55,14 @@ public class WrenchItem extends Item {
                 }
                 world.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.PLAYERS, 1, 1);
             }
-            return InteractionResult.sidedSuccess(world.isClientSide);
+            return InteractionResult.SUCCESS;
         }
 
         // placing covers
         if (tile.cover == null) {
             var offhand = player.getOffhandItem();
             if (offhand.getItem() instanceof BlockItem) {
-                if (!world.isClientSide) {
+                if (!world.isClientSide()) {
                     var blockContext = new BlockPlaceContext(context);
                     var block = ((BlockItem) offhand.getItem()).getBlock();
                     var cover = block.getStateForPlacement(blockContext);
@@ -72,7 +73,7 @@ public class WrenchItem extends Item {
                         world.playSound(null, pos, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1, 1);
                     }
                 }
-                return InteractionResult.sidedSuccess(world.isClientSide);
+                return InteractionResult.SUCCESS;
             }
         }
 
@@ -86,7 +87,7 @@ public class WrenchItem extends Item {
             if (curr == ConnectionType.DISCONNECTED)
                 continue;
 
-            if (!world.isClientSide) {
+            if (!world.isClientSide()) {
                 var newType = curr == ConnectionType.BLOCKED ? ConnectionType.CONNECTED : ConnectionType.BLOCKED;
                 var otherPos = pos.relative(entry.getKey());
                 var otherState = world.getBlockState(otherPos);
@@ -100,14 +101,14 @@ public class WrenchItem extends Item {
                 PipeBlock.onStateChanged(world, pos, newState);
                 world.playSound(null, pos, SoundEvents.ITEM_FRAME_ROTATE_ITEM, SoundSource.PLAYERS, 1, 1);
             }
-            return InteractionResult.sidedSuccess(world.isClientSide);
+            return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
     }
 
     @Override
-    public void appendHoverText(ItemStack pStack, TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
-        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), pTooltipComponents);
+    public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
+        Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), builder);
     }
 
     @Override

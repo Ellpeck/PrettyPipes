@@ -7,13 +7,14 @@ import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
+import mezz.jei.api.recipe.types.IRecipeType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
     }
 
     @Override
-    public RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
+    public IRecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
         return RecipeTypes.CRAFTING;
     }
 
@@ -48,7 +49,7 @@ public class CraftingTerminalTransferHandler implements IRecipeTransferHandler<C
         var ingredients = slots.getSlotViews(RecipeIngredientRole.INPUT);
         for (var entry : ingredients)
             stacks.add(PacketGhostSlot.Entry.fromStacks(player.level(), entry.getIngredients(VanillaTypes.ITEM_STACK).collect(Collectors.toList())));
-        PacketDistributor.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
+        ClientPacketDistributor.sendToServer(new PacketGhostSlot(container.getTile().getBlockPos(), stacks));
         return null;
     }
 

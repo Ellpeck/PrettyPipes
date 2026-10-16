@@ -40,7 +40,7 @@ public class SortingModuleItem extends ModuleItem {
                 module.set(Data.TYPE, new Data(next));
                 return next % nodes.size();
             case RANDOM:
-                return tile.getLevel().random.nextInt(nodes.size());
+                return tile.getLevel().getRandom().nextInt(nodes.size());
         }
         return null;
     }

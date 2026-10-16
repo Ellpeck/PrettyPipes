@@ -12,6 +12,7 @@ import mezz.jei.api.recipe.transfer.IUniversalRecipeTransferHandler;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +52,7 @@ public class CraftingModuleTransferHandler implements IUniversalRecipeTransferHa
             if (!remain.isEmpty())
                 toAdd.add(remain);
         }
-        PacketDistributor.sendToServer(new PacketCraftingModuleTransfer(inputs, outputs));
+        ClientPacketDistributor.sendToServer(new PacketCraftingModuleTransfer(inputs, outputs));
         return null;
     }
 

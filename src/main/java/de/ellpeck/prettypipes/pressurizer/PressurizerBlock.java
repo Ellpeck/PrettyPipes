@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
@@ -41,7 +42,7 @@ public class PressurizerBlock extends BaseEntityBlock {
         var tile = Utility.getBlockEntity(PressurizerBlockEntity.class, worldIn, pos);
         if (tile == null)
             return InteractionResult.PASS;
-        if (!worldIn.isClientSide)
+        if (!worldIn.isClientSide())
             player.openMenu(tile, pos);
         return InteractionResult.SUCCESS;
     }
@@ -65,7 +66,7 @@ public class PressurizerBlock extends BaseEntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : BaseEntityBlock.createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
+        return level.isClientSide() ? null : BaseEntityBlock.createTickerHelper(type, Registry.pressurizerBlockEntity, PressurizerBlockEntity::tick);
     }
 
     @Override
@@ -74,7 +75,7 @@ public class PressurizerBlock extends BaseEntityBlock {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos, Direction direction) {
         var pipe = Utility.getBlockEntity(PressurizerBlockEntity.class, world, pos);
         if (pipe == null)
             return 0;

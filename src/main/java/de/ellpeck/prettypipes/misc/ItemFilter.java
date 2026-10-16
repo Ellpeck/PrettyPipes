@@ -122,7 +122,7 @@ public class ItemFilter {
                 var filter = handler.content.getStackInSlot(i);
                 if (filter.isEmpty())
                     continue;
-                if (ItemEquality.compareItems(stack, filter, types))
+                if (ItemEquality.compareItems(this.pipe.getLevel().registryAccess(), stack, filter, types))
                     return true;
             }
         }

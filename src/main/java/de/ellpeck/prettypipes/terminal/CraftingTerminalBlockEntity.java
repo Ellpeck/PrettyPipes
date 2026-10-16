@@ -98,11 +98,11 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
             this.ghostItems.setStackInSlot(i, toSet.copy());
         }
 
-        if (!this.level.isClientSide) {
+        if (!this.level.isClientSide()) {
             List<PacketGhostSlot.Entry> clients = new ArrayList<>();
             for (var i = 0; i < this.ghostItems.getSlots(); i++)
                 clients.add(PacketGhostSlot.Entry.fromStacks(this.level, List.of(this.ghostItems.getStackInSlot(i))));
-            PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, new ChunkPos(this.getBlockPos()), new PacketGhostSlot(this.getBlockPos(), clients));
+            PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, ChunkPos.containing(this.getBlockPos()), new PacketGhostSlot(this.getBlockPos(), clients));
         }
     }
 

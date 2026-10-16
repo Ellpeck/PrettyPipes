@@ -44,11 +44,11 @@ public class ItemTerminalBlock extends BaseEntityBlock {
             return InteractionResult.PASS;
         var reason = tile.getInvalidTerminalReason();
         if (reason != null) {
-            if (!pLevel.isClientSide)
+            if (!pLevel.isClientSide())
                 pPlayer.sendSystemMessage(Component.translatable(reason).withStyle(ChatFormatting.RED));
             return InteractionResult.SUCCESS;
         }
-        if (!pLevel.isClientSide) {
+        if (!pLevel.isClientSide()) {
             pPlayer.openMenu(tile, pPos);
             tile.updateItems(pPlayer);
         }

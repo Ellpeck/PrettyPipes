@@ -8,23 +8,18 @@ import de.ellpeck.prettypipes.terminal.containers.ItemTerminalGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @JeiPlugin
 public class JEIPrettyPipesPlugin implements IModPlugin {
@@ -67,12 +62,12 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
         var screen = event.getScreen();
         if (!(screen instanceof ItemTerminalGui terminal))
             return;
-        terminal.addRenderableWidget(this.jeiSyncButton = Button.builder(Component.literal(""), button -> {
+        terminal.addRenderableWidget(this.jeiSyncButton = Button.builder(Component.literal(""), _ -> {
             var preferences = PlayerPrefs.get();
             preferences.syncJei = !preferences.syncJei;
             preferences.save();
             terminal.updateWidgets();
-        }).bounds(terminal.getLeftPos() - 22, terminal.guiTopPos() + 44, 20, 20).build());
+        }).bounds(terminal.getLeftPos() - 22, terminal.getTopPos() + 44, 20, 20).build());
         if (PlayerPrefs.get().syncJei)
             terminal.search.setValue(this.runtime.getIngredientFilter().getFilterText());
     }
@@ -93,7 +88,7 @@ public class JEIPrettyPipesPlugin implements IModPlugin {
             return;
         var sync = PlayerPrefs.get().syncJei;
         if (this.jeiSyncButton.isHovered())
-            event.getGuiGraphics().renderTooltip(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
+            event.getGuiGraphics().setTooltipForNextFrame(terminal.getMinecraft().font, Component.translatable("info." + PrettyPipes.ID + ".sync_jei." + (sync ? "on" : "off")), event.getMouseX(), event.getMouseY());
     }
 
     @SubscribeEvent

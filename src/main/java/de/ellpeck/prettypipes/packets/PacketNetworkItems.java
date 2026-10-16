@@ -18,9 +18,9 @@ public record PacketNetworkItems(List<ItemStack> items, List<ItemStack> craftabl
 
     public static final Type<PacketNetworkItems> TYPE = new Type<>(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "network_items"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PacketNetworkItems> CODEC = StreamCodec.composite(
-        ItemStack.LIST_STREAM_CODEC, PacketNetworkItems::items,
-        ItemStack.LIST_STREAM_CODEC, PacketNetworkItems::craftables,
-        ItemStack.LIST_STREAM_CODEC, PacketNetworkItems::currentlyCrafting,
+        ItemStack.OPTIONAL_LIST_STREAM_CODEC, PacketNetworkItems::items,
+        ItemStack.OPTIONAL_LIST_STREAM_CODEC, PacketNetworkItems::craftables,
+        ItemStack.OPTIONAL_LIST_STREAM_CODEC, PacketNetworkItems::currentlyCrafting,
         PacketNetworkItems::new);
 
     @Override

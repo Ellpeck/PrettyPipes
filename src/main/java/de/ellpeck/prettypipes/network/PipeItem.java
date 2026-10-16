@@ -111,7 +111,7 @@ public class PipeItem implements IPipeItem {
                 currPipe.getItems().remove(this);
                 var next = this.getNextTile(currPipe, true);
                 if (next == null) {
-                    if (!currPipe.getLevel().isClientSide) {
+                    if (!currPipe.getLevel().isClientSide()) {
                         if (currPipe.getBlockPos().equals(this.getDestPipe())) {
                             // ...or store in our destination container if we reached our destination
                             this.stack = this.store(currPipe);
@@ -137,7 +137,7 @@ public class PipeItem implements IPipeItem {
                             nextPos = this.destInventory;
                         } else {
                             currPipe.getItems().remove(this);
-                            if (!currPipe.getLevel().isClientSide)
+                            if (!currPipe.getLevel().isClientSide())
                                 this.onPathObstructed(currPipe, false);
                             return;
                         }
@@ -175,7 +175,7 @@ public class PipeItem implements IPipeItem {
     }
 
     protected void onPathObstructed(PipeBlockEntity currPipe, boolean tryReturn) {
-        if (currPipe.getLevel().isClientSide)
+        if (currPipe.getLevel().isClientSide())
             return;
         var network = PipeNetwork.get(currPipe.getLevel());
         if (tryReturn) {
