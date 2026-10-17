@@ -56,6 +56,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
@@ -151,9 +152,10 @@ public final class Registry {
                 h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, name), new SortingModuleItem(name, type));
             }
 
-            BuiltInRegistries.BLOCK.entrySet().stream()
-                .filter(b -> b.getKey().registry().getNamespace().equals(PrettyPipes.ID))
-                .forEach(b -> h.register(b.getKey().registry(), new BlockItem(b.getValue(), new Item.Properties())));
+            BuiltInRegistries.BLOCK.entrySet().stream().filter(b -> b.getKey().registry().getNamespace().equals(PrettyPipes.ID)).forEach(b -> {
+                var block = b.getValue();
+                h.register(b.getKey().registry(), block instanceof ICustomBlockItem custom ? custom.createItem(block) : new BlockItem(block, new Item.Properties()));
+            });
         });
 
         event.register(Registries.BLOCK_ENTITY_TYPE, h -> {
@@ -163,8 +165,10 @@ public final class Registry {
             h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pressurizer"), Registry.pressurizerBlockEntity = new BlockEntityType<>(PressurizerBlockEntity::new, Registry.pressurizerBlock));
         });
 
-        event.register(Registries.ENTITY_TYPE, h ->
-            h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame"), Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build("pipe_frame")));
+        event.register(Registries.ENTITY_TYPE, h -> {
+            var pipeFrame = Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe_frame");
+            h.register(pipeFrame, Registry.pipeFrameEntity = EntityType.Builder.<PipeFrameEntity>of(PipeFrameEntity::new, MobCategory.MISC).build(ResourceKey.create(Registries.ENTITY_TYPE, pipeFrame)));
+        });
 
         event.register(Registries.MENU, h -> {
             h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "pipe"), Registry.pipeContainer = IMenuTypeExtension.create((windowId, inv, data) -> new MainPipeContainer(Registry.pipeContainer, windowId, inv.player, data.readBlockPos())));
@@ -185,7 +189,7 @@ public final class Registry {
             h.register(Identifier.fromNamespaceAndPath(PrettyPipes.ID, "tab"), CreativeModeTab.builder()
                 .title(Component.translatable("item_group." + PrettyPipes.ID + ".tab"))
                 .icon(() -> new ItemStack(Registry.wrenchItem))
-                .displayItems((params, output) -> BuiltInRegistries.ITEM.entrySet().stream()
+                .displayItems((_, output) -> BuiltInRegistries.ITEM.entrySet().stream()
                     .filter(b -> b.getKey().registry().getNamespace().equals(PrettyPipes.ID))
                     .sorted(Comparator.comparing(b -> b.getValue().getClass().getSimpleName()))
                     .forEach(b -> output.accept(b.getValue()))).build()
@@ -270,4 +274,7 @@ public final class Registry {
 
     }
 
+    public interface ICustomBlockItem {
+        BlockItem createItem(Block block);
+    }
 }

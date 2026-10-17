@@ -1,14 +1,18 @@
 package de.ellpeck.prettypipes.network;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.util.INBTSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class NetworkLock implements INBTSerializable<CompoundTag> {
+public class NetworkLock implements ValueIOSerializable {
 
     // identify locks by UUID since network locks can't be identified by location and locked item alone
     // (two locks could be set for the same item and the same amount if it exists twice in the chest)
@@ -21,24 +25,22 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
         this.stack = stack;
     }
 
-    public NetworkLock(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.deserializeNBT(provider, nbt);
+    public NetworkLock(ValueInput input) {
+        this.deserialize(input);
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var nbt = new CompoundTag();
-        nbt.putUUID("id", this.lockId);
-        nbt.put("location", this.location.serializeNBT(provider));
-        nbt.put("stack", this.stack.save(provider));
-        return nbt;
+    public void serialize(ValueOutput output) {
+        output.store("id", UUIDUtil.CODEC, this.lockId);
+        this.location.serialize(output.child("location"));
+        output.store("stack", ItemStack.CODEC, this.stack);
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.lockId = nbt.getUUID("id");
-        this.location = new NetworkLocation(provider, nbt.getCompound("location"));
-        this.stack = ItemStack.parseOptional(provider, nbt.getCompound("stack"));
+    public void deserialize(ValueInput input) {
+        this.lockId = input.read("id", UUIDUtil.CODEC).orElse(null);
+        this.location = new NetworkLocation(input.childOrEmpty("location"));
+        this.stack = input.read("stack", ItemStack.CODEC).orElse(ItemStack.EMPTY);
     }
 
     @Override
@@ -57,5 +59,4 @@ public class NetworkLock implements INBTSerializable<CompoundTag> {
     public String toString() {
         return "NetworkLock{" + "location=" + this.location.pipePos + ", stack=" + this.stack + '}';
     }
-
 }

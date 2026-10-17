@@ -8,7 +8,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.common.util.INBTSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 import net.neoforged.neoforge.items.IItemHandler;
 
 import java.util.Collections;
@@ -17,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class NetworkLocation implements INBTSerializable<CompoundTag> {
+public class NetworkLocation implements ValueIOSerializable {
 
     public BlockPos pipePos;
     public Direction direction;
@@ -29,24 +31,24 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
         this.direction = direction;
     }
 
-    public NetworkLocation(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.deserializeNBT(provider, nbt);
+    public NetworkLocation(ValueInput input) {
+        this.deserialize(input);
     }
 
     public List<Integer> getStackSlots(Level world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return Collections.emptyList();
         return this.getItems(world).entrySet().stream()
-                .filter(kv -> ItemEquality.compareItems(kv.getValue(), stack, equalityTypes) && this.canExtract(world, kv.getKey()))
-                .map(Map.Entry::getKey).collect(Collectors.toList());
+            .filter(kv -> ItemEquality.compareItems(world.registryAccess(), kv.getValue(), stack, equalityTypes) && this.canExtract(world, kv.getKey()))
+            .map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
     public int getItemAmount(Level world, ItemStack stack, ItemEquality... equalityTypes) {
         if (this.isEmpty(world))
             return 0;
         return this.getItems(world).entrySet().stream()
-                .filter(kv -> ItemEquality.compareItems(world.registryAccess(), stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
-                .mapToInt(kv -> kv.getValue().getCount()).sum();
+            .filter(kv -> ItemEquality.compareItems(world.registryAccess(), stack, kv.getValue(), equalityTypes) && this.canExtract(world, kv.getKey()))
+            .mapToInt(kv -> kv.getValue().getCount()).sum();
     }
 
     public Map<Integer, ItemStack> getItems(Level world) {
@@ -92,17 +94,14 @@ public class NetworkLocation implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var nbt = new CompoundTag();
-        nbt.put("pipe_pos", NbtUtils.writeBlockPos(this.pipePos));
-        nbt.putInt("direction", this.direction.ordinal());
-        return nbt;
+    public void serialize(ValueOutput output) {
+        output.store("pipe_pos", BlockPos.CODEC, this.pipePos);
+        output.store("direction", Direction.CODEC, this.direction);
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.pipePos = NbtUtils.readBlockPos(nbt, "pipe_pos").orElse(null);
-        this.direction = Direction.values()[nbt.getInt("direction")];
+    public void deserialize(ValueInput input) {
+        this.pipePos = input.read("pipe_pos", BlockPos.CODEC).orElse(null);
+        this.direction = input.read("direction", Direction.CODEC).orElse(null);
     }
-
 }

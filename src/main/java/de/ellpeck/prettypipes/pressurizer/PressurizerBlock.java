@@ -9,11 +9,14 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -23,8 +26,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.List;
+import java.util.function.Consumer;
 
-public class PressurizerBlock extends BaseEntityBlock {
+public class PressurizerBlock extends BaseEntityBlock implements Registry.ICustomBlockItem {
 
     public static final MapCodec<PressurizerBlock> CODEC = BlockBehaviour.simpleCodec(PressurizerBlock::new);
 
@@ -58,11 +62,6 @@ public class PressurizerBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
-    @Override
-    public void appendHoverText(ItemStack pStack, Item.TooltipContext pContext, List<Component> pTooltipComponents, TooltipFlag pTooltipFlag) {
-        Utility.addTooltip(BuiltInRegistries.BLOCK.getKey(this).getPath(), pTooltipComponents);
-    }
-
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
@@ -82,4 +81,13 @@ public class PressurizerBlock extends BaseEntityBlock {
         return (int) (pipe.getEnergy() / (float) pipe.getMaxEnergy() * 15);
     }
 
+    @Override
+    public BlockItem createItem(Block block) {
+        return new BlockItem(block, new Item.Properties()) {
+            @Override
+            public void appendHoverText(ItemStack itemStack, TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag tooltipFlag) {
+                Utility.addTooltip(BuiltInRegistries.ITEM.getKey(this).getPath(), builder);
+            }
+        };
+    }
 }
