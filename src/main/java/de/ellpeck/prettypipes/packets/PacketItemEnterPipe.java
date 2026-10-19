@@ -12,6 +12,8 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record PacketItemEnterPipe(BlockPos tilePos, CompoundTag item) implements CustomPacketPayload {
@@ -31,10 +33,12 @@ public record PacketItemEnterPipe(BlockPos tilePos, CompoundTag item) implements
         var mc = Minecraft.getInstance();
         if (mc.level == null)
             return;
-        var item = IPipeItem.load(mc.level.registryAccess(), message.item);
         var pipe = Utility.getBlockEntity(PipeBlockEntity.class, mc.level, message.tilePos);
-        if (pipe != null)
+        if (pipe == null)
+            return;
+        try (var reporter = new ProblemReporter.ScopedCollector(pipe.problemPath(), PrettyPipes.LOGGER)) {
+            var item = IPipeItem.load(TagValueInput.create(reporter, mc.level.registryAccess(), message.item));
             pipe.getItems().add(item);
+        }
     }
-
 }

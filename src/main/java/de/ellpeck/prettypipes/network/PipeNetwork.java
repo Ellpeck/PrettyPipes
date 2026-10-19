@@ -3,6 +3,7 @@ package de.ellpeck.prettypipes.network;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Streams;
+import com.mojang.logging.LogUtils;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.misc.ItemEquality;
@@ -19,6 +20,7 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
@@ -26,6 +28,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -208,7 +212,11 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
         var item = itemSupplier.apply(startPipe.getItemSpeed(stack));
         item.setDestination(startInventory, destInventory, path);
         startPipe.addNewItem(item);
-        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, ChunkPos.containing(startPipePos), new PacketItemEnterPipe(startPipePos, item.serializeNBT(this.level.registryAccess())));
+        try (var reporter = new ProblemReporter.ScopedCollector(PrettyPipes.LOGGER)) {
+            var output = TagValueOutput.createWithContext(reporter, this.level.registryAccess());
+            item.serialize(output);
+            PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) this.level, ChunkPos.containing(startPipePos), new PacketItemEnterPipe(startPipePos, output.buildResult()));
+        }
         return true;
     }
 
@@ -606,5 +614,4 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
     private static String toNewlineDelimitedString(Collection<?> collection) {
         return collection.stream().map(c -> "\t" + c.toString()).collect(Collectors.joining("\n"));
     }
-
 }

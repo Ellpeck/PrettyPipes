@@ -44,7 +44,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -54,8 +53,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable, ItemOwner {
-
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
@@ -134,7 +131,7 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
-        try (var reporter = new ProblemReporter.ScopedCollector(this.problemPath(), PipeBlockEntity.LOGGER)) {
+        try (var reporter = new ProblemReporter.ScopedCollector(this.problemPath(), PrettyPipes.LOGGER)) {
             var output = TagValueOutput.createWithContext(reporter, provider);
             this.saveWithoutMetadata(output);
             var list = output.childrenList("items");
