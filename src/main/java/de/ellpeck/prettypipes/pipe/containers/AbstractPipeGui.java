@@ -4,16 +4,17 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.items.IModule;
 import de.ellpeck.prettypipes.packets.PacketButton;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.items.SlotItemHandler;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,22 +52,17 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(graphics, mouseX, mouseY, partialTicks);
-        this.renderTooltip(graphics, mouseX, mouseY);
-    }
-
-    @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8, this.imageHeight - 96 + 2, 4210752, false);
-        graphics.drawString(this.font, this.title.getString(), 8, 6 + 32, 4210752, false);
+    protected void extractLabels(GuiGraphicsExtractor graphics, int xm, int ym) {
+        graphics.text(this.font, this.playerInventoryTitle.getString(), 8, this.imageHeight - 96 + 2, 4210752, false);
+        graphics.text(this.font, this.title.getString(), 8, 6 + 32, 4210752, false);
         for (var tab : this.tabs)
-            tab.drawForeground(graphics, mouseX, mouseY);
+            tab.drawForeground(graphics, xm, ym);
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTicks, int mouseX, int mouseY) {
-        graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos, this.topPos + 32, 0, 0, 176, 171);
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        super.extractBackground(graphics, mouseX, mouseY, a);
+        graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.leftPos, this.topPos + 32, 0, 0, 176, 171);
 
         for (var tab : this.tabs)
             tab.draw(graphics);
@@ -74,17 +70,17 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
         // draw the slots since we're using a blank ui
         for (var slot : this.menu.slots) {
             if (slot instanceof SlotItemHandler)
-                graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + slot.x - 1, this.topPos + slot.y - 1, 176, 62, 18, 18);
+                graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.leftPos + slot.x - 1, this.topPos + slot.y - 1, 176, 62, 18, 18);
         }
     }
 
     @Override
-    public boolean mouseClicked(double x, double y, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         for (var tab : this.tabs) {
-            if (tab.onClicked(x, y, button))
+            if (tab.onClicked(event.x(), event.y(), event.button()))
                 return true;
         }
-        return super.mouseClicked(x, y, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     private void initTabs() {
@@ -114,7 +110,7 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
             this.y = AbstractPipeGui.this.topPos;
         }
 
-        private void draw(GuiGraphics graphics) {
+        private void draw(GuiGraphicsExtractor graphics) {
             var y = 2;
             var v = 0;
             var height = 30;
@@ -125,14 +121,14 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 height = 32;
                 itemOffset = 7;
             }
-            graphics.blit(AbstractPipeGui.TEXTURE, this.x, this.y + y, 176, v, 28, height);
-            graphics.renderItem(this.moduleStack, this.x + 6, this.y + itemOffset);
+            graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.x, this.y + y, 176, v, 28, height);
+            graphics.item(this.moduleStack, this.x + 6, this.y + itemOffset);
         }
 
-        private void drawForeground(GuiGraphics graphics, int mouseX, int mouseY) {
+        private void drawForeground(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return;
-            graphics.renderTooltip(AbstractPipeGui.this.font, this.moduleStack.getHoverName(), mouseX - AbstractPipeGui.this.leftPos, mouseY - AbstractPipeGui.this.topPos);
+            graphics.setTooltipForNextFrame(AbstractPipeGui.this.font, this.moduleStack.getHoverName(), mouseX - AbstractPipeGui.this.leftPos, mouseY - AbstractPipeGui.this.topPos);
         }
 
         private boolean onClicked(double mouseX, double mouseY, int button) {
@@ -142,11 +138,9 @@ public abstract class AbstractPipeGui<T extends AbstractPipeContainer<?>> extend
                 return false;
             if (mouseX < this.x || mouseY < this.y || mouseX >= this.x + 28 || mouseY >= this.y + 32)
                 return false;
-            PacketDistributor.sendToServer(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, List.of(this.index)));
+            ClientPacketDistributor.sendToServer(new PacketButton(AbstractPipeGui.this.menu.tile.getBlockPos(), PacketButton.ButtonResult.PIPE_TAB, List.of(this.index)));
             AbstractPipeGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }
-
     }
-
 }

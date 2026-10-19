@@ -4,26 +4,33 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import de.ellpeck.prettypipes.network.NetworkEdge;
 import de.ellpeck.prettypipes.network.PipeItem;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.common.util.INBTSerializable;
-import org.apache.commons.lang3.function.TriFunction;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 import org.jgrapht.GraphPath;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.BiFunction;
 
-public interface IPipeItem extends INBTSerializable<CompoundTag> {
+public interface IPipeItem extends ValueIOSerializable {
 
-    Map<Identifier, TriFunction<HolderLookup.Provider, Identifier, CompoundTag, IPipeItem>> TYPES = new HashMap<>(
+    Map<Identifier, BiFunction<Identifier, ValueInput, IPipeItem>> TYPES = new HashMap<>(
         Collections.singletonMap(PipeItem.TYPE, PipeItem::new));
 
     ItemStack getContent();
@@ -43,12 +50,22 @@ public interface IPipeItem extends INBTSerializable<CompoundTag> {
     int getItemsOnTheWay(BlockPos goalInv);
 
     @OnlyIn(Dist.CLIENT)
-    void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source);
+    RenderState extractRenderState(BlockEntityRendererProvider.Context ctx, PipeBlockEntity blockEntity, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress);
 
-    static IPipeItem load(HolderLookup.Provider provider, CompoundTag nbt) {
-        var type = Identifier.parse(nbt.getString("type"));
+    @OnlyIn(Dist.CLIENT)
+    void render( PipeRenderer.State pipeState, RenderState state, Random random, PoseStack matrixStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera);
+
+    static IPipeItem load(ValueInput input) {
+        var type = Identifier.parse(input.getStringOr("type", null));
         var func = IPipeItem.TYPES.get(type);
-        return func != null ? func.apply(provider, type, nbt) : null;
+        return func != null ? func.apply(type, input) : null;
     }
 
+    @OnlyIn(Dist.CLIENT)
+    class RenderState {
+        public final ItemStackRenderState item = new ItemStackRenderState();
+        public float x;
+        public float y;
+        public float z;
+    }
 }

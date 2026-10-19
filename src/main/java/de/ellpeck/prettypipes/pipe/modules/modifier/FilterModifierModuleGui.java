@@ -5,6 +5,8 @@ import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.pipe.containers.AbstractPipeGui;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -28,18 +30,18 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTicks, int mouseX, int mouseY) {
-        super.renderBg(graphics, partialTicks, mouseX, mouseY);
-        graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 7, this.topPos + 32 + 15, 0, 196, 162, 60);
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        super.extractBackground(graphics, mouseX, mouseY, a);
+        graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.leftPos + 7, this.topPos + 32 + 15, 0, 196, 162, 60);
 
         for (var tag : this.tagButtons)
             tag.draw(graphics, mouseX, mouseY);
 
         if (this.tags.size() >= 6) {
             var percentage = this.scrollOffset / (float) (this.tags.size() - 5);
-            graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16 + (int) (percentage * (58 - 15)), 232, 241, 12, 15);
+            graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16 + (int) (percentage * (58 - 15)), 232, 241, 12, 15);
         } else {
-            graphics.blit(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16, 244, 241, 12, 15);
+            graphics.blitInscribed(AbstractPipeGui.TEXTURE, this.leftPos + 156, this.topPos + 32 + 16, 244, 241, 12, 15);
         }
     }
 
@@ -51,29 +53,29 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         for (var tag : this.tagButtons) {
-            if (tag.onClicked(mouseX, mouseY, button))
+            if (tag.onClicked(event.x(), event.y(), event.button()))
                 return true;
         }
-        if (button == 0 && mouseX >= this.leftPos + 156 && this.topPos + mouseY >= 32 + 16 && mouseX < this.leftPos + 156 + 12 && mouseY < this.topPos + 32 + 16 + 58) {
+        if (event.button() == 0 && event.x() >= this.leftPos + 156 && this.topPos + event.y() >= 32 + 16 && event.x() < this.leftPos + 156 + 12 && event.y() < this.topPos + 32 + 16 + 58) {
             this.isScrolling = true;
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0)
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0)
             this.isScrolling = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         if (this.isScrolling) {
-            var percentage = Mth.clamp(((float) mouseY - (this.topPos + 32 + 18)) / (58 - 15), 0, 1);
+            var percentage = Mth.clamp(((float) event.y() - (this.topPos + 32 + 18)) / (58 - 15), 0, 1);
             var offset = Math.max(0, (int) (percentage * (float) (this.tags.size() - 5)));
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
@@ -81,7 +83,7 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, i, j, k);
+        return super.mouseDragged(event, dx, dy);
     }
 
     @Override
@@ -136,7 +138,5 @@ public class FilterModifierModuleGui extends AbstractPipeGui<FilterModifierModul
             FilterModifierModuleGui.this.getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1));
             return true;
         }
-
     }
-
 }

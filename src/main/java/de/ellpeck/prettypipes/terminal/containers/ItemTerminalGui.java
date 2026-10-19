@@ -7,14 +7,16 @@ import de.ellpeck.prettypipes.misc.PlayerPrefs;
 import de.ellpeck.prettypipes.packets.PacketButton;
 import de.ellpeck.prettypipes.packets.PacketRequest;
 import joptsimple.internal.Strings;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -23,7 +25,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -54,10 +56,12 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     private ItemStack hoveredCrafting;
     private boolean isScrolling;
 
+    public ItemTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn, int width, int height) {
+        super(screenContainer, inv, titleIn, width, height);
+    }
+
     public ItemTerminalGui(ItemTerminalContainer screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
-        this.imageWidth = 176 + 15;
-        this.imageHeight = 236;
+        this(screenContainer, inv, titleIn, 176 + 15, 236);
     }
 
     @Override
@@ -71,7 +75,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             this.updateWidgets();
 
         this.plusButton = this.addRenderableWidget(Button.builder(Component.literal("+"), button -> {
-            var modifier = ItemTerminalGui.requestModifier();
+            var modifier = ItemTerminalGui.requestModifier(this.minecraft);
             if (modifier > 1 && this.requestAmount == 1) {
                 this.requestAmount = modifier;
             } else {
@@ -82,7 +86,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 this.requestAmount = 384;
         }).bounds(this.leftPos + this.getXOffset() + 95 - 7 + 12, this.topPos + 103, 12, 12).build());
         this.minusButton = this.addRenderableWidget(Button.builder(Component.literal("-"), button -> {
-            this.requestAmount -= ItemTerminalGui.requestModifier();
+            this.requestAmount -= ItemTerminalGui.requestModifier(this.minecraft);
             if (this.requestAmount < 1)
                 this.requestAmount = 1;
         }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 24, this.topPos + 103, 12, 12).build());
@@ -95,7 +99,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             if (stack.isEmpty())
                 return;
             stack.setCount(1);
-            PacketDistributor.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
+            ClientPacketDistributor.sendToServer(new PacketRequest(this.menu.tile.getBlockPos(), stack, this.requestAmount));
             this.requestAmount = 1;
         }).bounds(this.leftPos + this.getXOffset() + 95 - 7 - 25, this.topPos + 115, 50, 20).build());
         this.requestButton.active = false;
@@ -144,38 +148,38 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && mouseX >= this.leftPos + this.getXOffset() + 172 && this.topPos + mouseY >= 18 && mouseX < this.leftPos + this.getXOffset() + 172 + 12 && mouseY < this.topPos + 18 + 70) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0 && event.x() >= this.leftPos + this.getXOffset() + 172 && this.topPos + event.y() >= 18 && event.x() < this.leftPos + this.getXOffset() + 172 + 12 && event.y() < this.topPos + 18 + 70) {
             this.isScrolling = true;
             return true;
-        } else if (button == 1 && mouseX >= this.search.getX() && mouseX <= this.search.getX() + this.search.getWidth() && mouseY >= this.search.getY() && mouseY <= this.search.getY() + 8) {
+        } else if (event.button() == 1 && event.x() >= this.search.getX() && event.x() <= this.search.getX() + this.search.getWidth() && event.y() >= this.search.getY() && event.y() <= this.search.getY() + 8) {
             this.search.setValue("");
             this.search.setFocused(true);
             this.setFocused(this.search);
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
         // we have to do the click logic here because JEI is activated when letting go of the mouse button
         // and vanilla buttons are activated when the click starts, so we'll always invoke jei accidentally by default
-        if (button == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
+        if (event.button() == 0 && this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-                PacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of(hasShiftDown() ? 1 : 0)));
+                ClientPacketDistributor.sendToServer(new PacketButton(this.menu.tile.getBlockPos(), PacketButton.ButtonResult.CANCEL_CRAFTING, List.of(this.minecraft.hasShiftDown() ? 1 : 0)));
                 return true;
             }
         }
-        if (button == 0)
+        if (event.button() == 0)
             this.isScrolling = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int i, double j, double k) {
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         if (this.isScrolling) {
-            var percentage = Mth.clamp(((float) mouseY - (this.topPos + 18) - 7.5F) / (70 - 15), 0, 1);
+            var percentage = Mth.clamp(((float) event.y() - (this.topPos + 18) - 7.5F) / (70 - 15), 0, 1);
             var offset = (int) (percentage * (float) (this.sortedItems.size() / 9 - 3));
             if (offset != this.scrollOffset) {
                 this.scrollOffset = offset;
@@ -183,18 +187,18 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             }
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, i, j, k);
+        return super.mouseDragged(event, dx, dy);
     }
 
     @Override
-    public boolean keyPressed(int x, int y, int z) {
+    public boolean keyPressed(KeyEvent event) {
         // for some reason we have to do this to make the text field allow the inventory key to be typed
         if (this.search.isFocused()) {
-            var mouseKey = InputConstants.getKey(x, y);
+            var mouseKey = InputConstants.getKey(event);
             if (this.minecraft.options.keyInventory.isActiveAndMatches(mouseKey))
                 return false;
         }
-        return super.keyPressed(x, y, z);
+        return super.keyPressed(event);
     }
 
     public void updateItemList(List<ItemStack> items, List<ItemStack> craftables, List<ItemStack> currentlyCrafting) {
@@ -210,7 +214,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         this.orderButton.setMessage(Component.literal(prefs.terminalItemOrder.name().substring(0, 1)));
         this.cancelCraftingButton.visible = this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty();
 
-        var comparator = prefs.terminalItemOrder.comparator;
+        var comparator = prefs.terminalItemOrder.makeComparator.apply(this.minecraft.level.registryAccess());
         if (!prefs.terminalAscending)
             comparator = comparator.reversed();
 
@@ -232,7 +236,7 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
                 String toCompare;
                 if (search.startsWith("@")) {
                     // search mod id
-                    toCompare = s.getLeft().getItem().getCreatorModId(s.getLeft());
+                    toCompare = s.getLeft().getItem().getCreatorModId(this.minecraft.level.registryAccess(), s.getLeft());
                     search = search.substring(1);
                 } else if (search.startsWith("#")) {
                     // search item description
@@ -269,8 +273,8 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(graphics, mouseX, mouseY, partialTicks);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        super.extractRenderState(graphics, mouseX, mouseY, a);
         for (var widget : this.renderables) {
             if (widget instanceof ItemTerminalWidget terminal)
                 terminal.renderToolTip(graphics, mouseX, mouseY);
@@ -278,57 +282,58 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
         if (this.sortedItems != null) {
             var prefs = PlayerPrefs.get();
             if (this.orderButton.isHovered())
-                graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
+                graphics.setTooltipForNextFrame(this.font, Component.translatable("info." + PrettyPipes.ID + ".order", I18n.get("info." + PrettyPipes.ID + ".order." + prefs.terminalItemOrder.name().toLowerCase(Locale.ROOT))), mouseX, mouseY);
             if (this.ascendingButton.isHovered())
-                graphics.renderTooltip(this.font, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
+                graphics.setTooltipForNextFrame(this.font, Component.translatable("info." + PrettyPipes.ID + "." + (prefs.terminalAscending ? "ascending" : "descending")), mouseX, mouseY);
         }
         if (this.cancelCraftingButton.visible && this.cancelCraftingButton.isHovered()) {
             var tooltip = I18n.get("info." + PrettyPipes.ID + ".cancel_all.desc").split("\n");
-            graphics.renderTooltip(this.font, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), Optional.empty(), mouseX, mouseY);
+            graphics.setTooltipForNextFrame(this.font, Arrays.stream(tooltip).map(Component::literal).collect(Collectors.toList()), Optional.empty(), mouseX, mouseY);
         }
         if (!this.hoveredCrafting.isEmpty())
-            graphics.renderTooltip(this.font, this.hoveredCrafting, mouseX, mouseY);
-        this.renderTooltip(graphics, mouseX, mouseY);
+            graphics.setTooltipForNextFrame(this.font, this.hoveredCrafting, mouseX, mouseY);
     }
 
     @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(this.font, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752, false);
-        graphics.drawString(this.font, this.title.getString(), 8, 6, 4210752, false);
+    protected void extractLabels(GuiGraphicsExtractor graphics, int xm, int ym) {
+        super.extractLabels(graphics, xm, ym);
+        graphics.text(this.font, this.playerInventoryTitle.getString(), 8 + this.getXOffset(), this.imageHeight - 96 + 2, 4210752, false);
+        graphics.text(this.font, this.title.getString(), 8, 6, 4210752, false);
 
         var amount = String.valueOf(this.requestAmount);
-        graphics.drawString(this.font, amount, (176 + 15 - this.font.width(amount)) / 2 - 7 + this.getXOffset(), 106, 4210752, false);
+        graphics.text(this.font, amount, (176 + 15 - this.font.width(amount)) / 2 - 7 + this.getXOffset(), 106, 4210752, false);
 
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            graphics.drawString(this.font, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752, false);
+            graphics.text(this.font, I18n.get("info." + PrettyPipes.ID + ".crafting"), this.imageWidth + 4, 4 + 6, 4210752, false);
             if (this.currentlyCrafting.size() > 6)
-                graphics.drawString(this.font, ". . .", this.imageWidth + 24, 4 + 51, 4210752, false);
+                graphics.text(this.font, ". . .", this.imageWidth + 24, 4 + 51, 4210752, false);
         }
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTicks, int mouseX, int mouseY) {
-        graphics.blit(this.getTexture(), this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        super.extractBackground(graphics, mouseX, mouseY, a);
+        graphics.blitInscribed(this.getTexture(), this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
         if (this.sortedItems != null && this.sortedItems.size() >= 9 * 4) {
             var percentage = this.scrollOffset / (float) (this.sortedItems.size() / 9 - 3);
-            graphics.blit(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
+            graphics.blitInscribed(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18 + (int) (percentage * (70 - 15)), 232, 241, 12, 15);
         } else {
-            graphics.blit(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18, 244, 241, 12, 15);
+            graphics.blitInscribed(this.getTexture(), this.leftPos + this.getXOffset() + 172, this.topPos + 18, 244, 241, 12, 15);
         }
 
         // draw the items that are currently crafting
         this.hoveredCrafting = ItemStack.EMPTY;
         if (this.currentlyCrafting != null && !this.currentlyCrafting.isEmpty()) {
-            graphics.blit(ItemTerminalGui.TEXTURE, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
+            graphics.blitInscribed(ItemTerminalGui.TEXTURE, this.leftPos + this.imageWidth, this.topPos + 4, 191, 0, 65, 89);
 
             var x = 0;
             var y = 0;
             for (var stack : this.currentlyCrafting) {
                 var itemX = this.leftPos + this.imageWidth + 4 + x * 18;
                 var itemY = this.topPos + 4 + 16 + y * 18;
-                graphics.renderItem(stack, itemX, itemY);
-                graphics.renderItemDecorations(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
+                graphics.item(stack, itemX, itemY);
+                graphics.itemDecorations(this.font, stack, itemX, itemY, String.valueOf(stack.getCount()));
                 if (mouseX >= itemX && mouseY >= itemY && mouseX < itemX + 16 && mouseY < itemY + 18)
                     this.hoveredCrafting = stack;
                 x++;
@@ -370,14 +375,13 @@ public class ItemTerminalGui extends AbstractContainerScreen<ItemTerminalContain
             .map(w -> (ItemTerminalWidget) w);
     }
 
-    public static int requestModifier() {
-        if (Screen.hasControlDown()) {
+    public static int requestModifier(Minecraft mc) {
+        if (mc.hasControlDown()) {
             return 10;
-        } else if (Screen.hasShiftDown()) {
+        } else if (mc.hasShiftDown()) {
             return 64;
         } else {
             return 1;
         }
     }
-
 }

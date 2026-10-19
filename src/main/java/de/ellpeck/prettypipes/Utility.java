@@ -7,9 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -26,9 +24,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -118,23 +113,6 @@ public final class Utility {
         return ItemStack.EMPTY;
     }
 
-    public static <T> ListTag serializeAll(Collection<T> items, Function<T, CompoundTag> serializer) {
-        var list = new ListTag();
-        for (var item : items)
-            list.add(serializer.apply(item));
-        return list;
-    }
-
-    public static <T> List<T> deserializeAll(ListTag list, Function<CompoundTag, T> deserializer) {
-        List<T> items = new ArrayList<>();
-        for (var i = 0; i < list.size(); i++) {
-            var item = deserializer.apply(list.getCompoundOrEmpty(i));
-            if (item != null)
-                items.add(item);
-        }
-        return items;
-    }
-
     public static void sendBlockEntityToClients(BlockEntity tile) {
         var world = (ServerLevel) tile.getLevel();
         var entities = world.getChunkSource().chunkMap.getPlayers(ChunkPos.containing(tile.getBlockPos()), false);
@@ -167,7 +145,5 @@ public final class Utility {
     public interface IMergeItemStack {
 
         boolean mergeItemStack(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection);
-
     }
-
 }

@@ -1,27 +1,23 @@
 package de.ellpeck.prettypipes.network;
 
-import de.ellpeck.prettypipes.Utility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.Tag;
-import net.neoforged.neoforge.common.util.INBTSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable<CompoundTag> {
+public class NetworkEdge extends DefaultWeightedEdge implements ValueIOSerializable {
 
     public final List<BlockPos> pipes = new ArrayList<>();
 
     public NetworkEdge() {
     }
 
-    public NetworkEdge(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.deserializeNBT(provider, nbt);
+    public NetworkEdge(ValueInput input) {
+        this.deserialize(input);
     }
 
     public BlockPos getStartPipe() {
@@ -33,20 +29,17 @@ public class NetworkEdge extends DefaultWeightedEdge implements INBTSerializable
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var nbt = new CompoundTag();
-        var list = new ListTag();
+    public void serialize(ValueOutput output) {
+        var list = output.list("pipes", BlockPos.CODEC);
         for (var pos : this.pipes)
-            list.add(NbtUtils.writeBlockPos(pos));
-        nbt.put("pipes", list);
-        return nbt;
+            list.add(pos);
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.pipes.clear();
-        for (var tag : nbt.getList("pipes", Tag.TAG_INT_ARRAY))
-            this.pipes.add(Utility.readBlockPos(tag));
+    public void deserialize(ValueInput input) {
+        for (var pos : input.listOrEmpty("pipes", BlockPos.CODEC))
+            this.pipes.add(pos);
     }
+
 
 }

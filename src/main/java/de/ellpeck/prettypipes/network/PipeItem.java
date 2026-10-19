@@ -5,8 +5,14 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.pipe.IPipeItem;
 import de.ellpeck.prettypipes.pipe.PipeBlockEntity;
+import de.ellpeck.prettypipes.pipe.PipeRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -21,11 +27,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.jgrapht.GraphPath;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,10 +72,10 @@ public class PipeItem implements IPipeItem {
         this(PipeItem.TYPE, stack, speed);
     }
 
-    public PipeItem(HolderLookup.Provider provider, Identifier type, CompoundTag nbt) {
+    public PipeItem(Identifier type, ValueInput input) {
         this.type = type;
         this.path = new ArrayList<>();
-        this.deserializeNBT(provider, nbt);
+        this.deserialize(input);
     }
 
     @Override
@@ -235,41 +243,38 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var nbt = new CompoundTag();
-        nbt.putString("type", this.type.toString());
-        nbt.put("stack", this.stack.save(provider));
-        nbt.putFloat("speed", this.speed);
-        nbt.put("start_inv", NbtUtils.writeBlockPos(this.startInventory));
-        nbt.put("dest_inv", NbtUtils.writeBlockPos(this.destInventory));
-        nbt.put("curr_goal", NbtUtils.writeBlockPos(this.currGoalPos));
-        nbt.putBoolean("drop_on_obstruction", this.retryOnObstruction);
-        nbt.putInt("tile", this.currentTile);
-        nbt.putFloat("x", this.x);
-        nbt.putFloat("y", this.y);
-        nbt.putFloat("z", this.z);
-        var list = new ListTag();
+    public void serialize(ValueOutput output) {
+        output.putString("type", this.type.toString());
+        output.store("stack", ItemStack.CODEC, this.stack);
+        output.putFloat("speed", this.speed);
+        output.store("start_inv", BlockPos.CODEC, this.startInventory);
+        output.store("dest_inv", BlockPos.CODEC, this.destInventory);
+        output.store("curr_goal", BlockPos.CODEC, this.currGoalPos);
+        output.putBoolean("drop_on_obstruction", this.retryOnObstruction);
+        output.putInt("tile", this.currentTile);
+        output.putFloat("x", this.x);
+        output.putFloat("y", this.y);
+        output.putFloat("z", this.z);
+        var list = output.list("path", BlockPos.CODEC);
         for (var pos : this.path)
-            list.add(NbtUtils.writeBlockPos(pos));
-        nbt.put("path", list);
-        return nbt;
+            list.add(pos);
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-        this.stack = ItemStack.parseOptional(provider, nbt.getCompound("stack"));
-        this.speed = nbt.getFloat("speed");
-        this.startInventory = NbtUtils.readBlockPos(nbt, "start_inv").orElse(null);
-        this.destInventory = NbtUtils.readBlockPos(nbt, "dest_inv").orElse(null);
-        this.currGoalPos = NbtUtils.readBlockPos(nbt, "curr_goal").orElse(null);
-        this.retryOnObstruction = nbt.getBoolean("drop_on_obstruction");
-        this.currentTile = nbt.getInt("tile");
-        this.x = nbt.getFloat("x");
-        this.y = nbt.getFloat("y");
-        this.z = nbt.getFloat("z");
+    public void deserialize(ValueInput input) {
+        this.stack = input.read("stack", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        this.speed = input.getFloatOr("speed", 0);
+        this.startInventory = input.read("start_inv", BlockPos.CODEC).orElse(null);
+        this.destInventory = input.read("dest_inv", BlockPos.CODEC).orElse(null);
+        this.currGoalPos = input.read("curr_goal", BlockPos.CODEC).orElse(null);
+        this.retryOnObstruction = input.getBooleanOr("drop_on_obstruction", false);
+        this.currentTile = input.getIntOr("tile", 0);
+        this.x = input.getFloatOr("x", 0);
+        this.y = input.getFloatOr("y", 0);
+        this.z = input.getFloatOr("z", 0);
         this.path.clear();
-        for (var tag : nbt.getList("path", Tag.TAG_INT_ARRAY))
-            this.path.add(Utility.readBlockPos(tag));
+        for (var pos : input.listOrEmpty("path", BlockPos.CODEC))
+            this.path.add(pos);
     }
 
     @Override
@@ -278,12 +283,18 @@ public class PipeItem implements IPipeItem {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
-    public void render(PipeBlockEntity tile, PoseStack matrixStack, Random random, float partialTicks, int light, int overlay, MultiBufferSource source) {
-        matrixStack.translate(
-            Mth.lerp(partialTicks, this.lastX, this.x),
-            Mth.lerp(partialTicks, this.lastY, this.y),
-            Mth.lerp(partialTicks, this.lastZ, this.z));
+    public RenderState extractRenderState(BlockEntityRendererProvider.Context ctx, PipeBlockEntity blockEntity, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress) {
+        var state = new RenderState();
+        state.x = Mth.lerp(partialTicks, this.lastX, this.x);
+        state.y = Mth.lerp(partialTicks, this.lastY, this.y);
+        state.z = Mth.lerp(partialTicks, this.lastZ, this.z);
+        ctx.itemModelResolver().updateForTopItem(state.item, this.stack, ItemDisplayContext.GROUND, blockEntity.getLevel(), blockEntity, this.hashCode());
+        return state;
+    }
+
+    @Override
+    public void render(PipeRenderer.State pipeState, RenderState state, Random random, PoseStack matrixStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
+        matrixStack.translate(state.x, state.y, state.z);
 
         if (this.stack.getItem() instanceof BlockItem) {
             var scale = 0.7F;
@@ -306,7 +317,7 @@ public class PipeItem implements IPipeItem {
                     (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F,
                     (random.nextFloat() * 2.0F - 1.0F) * 0.25F * 0.5F);
             }
-            Minecraft.getInstance().getItemRenderer().renderStatic(this.stack, ItemDisplayContext.GROUND, light, overlay, matrixStack, source, tile.getLevel(), 0);
+            state.item.submit(matrixStack, submitNodeCollector, pipeState.lightCoords, OverlayTexture.NO_OVERLAY, 0);
             matrixStack.popPose();
         }
     }

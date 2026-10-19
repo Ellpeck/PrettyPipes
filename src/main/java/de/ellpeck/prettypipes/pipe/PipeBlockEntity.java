@@ -1,5 +1,6 @@
 package de.ellpeck.prettypipes.pipe;
 
+import com.mojang.logging.LogUtils;
 import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Registry;
 import de.ellpeck.prettypipes.Utility;
@@ -12,20 +13,17 @@ import de.ellpeck.prettypipes.pressurizer.PressurizerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -35,6 +33,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.util.Lazy;
@@ -42,6 +44,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -50,7 +53,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable {
+public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeConnectable, ItemOwner {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public final ItemStackHandler modules = new ItemStackHandler(3) {
         @Override
@@ -103,43 +108,49 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
-        super.saveAdditional(compound, provider);
-        compound.put("modules", this.modules.serializeNBT(provider));
-        compound.putInt("module_drop_check", this.moduleDropCheck);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        this.modules.serialize(output.child("modules"));
+        output.putInt("module_drop_check", this.moduleDropCheck);
         if (this.cover != null)
-            compound.put("cover", NbtUtils.writeBlockState(this.cover));
-        compound.putInt("priority", this.priority);
+            output.store("cover", BlockState.CODEC, this.cover);
+        output.putInt("priority", this.priority);
     }
 
     @Override
-    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
-        this.modules.deserializeNBT(provider, compound.getCompound("modules"));
-        this.moduleDropCheck = compound.getInt("module_drop_check");
-        this.cover = compound.contains("cover") ? NbtUtils.readBlockState(this.level != null ? this.level.holderLookup(Registries.BLOCK) : BuiltInRegistries.BLOCK.asLookup(), compound.getCompound("cover")) : null;
-        this.priority = compound.getInt("priority");
-        super.loadAdditional(compound, provider);
+    protected void loadAdditional(ValueInput input) {
+        this.modules.deserialize(input.childOrEmpty("modules"));
+        this.moduleDropCheck = input.getIntOr("module_drop_check", 0);
+        this.cover = input.read("cover", BlockState.CODEC).orElse(null);
+        this.priority = input.getIntOr("priority", 0);
+        super.loadAdditional(input);
+    }
+
+    @Override
+    public @org.jspecify.annotations.Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider provider) {
         // sync pipe items on load
-        var nbt = this.saveWithoutMetadata(provider);
-        nbt.put("items", Utility.serializeAll(this.getItems(), i -> i.serializeNBT(provider)));
-        return nbt;
+        try (var reporter = new ProblemReporter.ScopedCollector(this.problemPath(), PipeBlockEntity.LOGGER)) {
+            var output = TagValueOutput.createWithContext(reporter, provider);
+            this.saveWithoutMetadata(output);
+            var list = output.childrenList("items");
+            for (var item : this.getItems())
+                item.serialize(list.addChild());
+            return output.buildResult();
+        }
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag nbt, HolderLookup.Provider provider) {
-        this.loadWithComponents(nbt, provider);
+    public void handleUpdateTag(ValueInput input) {
+        super.handleUpdateTag(input);
         var items = this.getItems();
         items.clear();
-        items.addAll(Utility.deserializeAll(nbt.getList("items", Tag.TAG_COMPOUND), d -> IPipeItem.load(provider, d)));
-    }
-
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider provider) {
-        this.loadWithComponents(pkt.getTag(), provider);
+        for (var item : input.childrenListOrEmpty("items"))
+            items.add(IPipeItem.load(item));
     }
 
     public List<IPipeItem> getItems() {
@@ -491,4 +502,18 @@ public class PipeBlockEntity extends BlockEntity implements MenuProvider, IPipeC
         profiler.pop();
     }
 
+    @Override
+    public Level level() {
+        return this.level;
+    }
+
+    @Override
+    public Vec3 position() {
+        return this.worldPosition.getCenter();
+    }
+
+    @Override
+    public float getVisualRotationYInDegrees() {
+        return 0;
+    }
 }
