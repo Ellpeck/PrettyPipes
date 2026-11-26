@@ -25,6 +25,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.apache.logging.log4j.util.TriConsumer;
@@ -60,7 +61,7 @@ public record PacketButton(BlockPos pos, int result, List<Integer> data) impleme
     }
 
     public static void sendAndExecute(BlockPos pos, ButtonResult result, List<Integer> data) {
-        PacketDistributor.sendToServer(new PacketButton(pos, result, data));
+        ClientPacketDistributor.sendToServer(new PacketButton(pos, result, data));
         result.action.accept(pos, data, Minecraft.getInstance().player);
     }
 

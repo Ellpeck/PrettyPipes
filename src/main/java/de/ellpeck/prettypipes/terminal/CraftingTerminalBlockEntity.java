@@ -24,6 +24,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.RangedWrapper;
@@ -77,7 +79,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
                 for (var stack : items) {
                     var amount = 0;
                     // check existing items
-                    var network = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
+                    var network = this.networkItems.get(new EquatableItemStack(this.level.registryAccess(), stack, ItemEquality.NBT));
                     if (network != null) {
                         amount = network.getLocations().stream()
                             .mapToInt(l -> l.getItemAmount(this.level, stack, ItemEquality.NBT))
@@ -152,15 +154,15 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound, HolderLookup.Provider provider) {
-        super.saveAdditional(compound, provider);
-        compound.put("craft_items", this.craftItems.serializeNBT(provider));
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        this.craftItems.serialize(output.child("craft_items"));
     }
 
     @Override
-    public void loadAdditional(CompoundTag compound, HolderLookup.Provider provider) {
-        this.craftItems.deserializeNBT(provider, compound.getCompound("craft_items"));
-        super.loadAdditional(compound, provider);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        this.craftItems.deserialize(input.childOrEmpty("craft_items"));
     }
 
     @Override
@@ -220,7 +222,7 @@ public class CraftingTerminalBlockEntity extends ItemTerminalBlockEntity {
             var requested = inputFunction.apply(i);
             if (requested.isEmpty())
                 continue;
-            var amount = requiredItems.computeIfAbsent(new EquatableItemStack(requested, equalityTypes), s -> new MutableInt());
+            var amount = requiredItems.computeIfAbsent(new EquatableItemStack(tile.level().registryAccess(), requested, equalityTypes), s -> new MutableInt());
             amount.add(requested.getCount());
             // if no items fit into the crafting input, we still want to pretend they do for requesting
             var fit = Math.max(requested.getMaxStackSize() - (isGhost.test(i) ? 0 : requested.getCount()), 1);

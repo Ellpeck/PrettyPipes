@@ -29,6 +29,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.RangedWrapper;
@@ -168,7 +170,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     public int requestItemImpl(ItemStack stack, Consumer<ItemStack> unavailableConsumer) {
-        var item = this.networkItems.get(new EquatableItemStack(stack, ItemEquality.NBT));
+        var item = this.networkItems.get(new EquatableItemStack(this.level.registryAccess(), stack, ItemEquality.NBT));
         Collection<NetworkLocation> locations = item == null ? Collections.emptyList() : item.getLocations();
         var network = PipeNetwork.get(this.level);
         var ret = network.requestLocksAndStartCrafting(this.getConnectedPipe().getBlockPos(), locations, unavailableConsumer, stack, new Stack<>(), ItemEquality.NBT);
@@ -190,7 +192,7 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
                 // make sure we can extract from this slot to display it
                 if (!location.canExtract(this.level, entry.getKey()))
                     continue;
-                var equatable = new EquatableItemStack(entry.getValue(), equalityTypes);
+                var equatable = new EquatableItemStack(this.level.registryAccess(), entry.getValue(), equalityTypes);
                 var item = items.computeIfAbsent(equatable, NetworkItem::new);
                 item.add(location, entry.getValue());
             }
@@ -224,18 +226,21 @@ public class ItemTerminalBlockEntity extends BlockEntity implements IPipeConnect
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
-        super.saveAdditional(compound, pRegistries);
-        compound.put("items", this.items.serializeNBT(pRegistries));
-        compound.put("requests", Utility.serializeAll(this.existingRequests, i -> i.serializeNBT(pRegistries)));
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        this.items.serialize(output.child("items"));
+        var list = output.childrenList("requests");
+        for (var request : this.existingRequests)
+            request.serialize(list.addChild());
     }
 
     @Override
-    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider pRegistries) {
-        this.items.deserializeNBT(pRegistries, compound.getCompound("items"));
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        this.items.deserialize(input.childOrEmpty("items"));
         this.existingRequests.clear();
-        this.existingRequests.addAll(Utility.deserializeAll(compound.getList("requests", Tag.TAG_COMPOUND), l -> new NetworkLock(pRegistries, l)));
-        super.loadAdditional(compound, pRegistries);
+        for (var request : input.childrenListOrEmpty("requests"))
+            this.existingRequests.add(new NetworkLock(request));
     }
 
     @Override

@@ -436,7 +436,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public int getLockedAmount(BlockPos pos, ItemStack stack, NetworkLock ignoredLock, ItemEquality... equalityTypes) {
         return this.getNetworkLocks(pos).stream()
-            .filter(l -> !l.equals(ignoredLock) && ItemEquality.compareItems(l.stack, stack, equalityTypes))
+            .filter(l -> !l.equals(ignoredLock) && ItemEquality.compareItems(this.level.registryAccess(), l.stack, stack, equalityTypes))
             .mapToInt(l -> l.stack.getCount()).sum();
     }
 
@@ -582,7 +582,7 @@ public class PipeNetwork extends SavedData implements GraphListener<BlockPos, Ne
 
     public int getItemsOnTheWay(BlockPos goalInv, ItemStack type, ItemEquality... equalityTypes) {
         return this.getPipeItemsOnTheWay(goalInv)
-            .filter(i -> type == null || ItemEquality.compareItems(i.getContent(), type, equalityTypes))
+            .filter(i -> type == null || ItemEquality.compareItems(this.level.registryAccess(), i.getContent(), type, equalityTypes))
             .mapToInt(i -> i.getItemsOnTheWay(goalInv)).sum();
     }
 

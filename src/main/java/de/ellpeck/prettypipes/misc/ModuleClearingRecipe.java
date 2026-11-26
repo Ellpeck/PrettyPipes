@@ -1,18 +1,19 @@
 package de.ellpeck.prettypipes.misc;
 
+import com.mojang.serialization.MapCodec;
 import de.ellpeck.prettypipes.items.IModule;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 
 public class ModuleClearingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<ModuleClearingRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<>(ModuleClearingRecipe::new);
-
-    public ModuleClearingRecipe(CraftingBookCategory cat) {
-        super(cat);
-    }
+    public static final ModuleClearingRecipe INSTANCE = new ModuleClearingRecipe();
+    public static final MapCodec<ModuleClearingRecipe> MAP_CODEC = MapCodec.unit(ModuleClearingRecipe.INSTANCE);
+    public static final StreamCodec<RegistryFriendlyByteBuf, ModuleClearingRecipe> STREAM_CODEC = StreamCodec.unit(ModuleClearingRecipe.INSTANCE);
+    public static final RecipeSerializer<ModuleClearingRecipe> SERIALIZER = new RecipeSerializer<>(ModuleClearingRecipe.MAP_CODEC, ModuleClearingRecipe.STREAM_CODEC);
 
     @Override
     public boolean matches(CraftingInput container, Level level) {
@@ -29,7 +30,7 @@ public class ModuleClearingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput container, HolderLookup.Provider pRegistries) {
+    public ItemStack assemble(CraftingInput container) {
         for (var i = 0; i < container.size(); i++) {
             var stack = container.getItem(i);
             if (stack.getItem() instanceof IModule)
@@ -39,12 +40,7 @@ public class ModuleClearingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean canCraftInDimensions(int x, int y) {
-        return x >= 1 && y >= 1;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return ModuleClearingRecipe.SERIALIZER;
     }
 

@@ -33,7 +33,7 @@ public class StackSizeModuleItem extends ModuleItem {
             var stored = destination.getStackInSlot(i);
             if (stored.isEmpty())
                 continue;
-            if (!ItemEquality.compareItems(stored, stack, types))
+            if (!ItemEquality.compareItems(tile.level().registryAccess(), stored, stack, types))
                 continue;
             amount += stored.getCount();
             if (amount >= max)

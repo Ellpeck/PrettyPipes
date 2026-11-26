@@ -45,14 +45,14 @@ public class ActiveCraft implements ValueIOSerializable {
     public void serialize(ValueOutput output) {
         output.putLong("pipe", this.pipe.asLong());
         output.putInt("module_slot", this.moduleSlot);
-        output.put("ingredients_to_request", Utility.serializeAll(this.ingredientsToRequest, n -> {
-            var tag = new CompoundTag();
-            n.ifLeft(l -> tag.put("lock", l.serializeNBT(provider))).ifRight(s -> tag.put("stack", s.save(provider)));
-            return tag;
-        }));
-        output.put("traveling_ingredients", Utility.serializeAll(this.travelingIngredients, s -> (CompoundTag) s.save(provider, new CompoundTag())));
+        var request = output.childrenList("ingredients_to_request");
+        for (var ing : this.ingredientsToRequest)
+            ing.ifLeft(l -> l.serialize(request.addChild().child("lock"))).ifRight(r -> request.addChild().store("stack", ItemStack.CODEC, r));
+        var traveling = output.list("traveling_ingredients", ItemStack.CODEC);
+        for (var ing : this.travelingIngredients)
+            traveling.add(ing);
         output.putLong("result_dest_pipe", this.resultDestPipe.asLong());
-        output.put("result_stack_remain", this.resultStackRemain.saveOptional(provider));
+        output.store("result_stack_remain", ItemStack.CODEC, this.resultStackRemain);
         output.putBoolean("in_progress", this.inProgress);
         output.putBoolean("result_found", this.resultFound);
         output.putBoolean("canceled", this.canceled);
@@ -60,13 +60,15 @@ public class ActiveCraft implements ValueIOSerializable {
 
     @Override
     public void deserialize(ValueInput input) {
-        this.pipe = BlockPos.of(input.getLongOr("pipe",0));
-        this.moduleSlot = input.getIntOr("module_slot",0);
-        this.ingredientsToRequest = Utility.deserializeAll(input.childrenList("ingredients_to_request"), t ->
-            t.contains("lock") ? Either.left(new NetworkLock(provider, t.getCompound("lock"))) : Either.right(ItemStack.parseOptional(provider, t.getCompound("stack"))));
-        this.travelingIngredients = Utility.deserializeAll(input.getList("traveling_ingredients", Tag.TAG_COMPOUND), t -> ItemStack.parse(provider, t).orElseThrow());
+        this.pipe = BlockPos.of(input.getLongOr("pipe", 0));
+        this.moduleSlot = input.getIntOr("module_slot", 0);
+        this.ingredientsToRequest = input.childrenListOrEmpty("ingredients_to_request").stream().map(t -> t.keySet().contains("lock") ?
+            Either.<NetworkLock, ItemStack>left(new NetworkLock(t.child("lock").orElseThrow())) :
+            Either.<NetworkLock, ItemStack>right(t.read("stack", ItemStack.CODEC).orElse(ItemStack.EMPTY))
+        ).toList();
+        this.travelingIngredients = input.listOrEmpty("traveling_ingredients", ItemStack.CODEC).stream().toList();
         this.resultDestPipe = BlockPos.of(input.getLongOr("result_dest_pipe", 0));
-        this.resultStackRemain = ItemStack.parseOptional(provider, input.getCompound("result_stack_remain"));
+        this.resultStackRemain = input.read("result_stack_remain", ItemStack.CODEC).orElse(ItemStack.EMPTY);
         this.inProgress = input.getBooleanOr("in_progress", false);
         this.resultFound = input.getBooleanOr("result_found", false);
         this.canceled = input.getBooleanOr("canceled", false);
@@ -87,9 +89,9 @@ public class ActiveCraft implements ValueIOSerializable {
             ", canceled=" + this.canceled + '}';
     }
 
-    public ItemStack getTravelingIngredient(ItemStack stack, ItemEquality... equalityTypes) {
+    public ItemStack getTravelingIngredient(HolderLookup.Provider provider, ItemStack stack, ItemEquality... equalityTypes) {
         for (var traveling : this.travelingIngredients) {
-            if (ItemEquality.compareItems(stack, traveling, equalityTypes))
+            if (ItemEquality.compareItems(provider, stack, traveling, equalityTypes))
                 return traveling;
         }
         return ItemStack.EMPTY;

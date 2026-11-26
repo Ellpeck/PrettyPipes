@@ -44,7 +44,7 @@ public class CraftingModuleTransferHandler implements IUniversalRecipeTransferHa
             var remain = allIngredients.getFirst().copy();
             var toAdd = entry.getRole() == RecipeIngredientRole.INPUT ? inputs : outputs;
             var lastAdded = toAdd.isEmpty() ? ItemStack.EMPTY : toAdd.getLast();
-            if (ItemEquality.compareItems(lastAdded, remain)) {
+            if (ItemEquality.compareItems(player.level().registryAccess(), lastAdded, remain)) {
                 var fits = Math.min(lastAdded.getMaxStackSize() - lastAdded.getCount(), remain.getCount());
                 lastAdded.grow(fits);
                 remain.shrink(fits);

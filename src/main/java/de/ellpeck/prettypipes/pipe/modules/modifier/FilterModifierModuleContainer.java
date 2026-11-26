@@ -23,7 +23,7 @@ public class FilterModifierModuleContainer extends AbstractPipeContainer<FilterM
         for (var filter : this.tile.getFilters(null)) {
             for (var i = 0; i < filter.content.getSlots(); i++) {
                 var stack = filter.content.getStackInSlot(i);
-                stack.getTags().forEach(t -> unsortedTags.add(t.location()));
+                stack.tags().forEach(t -> unsortedTags.add(t.location()));
             }
         }
         return unsortedTags.stream().sorted().collect(Collectors.toList());

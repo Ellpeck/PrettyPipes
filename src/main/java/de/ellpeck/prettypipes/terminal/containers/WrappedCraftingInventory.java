@@ -2,6 +2,7 @@ package de.ellpeck.prettypipes.terminal.containers;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.StackedContents;
+import net.minecraft.world.entity.player.StackedItemContents;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -78,9 +79,9 @@ public class WrappedCraftingInventory implements CraftingContainer {
     }
 
     @Override
-    public void fillStackedContents(StackedContents helper) {
+    public void fillStackedContents(StackedItemContents contents) {
         for (var i = 0; i < this.items.getSlots(); i++)
-            helper.accountStack(this.items.getStackInSlot(i));
+            contents.accountStack(this.items.getStackInSlot(i));
     }
 
     @Override

@@ -6,6 +6,7 @@ import de.ellpeck.prettypipes.PrettyPipes;
 import de.ellpeck.prettypipes.Utility;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -63,14 +64,14 @@ public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements Custo
 
         public List<ItemStack> getStacks(Level level) {
             return this.stacks.orElseGet(() ->
-                Streams.stream(level.registryAccess().registry(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag.orElseThrow()).iterator())
+                Streams.stream(level.registryAccess().lookup(Registries.ITEM).orElseThrow().getTagOrEmpty(this.tag.orElseThrow()).iterator())
                     .filter(h -> h.value() != null & h.value() != Items.AIR)
                     .map(h -> new ItemStack(h.value())).collect(Collectors.toList()));
         }
 
         private static TagKey<Item> getTagForStacks(Level level, List<ItemStack> stacks) {
-            return level.registryAccess().registry(Registries.ITEM).orElseThrow().getTags().filter(e -> {
-                var tag = e.getSecond();
+            return level.registryAccess().lookup(Registries.ITEM).orElseThrow().getTags().filter(e -> {
+                var tag = e.contents();
                 if (tag.size() != stacks.size())
                     return false;
                 for (var i = 0; i < tag.size(); i++) {
@@ -78,7 +79,7 @@ public record PacketGhostSlot(BlockPos pos, List<Entry> stacks) implements Custo
                         return false;
                 }
                 return true;
-            }).map(Pair::getFirst).findFirst().orElse(null);
+            }).map(HolderSet.Named::key).findFirst().orElse(null);
         }
 
     }

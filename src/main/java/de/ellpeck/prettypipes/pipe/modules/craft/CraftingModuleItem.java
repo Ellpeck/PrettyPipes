@@ -19,6 +19,7 @@ import de.ellpeck.prettypipes.pipe.containers.AbstractPipeContainer;
 import de.ellpeck.prettypipes.terminal.CraftingTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
@@ -206,7 +207,7 @@ public class CraftingModuleItem extends ModuleItem {
         var contents = module.get(Contents.TYPE);
 
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
-        var resultAmount = this.getResultAmountPerCraft(module, stack, equalityTypes);
+        var resultAmount = this.getResultAmountPerCraft(tile.level().registryAccess(), module, stack, equalityTypes);
         // calculate how many crafting *operations* to do (as opposed to how many *items* to craft)
         var requiredCrafts = Mth.ceil(stack.getCount() / (float) resultAmount);
         var craftableCrafts = Mth.ceil(craftableAmount / (float) resultAmount);
@@ -260,11 +261,12 @@ public class CraftingModuleItem extends ModuleItem {
         var contents = module.get(Contents.TYPE);
         var equalityTypes = ItemFilter.getEqualityTypes(tile);
         var allCrafts = tile.getActiveCrafts();
-        for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(stack, equalityTypes).isEmpty()).toList()) {
+        var provider = tile.level().registryAccess();
+        for (var craft : allCrafts.stream().filter(c -> c.moduleSlot == slot && !c.getTravelingIngredient(provider, stack, equalityTypes).isEmpty()).toList()) {
             // TODO currently, we always shrink by the size of stack, even if the container can't actually accept the entire stack
             //  some containers' getAvailableDestination method returns an incorrect value (because it's a heuristic), so parts of this stack might be sent back,
             //  in which case we have to add it back to the collection of items we need to request (as an item stack since we won't have the lock anymore)
-            var traveling = craft.getTravelingIngredient(stack, equalityTypes);
+            var traveling = craft.getTravelingIngredient(provider, stack, equalityTypes);
             traveling.shrink(stack.getCount());
             if (traveling.isEmpty())
                 craft.travelingIngredients.remove(traveling);
@@ -295,19 +297,18 @@ public class CraftingModuleItem extends ModuleItem {
         return stack;
     }
 
-    private int getResultAmountPerCraft(ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
+    private int getResultAmountPerCraft(HolderLookup.Provider provider, ItemStack module, ItemStack stack, ItemEquality... equalityTypes) {
         var output = module.get(Contents.TYPE).output;
         var resultAmount = 0;
         for (var i = 0; i < output.getSlots(); i++) {
             var out = output.getStackInSlot(i);
-            if (ItemEquality.compareItems(stack, out, equalityTypes))
+            if (ItemEquality.compareItems(provider, stack, out, equalityTypes))
                 resultAmount += out.getCount();
         }
         return resultAmount;
     }
 
     private static Stack<ItemStack> addDependency(Stack<ItemStack> deps, ItemStack module) {
-        // noinspection unchecked
         deps = (Stack<ItemStack>) deps.clone();
         deps.push(module);
         return deps;
